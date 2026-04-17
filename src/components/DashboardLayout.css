@@ -1,0 +1,139 @@
+.dashboard {
+  min-height: 100vh;
+  display: flex;
+  background: #f9fafb;
+}
+
+.dashboard__sidebar {
+  width: 15.75rem;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid rgba(17, 24, 39, 0.08);
+}
+
+.dashboard__brand {
+  padding: 1.25rem 1.25rem 1rem;
+  border-bottom: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.dashboard__brand-name {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.dashboard__brand-tag {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a3412;
+}
+
+.dashboard__nav {
+  flex: 1;
+  padding: 0.75rem 0.625rem;
+  overflow-y: auto;
+}
+
+.dashboard__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.dashboard__nav-link {
+  display: block;
+  padding: 0.5rem 0.625rem;
+  font-size: 0.875rem;
+  line-height: 1.35;
+  color: #4b5563;
+  text-decoration: none;
+  border-radius: 8px;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.dashboard__nav-link:hover {
+  background: rgba(17, 24, 39, 0.04);
+  color: #111827;
+}
+
+.dashboard__nav-link--active {
+  background: rgba(154, 52, 18, 0.1);
+  color: #7c2d12;
+  font-weight: 600;
+}
+
+.dashboard__sidebar-footer {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid rgba(17, 24, 39, 0.06);
+}
+
+.dashboard__logout {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    border-color 0.12s ease;
+}
+
+.dashboard__logout:hover {
+  background: #e5e7eb;
+  border-color: rgba(17, 24, 39, 0.12);
+}
+
+.dashboard__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard__content {
+  flex: 1;
+  padding: 1.75rem 2rem 2.5rem;
+}
+
+@media (max-width: 720px) {
+  .dashboard {
+    flex-direction: column;
+  }
+
+  .dashboard__sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(17, 24, 39, 0.08);
+  }
+
+  .dashboard__nav-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .dashboard__nav-link {
+    white-space: nowrap;
+  }
+
+  .dashboard__sidebar-footer {
+    padding-top: 0.5rem;
+  }
+}

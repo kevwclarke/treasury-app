@@ -1,25 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { DashboardLayout } from './components/DashboardLayout'
+import { LoginPage } from './components/LoginPage'
+import { ModulePlaceholder } from './components/ModulePlaceholder'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import './App.css'
 
-function App() {
+export default function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<DashboardLayout />}>
+            <Route index element={<ModulePlaceholder title="Dashboard" />} />
+            <Route
+              path="yield-optimisation"
+              element={<ModulePlaceholder title="Yield Optimisation" />}
+            />
+            <Route
+              path="concentration-risk"
+              element={<ModulePlaceholder title="Concentration Risk" />}
+            />
+            <Route path="runway-burn" element={<ModulePlaceholder title="Runway & Burn" />} />
+            <Route path="cash-flow" element={<ModulePlaceholder title="Cash Flow" />} />
+            <Route path="fx-exposure" element={<ModulePlaceholder title="FX Exposure" />} />
+            <Route path="opportunities" element={<ModulePlaceholder title="Opportunities" />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  )
 }
-
-export default App;

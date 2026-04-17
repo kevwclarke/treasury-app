@@ -1,0 +1,18 @@
+.module-placeholder {
+  max-width: 42rem;
+}
+
+.module-placeholder__title {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #111827;
+}
+
+.module-placeholder__body {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
