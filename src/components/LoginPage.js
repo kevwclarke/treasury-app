@@ -3,10 +3,16 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import './LoginPage.css'
 
+function postLoginPath(fromLocation) {
+  const p = fromLocation?.pathname
+  if (p && p.startsWith('/app')) return p
+  return '/app'
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const from = location.state?.from?.pathname ?? '/'
+  const redirectTo = postLoginPath(location.state?.from)
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,7 +45,7 @@ export function LoginPage() {
       setError(signInError.message)
       return
     }
-    navigate(from, { replace: true })
+    navigate(redirectTo, { replace: true })
   }
 
   if (session === undefined) {
@@ -53,7 +59,7 @@ export function LoginPage() {
   }
 
   if (session) {
-    return <Navigate to={from} replace />
+    return <Navigate to={redirectTo} replace />
   }
 
   return (

@@ -1,7 +1,11 @@
 import { render, screen } from '@testing-library/react'
 import App from './App'
 
-test('shows sign in for unauthenticated users', async () => {
+test('shows landing page for unauthenticated users', async () => {
   render(<App />)
-  expect(await screen.findByRole('heading', { name: /^sign in$/i })).toBeInTheDocument()
+  expect(
+    await screen.findByRole('heading', {
+      name: /your cash is losing money/i,
+    })
+  ).toBeInTheDocument()
 })

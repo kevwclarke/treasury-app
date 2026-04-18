@@ -3,13 +3,13 @@ import { supabase } from '../supabase'
 import './DashboardLayout.css'
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', end: true },
-  { to: '/yield-optimisation', label: 'Yield Optimisation' },
-  { to: '/concentration-risk', label: 'Concentration Risk' },
-  { to: '/runway-burn', label: 'Runway & Burn' },
-  { to: '/cash-flow', label: 'Cash Flow' },
-  { to: '/fx-exposure', label: 'FX Exposure' },
-  { to: '/opportunities', label: 'Opportunities' },
+  { to: '/app', label: 'Dashboard', end: true },
+  { to: '/app/yield-optimisation', label: 'Yield Optimisation' },
+  { to: '/app/concentration-risk', label: 'Concentration Risk' },
+  { to: '/app/runway-burn', label: 'Runway & Burn' },
+  { to: '/app/cash-flow', label: 'Cash Flow' },
+  { to: '/app/fx-exposure', label: 'FX Exposure' },
+  { to: '/app/opportunities', label: 'Opportunities' },
 ]
 
 export function DashboardLayout() {

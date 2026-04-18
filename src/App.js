@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from './components/DashboardLayout'
+import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
 import { ModulePlaceholder } from './components/ModulePlaceholder'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -9,9 +10,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<DashboardLayout />}>
+        <Route path="/app" element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
             <Route index element={<ModulePlaceholder title="Dashboard" />} />
             <Route
               path="yield-optimisation"
