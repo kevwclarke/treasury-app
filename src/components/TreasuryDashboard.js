@@ -1,30 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
+import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
 import './TreasuryDashboard.css'
-
-function formatGBP(value, opts = {}) {
-  return new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-    maximumFractionDigits: opts.maximumFractionDigits ?? 0,
-    minimumFractionDigits: opts.minimumFractionDigits ?? 0,
-  }).format(value)
-}
-
-function formatGBPCompact(value) {
-  if (Math.abs(value) >= 1_000_000) {
-    return `£${(value / 1_000_000).toLocaleString('en-GB', { maximumFractionDigits: 1 })}m`
-  }
-  if (Math.abs(value) >= 1_000) {
-    return `£${Math.round(value / 1_000).toLocaleString('en-GB')}k`
-  }
-  return formatGBP(value)
-}
-
-function formatPct(value, digits = 1) {
-  return `${value.toLocaleString('en-GB', { maximumFractionDigits: digits, minimumFractionDigits: digits })}%`
-}
 
 function IconClock() {
   return (
@@ -87,49 +67,6 @@ const CF_MONTHS = [
   { label: 'Aug', h: 47, proj: true },
 ]
 
-const BURN_CATEGORY_ORDER = [
-  'Payroll',
-  'Infrastructure',
-  'Contractors',
-  'Travel',
-  'Office & Ops',
-  'Marketing',
-  'Other',
-]
-
-function categorisePayee(payeeRaw) {
-  const p = String(payeeRaw ?? '').toLowerCase()
-  const hasAny = (terms) => terms.some((t) => p.includes(t))
-
-  if (hasAny(['wages', 'salary', 'payroll', 'deel', 'rippling'])) return 'Payroll'
-  if (hasAny(['aws', 'google cloud', 'azure', 'hosting', 'vercel', 'supabase'])) return 'Infrastructure'
-  if (hasAny(['contractor', 'freelance', 'consultant'])) return 'Contractors'
-  if (
-    hasAny([
-      'taxi',
-      'uber',
-      'lyft',
-      'sumup',
-      'train',
-      'subway',
-      'tube',
-      'rail',
-      'flight',
-      'airline',
-      'hotel',
-      'presto',
-      'transport',
-      'transit',
-      'tfl',
-    ])
-  )
-    return 'Travel'
-  if (hasAny(['rent', 'utilities', 'office', 'vodafone', 'phone', 'wifi', 'broadband'])) return 'Office & Ops'
-  if (hasAny(['ads', 'marketing', 'google ads', 'meta'])) return 'Marketing'
-
-  return 'Other'
-}
-
 const PEER_BENCHMARK_ROWS = [
   {
     metric: 'Liquidity Buffer',
@@ -140,7 +77,7 @@ const PEER_BENCHMARK_ROWS = [
   },
   {
     metric: 'Effective Yield',
-    yours: '0.42%',
+    yours: '0.10%',
     peer: '1.85%',
     position: 'Below peer',
     tone: 'salmon',
@@ -204,9 +141,9 @@ export function TreasuryDashboard() {
   const [tsCloseDate, setTsCloseDate] = useState('')
   const [tsResults, setTsResults] = useState(null)
 
-  const [burnLoading, setBurnLoading] = useState(true)
-  const [burnError, setBurnError] = useState('')
-  const [burnRows, setBurnRows] = useState([])
+  const [txnLoading, setTxnLoading] = useState(true)
+  const [txnError, setTxnError] = useState('')
+  const [txnRows, setTxnRows] = useState([])
 
   const { runwayMo, burnModel } = useMemo(() => {
     const baseRunway = 18.4
@@ -222,9 +159,9 @@ export function TreasuryDashboard() {
   useEffect(() => {
     let cancelled = false
 
-    async function loadBurn() {
-      setBurnLoading(true)
-      setBurnError('')
+    async function loadTransactions() {
+      setTxnLoading(true)
+      setTxnError('')
 
       try {
         const {
@@ -234,32 +171,42 @@ export function TreasuryDashboard() {
         if (userError) throw userError
         if (!user) throw new Error('Not authenticated.')
 
-        const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
         const { data, error } = await supabase
           .from('transactions')
           .select('amount,payee,date')
           .eq('user_id', user.id)
-          .lt('amount', 0)
-          .gte('date', since)
           .order('date', { ascending: false })
 
         if (error) throw error
         if (cancelled) return
-        setBurnRows(data ?? [])
+        setTxnRows(data ?? [])
       } catch (e) {
         if (cancelled) return
-        setBurnError(e?.message ?? 'Failed to load transactions.')
-        setBurnRows([])
+        setTxnError(e?.message ?? 'Failed to load transactions.')
+        setTxnRows([])
       } finally {
-        if (!cancelled) setBurnLoading(false)
+        if (!cancelled) setTxnLoading(false)
       }
     }
 
-    loadBurn()
+    loadTransactions()
     return () => {
       cancelled = true
     }
   }, [])
+
+  const since90dIso = useMemo(() => new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), [])
+
+  const burnRows = useMemo(
+    () =>
+      (txnRows ?? []).filter((t) => {
+        const amt = Number(t.amount)
+        if (!Number.isFinite(amt) || amt >= 0) return false
+        const d = t.date ? new Date(t.date).getTime() : 0
+        return d >= new Date(since90dIso).getTime()
+      }),
+    [txnRows, since90dIso],
+  )
 
   const burnSummary = useMemo(() => {
     if (!burnRows?.length) {
@@ -292,6 +239,21 @@ export function TreasuryDashboard() {
 
     return { monthlyAvg, categories, total }
   }, [burnRows])
+
+  const yieldSummary = useMemo(() => {
+    const totalCash = (txnRows ?? []).reduce((s, t) => {
+      const a = Number(t.amount)
+      return s + (Number.isFinite(a) ? a : 0)
+    }, 0)
+    const annualOppCost = totalCash * YIELD_SPREAD_DEC
+    const monthlyOppCost = annualOppCost / 12
+
+    return {
+      totalCash,
+      annualOppCost,
+      monthlyOppCost,
+    }
+  }, [txnRows])
 
   return (
     <div className="tdash">
@@ -346,8 +308,22 @@ export function TreasuryDashboard() {
             <div>
               <p className="tdash__alert-title">Idle cash opportunity cost</p>
               <p className="tdash__alert-meta">
-                <strong>{formatGBP(428_000)}</strong> at 0.10% for <strong>94 days</strong> vs best-available
-                benchmarks.
+                {txnLoading ? (
+                  <>Loading idle-cash signal…</>
+                ) : txnRows.length ? (
+                  <>
+                    <strong>{formatGBP(Math.round(yieldSummary.annualOppCost))}</strong> annual opportunity cost
+                    (≈ <strong>{formatGBP(Math.round(yieldSummary.monthlyOppCost))}</strong> / month) on{' '}
+                    <strong>{formatGBP(Math.round(yieldSummary.totalCash))}</strong> net cash at{' '}
+                    <strong>{formatPct(YIELD_CURRENT_PCT, 2)}</strong> vs <strong>{formatPct(YIELD_BEST_PCT, 2)}</strong>{' '}
+                    best-available.
+                  </>
+                ) : (
+                  <>
+                    <strong>{formatGBP(428_000)}</strong> at 0.10% for <strong>94 days</strong> vs best-available
+                    benchmarks. <Link to="/upload">Upload statement</Link> for your numbers.
+                  </>
+                )}
               </p>
             </div>
           </div>
@@ -375,14 +351,26 @@ export function TreasuryDashboard() {
       <section className="tdash__kpis" aria-label="Key performance indicators">
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Total Cash</p>
-          <p className="tdash__kpi-value">{formatGBP(4_820_000)}</p>
-          <p className="tdash__kpi-delta tdash__kpi-delta--up">+4.2% vs last month</p>
+          {txnLoading ? (
+            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem', color: '#57534e' }}>
+              …
+            </p>
+          ) : (
+            <p className="tdash__kpi-value">{formatGBP(Math.round(yieldSummary.totalCash))}</p>
+          )}
+          <p className="tdash__kpi-delta">
+            {txnRows.length
+              ? 'Net from uploaded inflows and outflows'
+              : 'Upload a bank statement to populate'}
+          </p>
           <Sparkline />
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Effective Yield</p>
-          <p className="tdash__kpi-value tdash__kpi-value--salmon">{formatPct(0.42, 2)}</p>
-          <p className="tdash__kpi-delta tdash__kpi-delta--down">−3.1 pts vs best available</p>
+          <p className="tdash__kpi-value tdash__kpi-value--salmon">{formatPct(YIELD_CURRENT_PCT, 2)}</p>
+          <p className="tdash__kpi-delta tdash__kpi-delta--down">
+            {formatPct(YIELD_BEST_PCT - YIELD_CURRENT_PCT, 2)} pts vs best available
+          </p>
           <Sparkline stroke="#c4704f" />
         </article>
         <article className="tdash__kpi">
@@ -409,85 +397,111 @@ export function TreasuryDashboard() {
             </a>
           </div>
           <p className="tdash__card-sub">Idle cash earnings vs. best available — monthly recalculated</p>
-          <div className="tdash__yield-stats">
-            <div>
-              <p className="tdash__stat-cap">Annual Opportunity Cost</p>
-              <p className="tdash__stat-big tdash__stat-big--salmon">{formatGBPCompact(312_000)}</p>
+          {txnLoading ? (
+            <p className="tdash__burn-avg" style={{ color: '#57534e', fontSize: '1rem' }}>
+              Loading…
+            </p>
+          ) : txnError ? (
+            <div
+              className="tdash__burn-warn"
+              style={{
+                background: 'rgba(180, 35, 24, 0.07)',
+                borderColor: 'rgba(180, 35, 24, 0.22)',
+                color: '#b42318',
+              }}
+            >
+              {txnError}
             </div>
-            <div>
-              <p className="tdash__stat-cap">Earning Now</p>
-              <p className="tdash__stat-big">{formatPct(0.42, 2)}</p>
-              <p className="tdash__stat-note">Blended on idle balances</p>
+          ) : txnRows.length === 0 ? (
+            <div className="tdash__burn-warn">
+              Upload a bank statement to see your yield gap.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Go to upload
+              </Link>
             </div>
-            <div>
-              <p className="tdash__stat-cap">Best Available</p>
-              <p className="tdash__stat-big tdash__stat-big--green">{formatPct(5.12, 2)}</p>
-              <p className="tdash__stat-note">Liquidity-adjusted ceiling</p>
-            </div>
-          </div>
-          <div className="tdash__rate-pair-row" aria-label="Current vs best rate">
-            <div>
-              <p className="tdash__stat-cap">Current rate</p>
-              <p className="tdash__stat-big tdash__stat-big--salmon">{formatPct(0.42, 2)}</p>
-              <p className="tdash__stat-note">Weighted on idle balances</p>
-            </div>
-            <div>
-              <p className="tdash__stat-cap">Best rate</p>
-              <p className="tdash__stat-big tdash__stat-big--green">{formatPct(5.12, 2)}</p>
-              <p className="tdash__stat-note">BlackRock Liquidity Fund (recommended sleeve)</p>
-            </div>
-          </div>
-          <table className="tdash__table">
-            <thead>
-              <tr>
-                <th>Instrument</th>
-                <th>Rate</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Barclays Business Current</td>
-                <td className="tdash__rate-current">{formatPct(0.1, 2)}</td>
-                <td>—</td>
-              </tr>
-              <tr>
-                <td>BoE Base Rate</td>
-                <td className="tdash__rate-bench">{formatPct(4.75, 2)}</td>
-                <td />
-              </tr>
-              <tr>
-                <td>Shawbrook 12-mo Fixed</td>
-                <td className="tdash__rate-best">{formatPct(4.95, 2)}</td>
-                <td>
-                  <a className="tdash__apply" href="#apply-shawbrook">
-                    Apply
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td>UK T-Bills 91-day</td>
-                <td className="tdash__rate-best">{formatPct(5.25, 2)}</td>
-                <td>
-                  <a className="tdash__apply" href="#apply-tbills">
-                    Apply
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  BlackRock Liquidity Fund
-                  <span className="tdash__tag-rec">Recommended</span>
-                </td>
-                <td className="tdash__rate-best">{formatPct(5.12, 2)}</td>
-                <td>
-                  <a className="tdash__apply" href="#apply-blrk">
-                    Apply
-                  </a>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          ) : (
+            <>
+              <p className="tdash__yield-total-cash">
+                <span className="tdash__yield-total-cash-label">Total cash (net)</span>
+                <span className="tdash__yield-total-cash-val">{formatGBP(Math.round(yieldSummary.totalCash))}</span>
+                <span className="tdash__yield-total-cash-note">
+                  Sum of all transaction amounts · updates when you import a new CSV
+                </span>
+              </p>
+              <div className="tdash__yield-stats">
+                <div>
+                  <p className="tdash__stat-cap">Annual opportunity cost</p>
+                  <p className="tdash__stat-big tdash__stat-big--salmon">
+                    {formatGBP(Math.round(yieldSummary.annualOppCost))}
+                  </p>
+                  <p className="tdash__stat-note">
+                    Total cash × (0.0512 − 0.001) · ≈ {formatGBP(Math.round(yieldSummary.monthlyOppCost))} / month
+                  </p>
+                </div>
+                <div>
+                  <p className="tdash__stat-cap">Earning now</p>
+                  <p className="tdash__stat-big tdash__stat-big--salmon">{formatPct(YIELD_CURRENT_PCT, 2)}</p>
+                  <p className="tdash__stat-note">Barclays Business Current (default)</p>
+                </div>
+                <div>
+                  <p className="tdash__stat-cap">Best available</p>
+                  <p className="tdash__stat-big tdash__stat-big--green">{formatPct(YIELD_BEST_PCT, 2)}</p>
+                  <p className="tdash__stat-note">BlackRock Liquidity Fund (placeholder)</p>
+                </div>
+              </div>
+              <table className="tdash__table">
+                <thead>
+                  <tr>
+                    <th>Instrument</th>
+                    <th>Rate</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Barclays Business Current</td>
+                    <td className="tdash__rate-current">{formatPct(YIELD_CURRENT_PCT, 2)}</td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td>BoE Base Rate</td>
+                    <td className="tdash__rate-bench">{formatPct(4.75, 2)}</td>
+                    <td />
+                  </tr>
+                  <tr>
+                    <td>Shawbrook 12-mo Fixed</td>
+                    <td className="tdash__rate-best">{formatPct(4.95, 2)}</td>
+                    <td>
+                      <a className="tdash__apply" href="#apply-shawbrook">
+                        Apply
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>UK T-Bills 91-day</td>
+                    <td className="tdash__rate-best">{formatPct(5.25, 2)}</td>
+                    <td>
+                      <a className="tdash__apply" href="#apply-tbills">
+                        Apply
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      BlackRock Liquidity Fund
+                      <span className="tdash__tag-rec">Recommended</span>
+                    </td>
+                    <td className="tdash__rate-best">{formatPct(YIELD_BEST_PCT, 2)}</td>
+                    <td>
+                      <a className="tdash__apply" href="#apply-blrk">
+                        Apply
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </>
+          )}
         </article>
 
         {/* Concentration */}
@@ -658,13 +672,13 @@ export function TreasuryDashboard() {
             </div>
           </div>
           <p className="tdash__card-sub">By category, last 90 days, auto-categorised</p>
-          {burnLoading ? (
+          {txnLoading ? (
             <p className="tdash__burn-avg" style={{ color: '#57534e', fontSize: '1rem' }}>
               Loading…
             </p>
-          ) : burnError ? (
+          ) : txnError ? (
             <div className="tdash__burn-warn" style={{ background: 'rgba(180, 35, 24, 0.07)', borderColor: 'rgba(180, 35, 24, 0.22)', color: '#b42318' }}>
-              {burnError}
+              {txnError}
             </div>
           ) : burnSummary.total === 0 ? (
             <div className="tdash__burn-warn">
@@ -801,7 +815,7 @@ export function TreasuryDashboard() {
         <article className="tdash__card tdash__card--wide">
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Peer Benchmarks</h2>
-            <Link className="tdash__card-link" to="/app/peer-benchmarks">
+            <Link className="tdash__card-link" to="/app/benchmarks">
               Full report
             </Link>
           </div>

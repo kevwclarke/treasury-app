@@ -8,9 +8,39 @@
 
 ## Pages built so far
 
-- Landing/waitlist page at `/`
-- Login page at `/login`
-- Dashboard shell with sidebar at `/app`
+**Public**
+
+- Landing / waitlist at `/`
+- Login at `/login`
+
+**Authenticated (shell: dark sidebar + cream main — same layout for all below)**
+
+- Treasury dashboard (overview cards) at `/app`
+- CSV upload at `/upload`
+
+**Intelligence (full detail pages)**
+
+- Yield Optimisation at `/app/yield`
+- Concentration Risk at `/app/concentration`
+- Runway & Burn at `/app/runway`
+- Cash Flow Forecast at `/app/cashflow`
+- FX Exposure at `/app/fx`
+- Opportunities (marketplace) at `/app/opportunities`
+
+**Advanced**
+
+- Scenario Modeller at `/app/scenarios`
+- Peer Benchmarks at `/app/benchmarks`
+- Term Sheet Cash Impact at `/app/term-sheet-cash-impact`
+- AR Ageing at `/app/ar`
+- Tax Tracker at `/app/tax`
+
+**Reports**
+
+- Investor Report at `/app/report`
+- Fundraise Timing at `/app/fundraise`
+
+**Legacy redirects (old paths → canonical URLs above):** e.g. `/app/yield-optimisation` → `/app/yield`, `/app/cash-flow` → `/app/cashflow`, and similar for other former slugs.
 
 ## Design style
 

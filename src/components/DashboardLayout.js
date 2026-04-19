@@ -13,29 +13,29 @@ const NAV_SECTIONS = [
   {
     label: 'Intelligence',
     items: [
-      { to: '/app/yield-optimisation', label: 'Yield Optimisation', badge: '3' },
-      { to: '/app/concentration-risk', label: 'Concentration Risk' },
-      { to: '/app/runway-burn', label: 'Runway & Burn' },
-      { to: '/app/cash-flow', label: 'Cash Flow' },
-      { to: '/app/fx-exposure', label: 'FX Exposure' },
+      { to: '/app/yield', label: 'Yield Optimisation', badge: '3' },
+      { to: '/app/concentration', label: 'Concentration Risk' },
+      { to: '/app/runway', label: 'Runway & Burn' },
+      { to: '/app/cashflow', label: 'Cash Flow' },
+      { to: '/app/fx', label: 'FX Exposure' },
       { to: '/app/opportunities', label: 'Opportunities' },
     ],
   },
   {
     label: 'Advanced',
     items: [
-      { to: '/app/scenario-modeller', label: 'Scenario Modeller', tag: 'NEW' },
-      { to: '/app/peer-benchmarks', label: 'Peer Benchmarks', tag: 'NEW' },
+      { to: '/app/scenarios', label: 'Scenario Modeller', tag: 'NEW' },
+      { to: '/app/benchmarks', label: 'Peer Benchmarks', tag: 'NEW' },
       { to: '/app/term-sheet-cash-impact', label: 'Term Sheet Cash Impact', tag: 'NEW' },
-      { to: '/app/ar-ageing', label: 'AR Ageing' },
-      { to: '/app/tax-tracker', label: 'Tax Tracker' },
+      { to: '/app/ar', label: 'AR Ageing' },
+      { to: '/app/tax', label: 'Tax Tracker' },
     ],
   },
   {
     label: 'Reports',
     items: [
-      { to: '/app/investor-report', label: 'Investor Report' },
-      { to: '/app/fundraise-timing', label: 'Fundraise Timing' },
+      { to: '/app/report', label: 'Investor Report' },
+      { to: '/app/fundraise', label: 'Fundraise Timing' },
     ],
   },
 ]
