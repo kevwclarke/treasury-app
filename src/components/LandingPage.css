@@ -3,11 +3,11 @@
   display: flex;
   flex-direction: column;
   color: #14120f;
-  background-color: #faf6f0;
+  background-color: #faf7f2;
   background-image:
     linear-gradient(180deg, rgba(255, 241, 229, 0.85) 0%, rgba(250, 246, 240, 0) 42%),
     radial-gradient(ellipse 90% 55% at 50% -15%, rgba(255, 236, 220, 0.9) 0%, transparent 55%),
-    linear-gradient(165deg, #f7efe6 0%, #faf6f0 38%, #f3ebe2 100%);
+    linear-gradient(165deg, #f7efe6 0%, #faf7f2 38%, #f3ebe2 100%);
 }
 
 .landing__header {
@@ -21,7 +21,7 @@
 }
 
 .landing__wordmark {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -30,7 +30,7 @@
 }
 
 .landing__sign-in {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.875rem;
   font-weight: 500;
   color: #14120f;
@@ -61,7 +61,7 @@
 
 .landing__kicker {
   margin: 0 0 1rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -71,7 +71,7 @@
 
 .landing__headline {
   margin: 0 0 1.25rem;
-  font-family: 'Newsreader', 'Georgia', serif;
+  font-family: var(--ds-font-display);
   font-size: clamp(2.125rem, 5.2vw, 3.25rem);
   font-weight: 500;
   line-height: 1.12;
@@ -81,7 +81,7 @@
 
 .landing__subhead {
   margin: 0 0 2rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: clamp(1rem, 2.1vw, 1.125rem);
   font-weight: 400;
   line-height: 1.65;
@@ -101,7 +101,7 @@
 .landing__benefit {
   display: flex;
   gap: 0.625rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   line-height: 1.5;
   color: #2a2622;
@@ -128,7 +128,7 @@
   flex: 1 1 12rem;
   min-width: 0;
   padding: 0.75rem 1rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 1rem;
   color: #14120f;
   background: rgba(255, 253, 249, 0.92);
@@ -156,7 +156,7 @@
 .landing__cta {
   flex-shrink: 0;
   padding: 0.75rem 1.35rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.01em;
@@ -178,14 +178,14 @@
 
 .landing__hint {
   margin: 0.5rem 0 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.8125rem;
   color: #9a3412;
 }
 
 .landing__confirm {
   margin: 0 0 1rem;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   line-height: 1.5;
   color: #2f4a3c;
@@ -197,7 +197,7 @@
 
 .landing__footnote {
   margin: 0;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--ds-font-body);
   font-size: 0.8125rem;
   line-height: 1.5;
   color: #6b635a;

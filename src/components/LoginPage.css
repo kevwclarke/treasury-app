@@ -4,7 +4,8 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background-color: #fff1e5;
+  font-family: var(--ds-font-body);
+  background-color: #faf7f2;
   background-image: radial-gradient(
     ellipse 120% 80% at 50% -20%,
     rgba(255, 255, 255, 0.65) 0%,
@@ -32,17 +33,18 @@
   margin: 0 0 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #9a3412;
+  color: #c4704f;
 }
 
 .login-page__title {
   margin: 0 0 0.5rem;
-  font-size: 1.375rem;
+  font-family: var(--ds-font-display);
+  font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: #111827;
+  color: #1a1614;
 }
 
 .login-page__subtitle {
@@ -84,8 +86,8 @@
 }
 
 .login-page__input:focus {
-  border-color: #c2410c;
-  box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.15);
+  border-color: #c4704f;
+  box-shadow: 0 0 0 3px rgba(196, 112, 79, 0.18);
 }
 
 .login-page__input:disabled {
@@ -109,18 +111,19 @@
   padding: 0.6875rem 1rem;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #fff;
-  background: #9a3412;
+  font-family: inherit;
+  color: #faf7f2;
+  background: #1a1614;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition:
-    background 0.15s ease,
-    opacity 0.15s ease;
+    background var(--ds-transition),
+    opacity var(--ds-transition);
 }
 
 .login-page__submit:hover:not(:disabled) {
-  background: #7c2d12;
+  background: #2c2622;
 }
 
 .login-page__submit:disabled {

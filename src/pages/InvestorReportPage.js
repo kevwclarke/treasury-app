@@ -32,7 +32,7 @@ export function InvestorReportPage() {
             padding: '1.25rem',
             background: 'linear-gradient(180deg,#fffefb,#faf6f0)',
             minHeight: 280,
-            fontFamily: 'Newsreader, Georgia, serif',
+            fontFamily: "'Playfair Display', Georgia, serif",
           }}
         >
           <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#57534e' }}>

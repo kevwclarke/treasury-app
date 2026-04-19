@@ -15,7 +15,16 @@ function IconClock() {
   )
 }
 
-function Sparkline({ stroke = '#1c1917' }) {
+function IconInfo() {
+  return (
+    <svg className="tdash__alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
+      <path d="M12 10v6M12 8h.01" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    </svg>
+  )
+}
+
+function Sparkline({ stroke = '#1a1614' }) {
   const pts = '0,11 5,9 10,10 15,7 20,8 25,5 30,6 35,4 40,5 45,3 50,4 55,2 60,3'
   return (
     <svg className="tdash__sparkline" viewBox="0 0 60 14" preserveAspectRatio="none" aria-hidden>
@@ -32,7 +41,7 @@ function LiquidityDonut({ months, targetMonths }) {
 
   return (
     <svg className="tdash__donut" viewBox="0 0 80 80" aria-hidden>
-      <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(28,25,23,0.08)" strokeWidth="8" />
+      <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(26,22,20,0.08)" strokeWidth="8" />
       <circle
         cx="40"
         cy="40"
@@ -144,6 +153,8 @@ export function TreasuryDashboard() {
   const [txnLoading, setTxnLoading] = useState(true)
   const [txnError, setTxnError] = useState('')
   const [txnRows, setTxnRows] = useState([])
+  const [cfChartReady, setCfChartReady] = useState(false)
+  const [burnBarsReady, setBurnBarsReady] = useState(false)
 
   const { runwayMo, burnModel } = useMemo(() => {
     const baseRunway = 18.4
@@ -193,6 +204,11 @@ export function TreasuryDashboard() {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setCfChartReady(true))
+    return () => cancelAnimationFrame(id)
   }, [])
 
   const since90dIso = useMemo(() => new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), [])
@@ -254,6 +270,15 @@ export function TreasuryDashboard() {
       monthlyOppCost,
     }
   }, [txnRows])
+
+  useEffect(() => {
+    if (txnLoading || burnSummary.total === 0) {
+      setBurnBarsReady(false)
+      return undefined
+    }
+    const t = window.setTimeout(() => setBurnBarsReady(true), 100)
+    return () => window.clearTimeout(t)
+  }, [txnLoading, burnSummary.total])
 
   return (
     <div className="tdash">
@@ -331,6 +356,21 @@ export function TreasuryDashboard() {
             Fix This
           </button>
         </div>
+        <div className="tdash__alert tdash__alert--info">
+          <div className="tdash__alert-main">
+            <IconInfo />
+            <div>
+              <p className="tdash__alert-title">Bank feed health</p>
+              <p className="tdash__alert-meta">
+                Primary Barclays connection is stable. Secondary Starling token renews in <strong>18 days</strong> — no
+                action required.
+              </p>
+            </div>
+          </div>
+          <button type="button" className="tdash__alert-action tdash__alert-action--blue">
+            View connections
+          </button>
+        </div>
       </section>
 
       <section className="tdash__promo" aria-label="Investor-ready report">
@@ -352,9 +392,9 @@ export function TreasuryDashboard() {
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Total Cash</p>
           {txnLoading ? (
-            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem', color: '#57534e' }}>
-              …
-            </p>
+            <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading total cash">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+            </div>
           ) : (
             <p className="tdash__kpi-value">{formatGBP(Math.round(yieldSummary.totalCash))}</p>
           )}
@@ -398,9 +438,15 @@ export function TreasuryDashboard() {
           </div>
           <p className="tdash__card-sub">Idle cash earnings vs. best available — monthly recalculated</p>
           {txnLoading ? (
-            <p className="tdash__burn-avg" style={{ color: '#57534e', fontSize: '1rem' }}>
-              Loading…
-            </p>
+            <div className="tdash__yield-skel" aria-busy="true" aria-label="Loading yield gap">
+              <span className="ds-skeleton ds-skeleton--title" />
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+              <div className="ds-skeleton-grid">
+                <span className="ds-skeleton ds-skeleton--line" />
+                <span className="ds-skeleton ds-skeleton--line" />
+                <span className="ds-skeleton ds-skeleton--line" />
+              </div>
+            </div>
           ) : txnError ? (
             <div
               className="tdash__burn-warn"
@@ -505,7 +551,7 @@ export function TreasuryDashboard() {
         </article>
 
         {/* Concentration */}
-        <article className="tdash__card">
+        <article className="tdash__card tdash__card--critical">
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Concentration Risk</h2>
             <span className="tdash__badge tdash__badge--red">High Risk</span>
@@ -673,9 +719,12 @@ export function TreasuryDashboard() {
           </div>
           <p className="tdash__card-sub">By category, last 90 days, auto-categorised</p>
           {txnLoading ? (
-            <p className="tdash__burn-avg" style={{ color: '#57534e', fontSize: '1rem' }}>
-              Loading…
-            </p>
+            <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading burn breakdown">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+              <span className="ds-skeleton ds-skeleton--line" />
+              <span className="ds-skeleton ds-skeleton--line ds-skeleton--short" />
+              <span className="ds-skeleton ds-skeleton--line" />
+            </div>
           ) : txnError ? (
             <div className="tdash__burn-warn" style={{ background: 'rgba(180, 35, 24, 0.07)', borderColor: 'rgba(180, 35, 24, 0.22)', color: '#b42318' }}>
               {txnError}
@@ -690,7 +739,7 @@ export function TreasuryDashboard() {
           ) : (
             <>
               <p className="tdash__burn-avg">{formatGBP(Math.round(burnSummary.monthlyAvg))}</p>
-              <div>
+              <div className={burnBarsReady ? 'tdash__burn-bars tdash__burn-bars--ready' : 'tdash__burn-bars'}>
                 {burnSummary.categories.map((c) => (
                   <div key={c.name} className="tdash__cat-row">
                     <div className="tdash__cat-top">
@@ -730,7 +779,11 @@ export function TreasuryDashboard() {
               <p className="tdash__cf-stat-val tdash__cf-stat-val--net">{formatGBP(94_000)}</p>
             </div>
           </div>
-          <div className="tdash__cf-chart" role="img" aria-label="Monthly cash movement, dotted line is today">
+          <div
+            className={`tdash__cf-chart${cfChartReady ? ' tdash__cf-chart--ready' : ''}`}
+            role="img"
+            aria-label="Monthly cash movement, dotted line is today"
+          >
             {CF_MONTHS.map((m) => (
               <div key={m.label} className="tdash__cf-col">
                 <div

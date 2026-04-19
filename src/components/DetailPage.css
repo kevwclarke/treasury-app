@@ -3,8 +3,8 @@
   max-width: 56rem;
   margin: 0 auto;
   padding-bottom: 2rem;
-  color: #1c1917;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: #1a1614;
+  font-family: var(--ds-font-body);
 }
 
 .detail-hero {
@@ -13,8 +13,8 @@
 
 .detail-title {
   margin: 0 0 0.5rem;
-  font-family: 'Newsreader', Georgia, 'Times New Roman', serif;
-  font-size: 1.875rem;
+  font-family: var(--ds-font-display);
+  font-size: 2.0625rem;
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
@@ -30,15 +30,24 @@
 
 .detail-section {
   margin-bottom: 1.75rem;
-  padding: 1.125rem 1.25rem 1.25rem;
-  background: #fffefb;
-  border: 1px solid rgba(28, 25, 23, 0.08);
+  padding: 1.75rem;
+  background: #ffffff;
+  border: 1px solid rgba(26, 22, 20, 0.08);
   border-radius: 12px;
+  box-shadow: var(--ds-shadow-card);
+  transition:
+    transform var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.detail-section:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--ds-shadow-card-hover);
 }
 
 .detail-section__title {
   margin: 0 0 0.75rem;
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--ds-font-display);
   font-size: 1.125rem;
   font-weight: 600;
 }
@@ -73,14 +82,14 @@
   margin: 0 0 0.375rem;
   font-size: 0.5625rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #57534e;
 }
 
 .detail-stat__val {
   margin: 0;
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--ds-font-display);
   font-size: 1.375rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -114,7 +123,7 @@
   margin-bottom: 0.375rem;
   font-size: 0.5625rem;
   font-weight: 600;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #57534e;
 }
@@ -123,35 +132,42 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem 0.875rem;
+  padding: 0.55rem 1rem;
   font-size: 0.8125rem;
   font-weight: 600;
-  border-radius: 8px;
-  border: 1px solid rgba(28, 25, 23, 0.12);
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid rgba(26, 22, 20, 0.18);
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  background: #fffefb;
+  background: transparent;
+  transition:
+    background var(--ds-transition),
+    border-color var(--ds-transition),
+    color var(--ds-transition);
 }
 
 .detail-btn--dark {
-  background: #1c1917;
-  color: #fffefb;
-  border-color: #1c1917;
+  background: #1a1614;
+  color: #faf7f2;
+  border-color: #1a1614;
 }
 
 .detail-btn--dark:hover {
-  background: #292524;
+  background: #2c2622;
+  border-color: #2c2622;
 }
 
 .detail-btn--salmon {
   background: #c4704f;
-  color: #fffefb;
+  color: #faf7f2;
   border-color: #a85a3d;
 }
 
 .detail-btn--salmon:hover {
-  background: #b35d42;
+  background: #a85a3d;
+  border-color: #8f4d36;
 }
 
 .detail-empty {
@@ -180,10 +196,19 @@
   grid-template-columns: auto 1fr auto;
   gap: 0.75rem 1rem;
   align-items: start;
-  padding: 1rem 1rem;
-  border-radius: 10px;
-  border: 1px solid rgba(28, 25, 23, 0.08);
-  background: rgba(255, 254, 251, 0.9);
+  padding: 1.25rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid rgba(26, 22, 20, 0.08);
+  background: #ffffff;
+  box-shadow: var(--ds-shadow-card);
+  transition:
+    transform var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.detail-product:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--ds-shadow-card-hover);
 }
 
 @media (max-width: 640px) {
@@ -193,7 +218,7 @@
 }
 
 .detail-product__rank {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--ds-font-display);
   font-size: 1.5rem;
   font-weight: 600;
   color: #c4704f;
@@ -214,7 +239,7 @@
 
 .detail-product__rate {
   margin: 0.25rem 0 0;
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--ds-font-display);
   font-size: 1.5rem;
   font-weight: 600;
   color: #2d6a4f;
@@ -272,13 +297,22 @@
 .detail-table td {
   padding: 0.5rem 0.625rem;
   text-align: left;
-  border-bottom: 1px solid rgba(28, 25, 23, 0.06);
+  border-bottom: 1px solid rgba(26, 22, 20, 0.06);
+  transition: background var(--ds-transition);
+}
+
+.detail-table tbody tr:nth-child(even) {
+  background: rgba(250, 247, 242, 0.85);
+}
+
+.detail-table tbody tr:hover {
+  background: rgba(196, 112, 79, 0.06);
 }
 
 .detail-table th {
   font-size: 0.5625rem;
-  font-weight: 600;
-  letter-spacing: 0.1em;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #57534e;
 }

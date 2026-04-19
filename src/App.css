@@ -3,10 +3,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f9fafb;
+  font-family: var(--ds-font-body);
+  background: #faf7f2;
 }
 
 .app-loading__text {
   font-size: 0.9375rem;
-  color: #6b7280;
+  color: #57534e;
 }
