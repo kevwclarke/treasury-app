@@ -5,7 +5,10 @@ import './DashboardLayout.css'
 const NAV_SECTIONS = [
   {
     label: 'Overview',
-    items: [{ to: '/app', label: 'Dashboard', end: true }],
+    items: [
+      { to: '/app', label: 'Dashboard', end: true },
+      { to: '/upload', label: 'Upload Statement' },
+    ],
   },
   {
     label: 'Intelligence',

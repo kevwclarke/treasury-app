@@ -5,6 +5,7 @@ import { LoginPage } from './components/LoginPage'
 import { ModulePlaceholder } from './components/ModulePlaceholder'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { TreasuryDashboard } from './components/TreasuryDashboard'
+import { UploadPage } from './components/UploadPage'
 import './App.css'
 
 export default function App() {
@@ -38,6 +39,11 @@ export default function App() {
             <Route path="tax-tracker" element={<ModulePlaceholder title="Tax Tracker" />} />
             <Route path="investor-report" element={<ModulePlaceholder title="Investor Report" />} />
             <Route path="fundraise-timing" element={<ModulePlaceholder title="Fundraise Timing" />} />
+          </Route>
+        </Route>
+        <Route path="/upload" element={<ProtectedRoute />}>
+          <Route element={<DashboardLayout />}>
+            <Route index element={<UploadPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
