@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '../supabase'
 import './TreasuryDashboard.css'
 
 function formatGBP(value, opts = {}) {
@@ -86,14 +87,48 @@ const CF_MONTHS = [
   { label: 'Aug', h: 47, proj: true },
 ]
 
-const BURN_CATS = [
-  { name: 'Payroll', pct: 52, amount: 137_800 },
-  { name: 'Infrastructure', pct: 18, amount: 47_700 },
-  { name: 'Contractors', pct: 12, amount: 31_800 },
-  { name: 'Office & Ops', pct: 8, amount: 21_200 },
-  { name: 'Marketing', pct: 7, amount: 18_550 },
-  { name: 'Other', pct: 5, amount: 13_250 },
+const BURN_CATEGORY_ORDER = [
+  'Payroll',
+  'Infrastructure',
+  'Contractors',
+  'Travel',
+  'Office & Ops',
+  'Marketing',
+  'Other',
 ]
+
+function categorisePayee(payeeRaw) {
+  const p = String(payeeRaw ?? '').toLowerCase()
+  const hasAny = (terms) => terms.some((t) => p.includes(t))
+
+  if (hasAny(['wages', 'salary', 'payroll', 'deel', 'rippling'])) return 'Payroll'
+  if (hasAny(['aws', 'google cloud', 'azure', 'hosting', 'vercel', 'supabase'])) return 'Infrastructure'
+  if (hasAny(['contractor', 'freelance', 'consultant'])) return 'Contractors'
+  if (
+    hasAny([
+      'taxi',
+      'uber',
+      'lyft',
+      'sumup',
+      'train',
+      'subway',
+      'tube',
+      'rail',
+      'flight',
+      'airline',
+      'hotel',
+      'presto',
+      'transport',
+      'transit',
+      'tfl',
+    ])
+  )
+    return 'Travel'
+  if (hasAny(['rent', 'utilities', 'office', 'vodafone', 'phone', 'wifi', 'broadband'])) return 'Office & Ops'
+  if (hasAny(['ads', 'marketing', 'google ads', 'meta'])) return 'Marketing'
+
+  return 'Other'
+}
 
 const PEER_BENCHMARK_ROWS = [
   {
@@ -169,6 +204,10 @@ export function TreasuryDashboard() {
   const [tsCloseDate, setTsCloseDate] = useState('')
   const [tsResults, setTsResults] = useState(null)
 
+  const [burnLoading, setBurnLoading] = useState(true)
+  const [burnError, setBurnError] = useState('')
+  const [burnRows, setBurnRows] = useState([])
+
   const { runwayMo, burnModel } = useMemo(() => {
     const baseRunway = 18.4
     const baseBurn = 265_000
@@ -179,6 +218,80 @@ export function TreasuryDashboard() {
     const burn = baseBurn * (1 + burnSlider / 100) + hireSlider * 8_200 - arrSlider * 1_400
     return { runwayMo: runway, burnModel: Math.max(195_000, burn) }
   }, [burnSlider, hireSlider, arrSlider])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadBurn() {
+      setBurnLoading(true)
+      setBurnError('')
+
+      try {
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) throw new Error('Not authenticated.')
+
+        const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('amount,payee,date')
+          .eq('user_id', user.id)
+          .lt('amount', 0)
+          .gte('date', since)
+          .order('date', { ascending: false })
+
+        if (error) throw error
+        if (cancelled) return
+        setBurnRows(data ?? [])
+      } catch (e) {
+        if (cancelled) return
+        setBurnError(e?.message ?? 'Failed to load transactions.')
+        setBurnRows([])
+      } finally {
+        if (!cancelled) setBurnLoading(false)
+      }
+    }
+
+    loadBurn()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const burnSummary = useMemo(() => {
+    if (!burnRows?.length) {
+      return {
+        monthlyAvg: 0,
+        categories: BURN_CATEGORY_ORDER.map((name) => ({ name, amount: 0, pct: 0 })),
+        total: 0,
+      }
+    }
+
+    const totals = Object.fromEntries(BURN_CATEGORY_ORDER.map((c) => [c, 0]))
+    let total = 0
+
+    burnRows.forEach((t) => {
+      const spend = Math.abs(Number(t.amount) || 0)
+      if (!spend) return
+      const cat = categorisePayee(t.payee)
+      totals[cat] += spend
+      total += spend
+    })
+
+    const categories = BURN_CATEGORY_ORDER.map((name) => {
+      const amount = totals[name] ?? 0
+      const pct = total > 0 ? Math.round((amount / total) * 100) : 0
+      return { name, amount, pct }
+    })
+
+    // Last 90 days → monthly average (30-day equivalent)
+    const monthlyAvg = total > 0 ? (total / 90) * 30 : 0
+
+    return { monthlyAvg, categories, total }
+  }, [burnRows])
 
   return (
     <div className="tdash">
@@ -545,27 +658,42 @@ export function TreasuryDashboard() {
             </div>
           </div>
           <p className="tdash__card-sub">By category, last 90 days, auto-categorised</p>
-          <p className="tdash__burn-avg">{formatGBP(270_000)}</p>
-          <div>
-            {BURN_CATS.map((c) => (
-              <div key={c.name} className="tdash__cat-row">
-                <div className="tdash__cat-top">
-                  <span className="tdash__cat-name">{c.name}</span>
-                  <span>
-                    <span className="tdash__cat-amt">{formatGBP(c.amount)}</span>
-                    <span className="tdash__cat-pct">{c.pct}%</span>
-                  </span>
-                </div>
-                <div className="tdash__cat-bar-wrap">
-                  <div className="tdash__cat-bar" style={{ width: `${c.pct}%` }} />
-                </div>
+          {burnLoading ? (
+            <p className="tdash__burn-avg" style={{ color: '#57534e', fontSize: '1rem' }}>
+              Loading…
+            </p>
+          ) : burnError ? (
+            <div className="tdash__burn-warn" style={{ background: 'rgba(180, 35, 24, 0.07)', borderColor: 'rgba(180, 35, 24, 0.22)', color: '#b42318' }}>
+              {burnError}
+            </div>
+          ) : burnSummary.total === 0 ? (
+            <div className="tdash__burn-warn">
+              Upload a bank statement to see your burn breakdown.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Go to upload
+              </Link>
+            </div>
+          ) : (
+            <>
+              <p className="tdash__burn-avg">{formatGBP(Math.round(burnSummary.monthlyAvg))}</p>
+              <div>
+                {burnSummary.categories.map((c) => (
+                  <div key={c.name} className="tdash__cat-row">
+                    <div className="tdash__cat-top">
+                      <span className="tdash__cat-name">{c.name}</span>
+                      <span>
+                        <span className="tdash__cat-amt">{formatGBP(Math.round(c.amount))}</span>
+                        <span className="tdash__cat-pct">{c.pct}%</span>
+                      </span>
+                    </div>
+                    <div className="tdash__cat-bar-wrap">
+                      <div className="tdash__cat-bar" style={{ width: `${c.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <div className="tdash__burn-warn">
-            Largest driver change: <strong>Payroll</strong> +£18,400 vs prior quarter — check headcount plan vs
-            hiring freeze policy.
-          </div>
+            </>
+          )}
         </article>
 
         {/* Cash flow forecast */}
