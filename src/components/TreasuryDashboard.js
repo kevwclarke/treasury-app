@@ -4,6 +4,10 @@ import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import {
+  computeRunwayFromTransactions,
+  FUNDRAISE_RUNWAY_ALERT_MONTHS,
+} from '../utils/treasuryRunway'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
 import './TreasuryDashboard.css'
 
@@ -274,6 +278,15 @@ export function TreasuryDashboard() {
 
   const concentration = useMemo(() => computeConcentrationFromTransactions(txnRows), [txnRows])
 
+  const runwayMetrics = useMemo(() => computeRunwayFromTransactions(txnRows), [txnRows])
+
+  const showFundraiseAlert =
+    !txnLoading &&
+    (txnRows?.length ?? 0) > 0 &&
+    runwayMetrics.baseRunwayMo != null &&
+    Number.isFinite(runwayMetrics.baseRunwayMo) &&
+    runwayMetrics.baseRunwayMo < FUNDRAISE_RUNWAY_ALERT_MONTHS
+
   useEffect(() => {
     if (txnLoading || burnSummary.total === 0) {
       setBurnBarsReady(false)
@@ -316,20 +329,25 @@ export function TreasuryDashboard() {
       </header>
 
       <section className="tdash__alerts" aria-label="Priority alerts">
-        <div className="tdash__alert tdash__alert--urgent">
-          <div className="tdash__alert-main">
-            <IconClock />
-            <div>
-              <p className="tdash__alert-title">Fundraise window tightening</p>
-              <p className="tdash__alert-meta">
-                Optimal cash buffer crosses minimum on <strong>14 Aug 2026</strong> at current burn.
-              </p>
+        {showFundraiseAlert ? (
+          <div className="tdash__alert tdash__alert--urgent">
+            <div className="tdash__alert-main">
+              <IconClock />
+              <div>
+                <p className="tdash__alert-title">Fundraise window tightening</p>
+                <p className="tdash__alert-meta">
+                  Base-case runway is <strong>{runwayMetrics.baseRunwayMo.toFixed(1)} months</strong> from your
+                  uploaded activity — below the <strong>{FUNDRAISE_RUNWAY_ALERT_MONTHS}-month</strong> buffer we use
+                  when a raise can take around <strong>6 months</strong> to close. Model timing and cash before you
+                  drift into a forced process.
+                </p>
+              </div>
             </div>
+            <Link className="tdash__alert-action tdash__alert-action--red" to="/app/runway" style={{ textAlign: 'center' }}>
+              Review runway
+            </Link>
           </div>
-          <button type="button" className="tdash__alert-action tdash__alert-action--red">
-            Model Raise
-          </button>
-        </div>
+        ) : null}
         <div className="tdash__alert tdash__alert--amber">
           <div className="tdash__alert-main">
             <IconClock />
@@ -418,14 +436,48 @@ export function TreasuryDashboard() {
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Runway</p>
-          <p className="tdash__kpi-value">18.4 mo</p>
-          <p className="tdash__kpi-delta">+1.1 mo if yield optimised</p>
+          {txnLoading ? (
+            <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading runway">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+            </div>
+          ) : !txnRows.length ? (
+            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem' }}>
+              <Link className="tdash__card-link" to="/upload">
+                Upload data
+              </Link>
+            </p>
+          ) : runwayMetrics.baseRunwayMo == null || !Number.isFinite(runwayMetrics.baseRunwayMo) ? (
+            <p className="tdash__kpi-value">—</p>
+          ) : (
+            <p className="tdash__kpi-value">{runwayMetrics.baseRunwayMo.toFixed(1)} mo</p>
+          )}
+          <p className="tdash__kpi-delta">
+            {!txnLoading && txnRows.length && runwayMetrics.bullRunwayMo != null && runwayMetrics.baseRunwayMo != null
+              ? `+${(runwayMetrics.bullRunwayMo - runwayMetrics.baseRunwayMo).toFixed(1)} mo if yield optimised`
+              : 'Base case from uploaded cash ÷ avg monthly outflow'}
+          </p>
           <Sparkline stroke="#2d6a4f" />
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Monthly Burn</p>
-          <p className="tdash__kpi-value">{formatGBP(265_000)}</p>
-          <p className="tdash__kpi-delta tdash__kpi-delta--down">+6.1% vs 90-day average</p>
+          {txnLoading ? (
+            <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading burn">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+            </div>
+          ) : !txnRows.length ? (
+            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem' }}>
+              <Link className="tdash__card-link" to="/upload">
+                Upload data
+              </Link>
+            </p>
+          ) : (
+            <p className="tdash__kpi-value">{formatGBP(Math.round(runwayMetrics.monthlyBurn))}</p>
+          )}
+          <p className="tdash__kpi-delta">
+            {!txnLoading && txnRows.length && runwayMetrics.months > 0
+              ? `Avg from ${runwayMetrics.months} mo of outflows in your CSV`
+              : 'From uploaded transactions'}
+          </p>
           <Sparkline stroke="#c27803" />
         </article>
       </section>
@@ -645,49 +697,88 @@ export function TreasuryDashboard() {
         <article className="tdash__card">
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Runway</h2>
-            <a className="tdash__card-link" href="#runway-model">
+            <Link className="tdash__card-link" to="/app/runway">
               Full model
-            </a>
+            </Link>
           </div>
           <p className="tdash__card-sub">
-            Net cash ÷ fully-loaded monthly burn (incl. VAT), 90-day trailing, excludes uncommitted ARR.
+            Net cash ÷ average monthly outflow from your CSV date range. Bear +15% burn; bull adds monthly yield gap
+            to cash.
           </p>
-          <p className="tdash__runway-hero">
-            18.4<span>mo remaining</span>
-          </p>
-          <div className="tdash__scenarios">
-            <div className="tdash__scenario tdash__scenario--bear">
-              <p className="tdash__scenario-label">Bear</p>
-              <p className="tdash__scenario-mo">14.1 mo</p>
-              <p className="tdash__scenario-note">+15% burn vs base</p>
+          {txnLoading ? (
+            <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading runway">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+              <span className="ds-skeleton ds-skeleton--line" />
             </div>
-            <div className="tdash__scenario tdash__scenario--base">
-              <p className="tdash__scenario-label">Base</p>
-              <p className="tdash__scenario-mo">18.4 mo</p>
-              <p className="tdash__scenario-note">Current trajectory</p>
+          ) : !txnRows.length ? (
+            <div className="tdash__burn-warn">
+              Upload transactions to see runway scenarios.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Go to upload
+              </Link>
             </div>
-            <div className="tdash__scenario tdash__scenario--bull">
-              <p className="tdash__scenario-label">Bull</p>
-              <p className="tdash__scenario-mo">21.6 mo</p>
-              <p className="tdash__scenario-note">Yield optimised</p>
-            </div>
-          </div>
-          <div className="tdash__timeline" aria-hidden>
-            <div className="tdash__timeline-track" />
-            <div className="tdash__timeline-fill" />
-            <div className="tdash__timeline-mark" style={{ left: '0%' }}>
-              Now
-            </div>
-            <div className="tdash__timeline-mark" style={{ left: '33%' }}>
-              6mo
-            </div>
-            <div className="tdash__timeline-mark" style={{ left: '50%' }}>
-              12mo
-            </div>
-            <div className="tdash__timeline-mark tdash__timeline-mark--target" style={{ left: '100%' }}>
-              24mo target
-            </div>
-          </div>
+          ) : runwayMetrics.baseRunwayMo == null || !Number.isFinite(runwayMetrics.baseRunwayMo) ? (
+            <p className="tdash__card-sub" style={{ marginTop: '0.5rem' }}>
+              No negative outflows in your data — runway cannot be calculated.
+            </p>
+          ) : (
+            <>
+              <p className="tdash__runway-hero">
+                {runwayMetrics.baseRunwayMo.toFixed(1)}
+                <span>mo remaining (base)</span>
+              </p>
+              <div className="tdash__scenarios">
+                <div className="tdash__scenario tdash__scenario--bear">
+                  <p className="tdash__scenario-label">Bear</p>
+                  <p className="tdash__scenario-mo" style={{ color: 'var(--td-red)' }}>
+                    {runwayMetrics.bearRunwayMo != null ? runwayMetrics.bearRunwayMo.toFixed(1) : '—'}
+                    <span style={{ fontSize: '0.75rem', fontWeight: 500 }}> mo</span>
+                  </p>
+                  <p className="tdash__scenario-note">+15% burn vs base</p>
+                </div>
+                <div className="tdash__scenario tdash__scenario--base">
+                  <p className="tdash__scenario-label">Base</p>
+                  <p className="tdash__scenario-mo" style={{ color: 'var(--td-amber)' }}>
+                    {runwayMetrics.baseRunwayMo.toFixed(1)}
+                    <span style={{ fontSize: '0.75rem', fontWeight: 500 }}> mo</span>
+                  </p>
+                  <p className="tdash__scenario-note">Current trajectory</p>
+                </div>
+                <div className="tdash__scenario tdash__scenario--bull">
+                  <p className="tdash__scenario-label">Bull</p>
+                  <p className="tdash__scenario-mo" style={{ color: 'var(--td-green)' }}>
+                    {runwayMetrics.bullRunwayMo != null ? runwayMetrics.bullRunwayMo.toFixed(1) : '—'}
+                    <span style={{ fontSize: '0.75rem', fontWeight: 500 }}> mo</span>
+                  </p>
+                  <p className="tdash__scenario-note">Yield optimised (+ monthly opp. cost to cash)</p>
+                </div>
+              </div>
+              <div className="tdash__timeline" aria-hidden>
+                <div className="tdash__timeline-track" />
+                <div
+                  className="tdash__timeline-fill"
+                  style={{
+                    width: `${Math.min(100, (runwayMetrics.baseRunwayMo / 24) * 100)}%`,
+                  }}
+                />
+                <div className="tdash__timeline-mark" style={{ left: '0%' }}>
+                  Now
+                </div>
+                <div className="tdash__timeline-mark" style={{ left: '25%' }}>
+                  6mo
+                </div>
+                <div className="tdash__timeline-mark" style={{ left: '50%' }}>
+                  12mo
+                </div>
+                <div className="tdash__timeline-mark tdash__timeline-mark--fundraise" style={{ left: '75%' }}>
+                  18mo · raise
+                </div>
+                <div className="tdash__timeline-mark" style={{ left: '100%' }}>
+                  24mo
+                </div>
+              </div>
+            </>
+          )}
         </article>
 
         {/* Scenario modeller */}

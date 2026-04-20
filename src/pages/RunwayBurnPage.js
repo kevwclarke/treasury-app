@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useUserTransactions } from '../hooks/useUserTransactions'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { formatGBP } from '../utils/treasuryFormat'
+import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
+import { RunwayBurnMonthlyChart } from '../components/RunwayBurnMonthlyChart'
 import '../components/DetailPage.css'
 
 function monthKey(iso) {
@@ -20,16 +23,6 @@ function last12MonthKeys() {
   return keys
 }
 
-const CAT_COLORS = {
-  Payroll: '#c4704f',
-  Infrastructure: '#e8a87c',
-  Contractors: '#78716c',
-  Travel: '#a8a29e',
-  'Office & Ops': '#57534e',
-  Marketing: '#c27803',
-  Other: '#d6d3d1',
-}
-
 export function RunwayBurnPage() {
   const { rows, loading, error } = useUserTransactions()
   const [expanded, setExpanded] = useState(null)
@@ -44,16 +37,8 @@ export function RunwayBurnPage() {
     [rows],
   )
 
-  const since90 = useMemo(() => Date.now() - 90 * 24 * 60 * 60 * 1000, [])
-  const monthlyBurnBase = useMemo(() => {
-    let spend = 0
-    rows.forEach((t) => {
-      const a = Number(t.amount)
-      const d = t.date ? new Date(t.date).getTime() : 0
-      if (Number.isFinite(a) && a < 0 && d >= since90) spend += Math.abs(a)
-    })
-    return spend > 0 ? spend / 3 : 265_000
-  }, [rows, since90])
+  const runwayCore = useMemo(() => computeRunwayFromTransactions(rows), [rows])
+  const monthlyBurnBase = runwayCore.monthlyBurn > 0 ? runwayCore.monthlyBurn : 1
 
   const monthKeys = useMemo(() => last12MonthKeys(), [])
   const monthlyByMonth = useMemo(() => {
@@ -100,15 +85,10 @@ export function RunwayBurnPage() {
     }))
   }, [monthKeys, monthlyByMonth])
 
-  const baseRunwayMo = useMemo(() => {
-    const b = monthlyBurnBase || 1
-    return Math.max(0, totalCash / b)
-  }, [totalCash, monthlyBurnBase])
-
   const modelledRunway = useMemo(() => {
     const burnAdj = monthlyBurnBase * (1 + burnMult / 100) + hires * (hireSalary / 12) - arrK * 1000
     const burn = Math.max(40_000, burnAdj) + oneOff / 12
-    return Math.max(3, totalCash / burn)
+    return Math.max(0, totalCash / burn)
   }, [monthlyBurnBase, burnMult, hires, hireSalary, arrK, oneOff, totalCash])
 
   const monthlyTableRows = useMemo(
@@ -139,8 +119,6 @@ export function RunwayBurnPage() {
     URL.revokeObjectURL(url)
   }, [monthlyTableRows])
 
-  const maxBar = Math.max(1, ...monthlyTableRows.map((r) => r.total))
-
   return (
     <div className="detail-page">
       <header className="detail-hero">
@@ -150,97 +128,133 @@ export function RunwayBurnPage() {
 
       <section className="detail-section">
         <h2 className="detail-section__title">Runway scenarios</h2>
-        <div className="detail-grid3">
-          <div className="detail-stat" style={{ borderColor: 'rgba(180,35,24,0.2)', background: 'rgba(180,35,24,0.05)' }}>
-            <p className="detail-stat__cap" style={{ color: '#b42318' }}>
-              Bear
+        {loading ? (
+          <p className="detail-muted">Loading transactions…</p>
+        ) : !rows.length ? (
+          <>
+            <p className="detail-section__lead">
+              Upload a bank CSV so we can sum cash, average monthly outflows across your date range, and plot bear /
+              base / bull runway.
             </p>
-            <p className="detail-stat__val text-red">{(baseRunwayMo * 0.85).toFixed(1)} mo</p>
-            <p className="detail-muted">+15% burn vs base</p>
-          </div>
-          <div className="detail-stat" style={{ borderColor: 'rgba(194,120,3,0.3)', background: 'rgba(194,120,3,0.08)' }}>
-            <p className="detail-stat__cap" style={{ color: '#92400e' }}>
-              Base
+            <Link className="detail-btn detail-btn--dark" to="/upload" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
+              Upload statement
+            </Link>
+          </>
+        ) : runwayCore.baseRunwayMo == null || !Number.isFinite(runwayCore.baseRunwayMo) ? (
+          <p className="detail-muted">No outflows found in your import — add debits or check column mapping.</p>
+        ) : (
+          <>
+            <p className="detail-section__lead" style={{ marginBottom: '0.75rem' }}>
+              Net cash <strong>{formatGBP(Math.round(runwayCore.totalCash))}</strong> · avg monthly burn{' '}
+              <strong>{formatGBP(Math.round(runwayCore.monthlyBurn))}</strong> (
+              {runwayCore.totalOutflows > 0 ? formatGBP(Math.round(runwayCore.totalOutflows)) : '£0'} outflows ÷{' '}
+              {runwayCore.months} mo in file)
             </p>
-            <p className="detail-stat__val" style={{ color: '#c27803' }}>
-              {baseRunwayMo.toFixed(1)} mo
-            </p>
-            <p className="detail-muted">Current trajectory</p>
-          </div>
-          <div className="detail-stat" style={{ borderColor: 'rgba(45,106,79,0.25)', background: 'rgba(45,106,79,0.07)' }}>
-            <p className="detail-stat__cap" style={{ color: '#2d6a4f' }}>
-              Bull
-            </p>
-            <p className="detail-stat__val detail-stat__val--green">{(baseRunwayMo * 1.12).toFixed(1)} mo</p>
-            <p className="detail-muted">Yield optimised</p>
-          </div>
-        </div>
-        <div style={{ marginTop: '1.25rem', position: 'relative', height: '2.5rem' }}>
-          <div style={{ position: 'absolute', left: 0, right: 0, top: '50%', height: 4, marginTop: -2, background: 'rgba(28,25,23,0.08)', borderRadius: 999 }} />
-          {['Now', '6mo', '12mo', '18mo', '24mo'].map((lab, i) => (
-            <span
-              key={lab}
-              style={{
-                position: 'absolute',
-                left: `${(i / 4) * 100}%`,
-                transform: 'translateX(-50%)',
-                top: 0,
-                fontSize: '0.5625rem',
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                color: lab === '18mo' ? '#c4704f' : '#57534e',
-              }}
-            >
-              {lab}
-              {lab === '18mo' ? ' · fundraise' : ''}
-            </span>
-          ))}
-        </div>
+            <div className="detail-grid3">
+              <div
+                className="detail-stat"
+                style={{ borderColor: 'rgba(180,35,24,0.2)', background: 'rgba(180,35,24,0.05)' }}
+              >
+                <p className="detail-stat__cap" style={{ color: '#b42318' }}>
+                  Bear
+                </p>
+                <p className="detail-stat__val text-red">
+                  {runwayCore.bearRunwayMo != null ? runwayCore.bearRunwayMo.toFixed(1) : '—'} mo
+                </p>
+                <p className="detail-muted">+15% burn vs base</p>
+              </div>
+              <div
+                className="detail-stat"
+                style={{ borderColor: 'rgba(194,120,3,0.3)', background: 'rgba(194,120,3,0.08)' }}
+              >
+                <p className="detail-stat__cap" style={{ color: '#92400e' }}>
+                  Base
+                </p>
+                <p className="detail-stat__val" style={{ color: '#c27803' }}>
+                  {runwayCore.baseRunwayMo.toFixed(1)} mo
+                </p>
+                <p className="detail-muted">Current trajectory</p>
+              </div>
+              <div
+                className="detail-stat"
+                style={{ borderColor: 'rgba(45,106,79,0.25)', background: 'rgba(45,106,79,0.07)' }}
+              >
+                <p className="detail-stat__cap" style={{ color: '#2d6a4f' }}>
+                  Bull
+                </p>
+                <p className="detail-stat__val detail-stat__val--green">
+                  {runwayCore.bullRunwayMo != null ? runwayCore.bullRunwayMo.toFixed(1) : '—'} mo
+                </p>
+                <p className="detail-muted">Yield optimised (+{formatGBP(Math.round(runwayCore.monthlyOppCost))}/mo to cash)</p>
+              </div>
+            </div>
+            <div style={{ marginTop: '1.25rem', position: 'relative', height: '2.75rem' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: '55%',
+                  height: 4,
+                  marginTop: -2,
+                  background: 'rgba(28,25,23,0.08)',
+                  borderRadius: 999,
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: '55%',
+                  width: `${Math.min(100, (runwayCore.baseRunwayMo / 24) * 100)}%`,
+                  maxWidth: '100%',
+                  height: 4,
+                  marginTop: -2,
+                  background: 'linear-gradient(90deg, #c4704f, #c27803)',
+                  borderRadius: 999,
+                }}
+              />
+              {['Now', '6mo', '12mo', '18mo', '24mo'].map((lab, i) => (
+                <span
+                  key={lab}
+                  style={{
+                    position: 'absolute',
+                    left: `${(i / 4) * 100}%`,
+                    transform: 'translateX(-50%)',
+                    top: 0,
+                    fontSize: '0.5625rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase',
+                    color: lab === '18mo' ? '#c27803' : '#57534e',
+                  }}
+                >
+                  {lab}
+                  {lab === '18mo' ? ' · fundraise' : ''}
+                </span>
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="detail-section">
-        <h2 className="detail-section__title">Burn chart (last 12 months)</h2>
-        <p className="detail-section__lead">Where your cash is going, month by month</p>
+        <p className="detail-section__lead" style={{ marginBottom: '0.35rem' }}>
+          Where your cash is going, month by month
+        </p>
         {loading ? (
           <p className="detail-muted">Loading…</p>
         ) : error ? (
           <p className="detail-warn detail-warn--red">{error}</p>
+        ) : !rows.length ? (
+          <p className="detail-muted">
+            Upload a CSV to see monthly burn by category.{' '}
+            <Link to="/upload" style={{ color: '#c4704f', fontWeight: 600 }}>
+              Upload statement
+            </Link>
+          </p>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 220, paddingTop: 16 }}>
-            {monthlyTableRows.map((r) => (
-              <div key={r.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
-                <div
-                  style={{
-                    width: '100%',
-                    maxWidth: 36,
-                    height: `${(r.total / maxBar) * 180}px`,
-                    display: 'flex',
-                    flexDirection: 'column-reverse',
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                  }}
-                >
-                  {BURN_CATEGORY_ORDER.map((c) => {
-                    const part = r.total ? ((r.byCat[c] || 0) / r.total) * 100 : 0
-                    return (
-                      <div
-                        key={c}
-                        style={{
-                          height: `${part}%`,
-                          background: CAT_COLORS[c],
-                          minHeight: r.byCat[c] ? 2 : 0,
-                        }}
-                      />
-                    )
-                  })}
-                </div>
-                <span className="detail-muted" style={{ marginTop: 6, fontSize: 10 }}>
-                  {r.key.slice(5)}
-                </span>
-              </div>
-            ))}
-          </div>
+          <RunwayBurnMonthlyChart monthlyTableRows={monthlyTableRows} rows={rows} onExportCsv={exportCsv} />
         )}
       </section>
 

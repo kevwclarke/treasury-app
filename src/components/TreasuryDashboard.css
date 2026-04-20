@@ -961,6 +961,14 @@
   background: var(--td-green);
 }
 
+.tdash__timeline-mark--fundraise {
+  color: var(--td-amber);
+}
+
+.tdash__timeline-mark--fundraise::after {
+  background: var(--td-amber);
+}
+
 /* Scenario modeller */
 .tdash__slider-block {
   margin-bottom: 1rem;
