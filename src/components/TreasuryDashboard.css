@@ -770,6 +770,10 @@
   background: rgba(196, 112, 79, 0.06);
 }
 
+.tdash__acct-row--concentration {
+  grid-template-columns: auto 1fr auto auto;
+}
+
 .tdash__bank-badge {
   font-size: 0.625rem;
   font-weight: 700;

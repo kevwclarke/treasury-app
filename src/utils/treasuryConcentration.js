@@ -1,0 +1,116 @@
+import { CSV_SOURCE_INSTITUTIONS } from '../constants/institutions'
+
+export const CONCENTRATION_INSTITUTIONS = [...CSV_SOURCE_INSTITUTIONS]
+
+export const FSCS_LIMIT_GBP = 85_000
+
+const STACK_COLORS = ['#c4704f', '#e8a87c', '#78716c', '#a8a29e', '#57534e', '#44403c', '#292524']
+
+const BANK_BADGE = {
+  Barclays: 'BARC',
+  HSBC: 'HSBC',
+  Starling: 'STAR',
+  Monzo: 'MONZO',
+  NatWest: 'NWIDE',
+  Lloyds: 'LLOYDS',
+  Other: 'OTHER',
+}
+
+/** Normalise stored institution; missing or unknown → Other. */
+export function normalizeTransactionInstitution(raw) {
+  const s = String(raw ?? '').trim()
+  if (!s) return 'Other'
+  return CSV_SOURCE_INSTITUTIONS.includes(s) ? s : 'Other'
+}
+
+function emptyBuckets() {
+  return Object.fromEntries(CONCENTRATION_INSTITUTIONS.map((k) => [k, 0]))
+}
+
+/**
+ * Concentration from uploaded transactions: all amounts in a row belong to `institution`
+ * (the bank selected at CSV import).
+ *
+ * @param {Array<{ amount?: number | string, institution?: string | null }>} rows
+ */
+export function computeConcentrationFromTransactions(rows) {
+  const list = Array.isArray(rows) ? rows : []
+  let totalCash = 0
+
+  for (const r of list) {
+    const a = Number(r?.amount)
+    if (!Number.isFinite(a)) continue
+    totalCash += a
+  }
+
+  const balances = emptyBuckets()
+
+  for (const r of list) {
+    const a = Number(r?.amount)
+    if (!Number.isFinite(a)) continue
+    const key = normalizeTransactionInstitution(r?.institution)
+    balances[key] = (balances[key] ?? 0) + a
+  }
+
+  const institutionRows = CONCENTRATION_INSTITUTIONS.map((name) => {
+    const balance = balances[name] ?? 0
+    const pctOfTotal = totalCash !== 0 ? (balance / totalCash) * 100 : 0
+    const balanceForFscs = Math.max(0, balance)
+    const protectedAmt = Math.min(balanceForFscs, FSCS_LIMIT_GBP)
+    const unprotectedAmt = Math.max(0, balanceForFscs - FSCS_LIMIT_GBP)
+    return {
+      name,
+      badge: BANK_BADGE[name] ?? 'OTHER',
+      balance,
+      pctOfTotal,
+      protectedAmt,
+      unprotectedAmt,
+      color: STACK_COLORS[CONCENTRATION_INSTITUTIONS.indexOf(name) % STACK_COLORS.length],
+    }
+  }).sort((a, b) => b.balance - a.balance)
+
+  const maxPct = institutionRows.reduce((m, r) => Math.max(m, r.pctOfTotal), 0)
+
+  let riskTone = 'green'
+  let riskLabel = 'Lower risk'
+  if (maxPct > 75) {
+    riskTone = 'red'
+    riskLabel = 'High risk'
+  } else if (maxPct > 50) {
+    riskTone = 'amber'
+    riskLabel = 'Elevated'
+  }
+
+  const unprotectedTotal = institutionRows.reduce((s, r) => s + r.unprotectedAmt, 0)
+  const protectedTotal = institutionRows.reduce((s, r) => s + r.protectedAmt, 0)
+
+  const barSegments = getConcentrationBarSegments(institutionRows, totalCash)
+
+  return {
+    totalCash,
+    institutionRows,
+    barSegments,
+    maxPct,
+    riskTone,
+    riskLabel,
+    unprotectedTotal,
+    protectedTotal,
+  }
+}
+
+/**
+ * Bar widths as % of bar track. If attributed positive balances exceed total cash, scale down so sum ≤ 100%.
+ */
+export function getConcentrationBarSegments(institutionRows, totalCash) {
+  const positive = institutionRows.filter((r) => r.balance > 0).sort((a, b) => b.balance - a.balance)
+  if (totalCash <= 0 || !positive.length) return []
+  const raw = positive.map((r) => (r.balance / totalCash) * 100)
+  const sum = raw.reduce((a, b) => a + b, 0)
+  const scale = sum > 100.001 ? 100 / sum : 1
+  return positive.map((r, i) => ({
+    name: r.name,
+    balance: r.balance,
+    color: r.color,
+    widthPct: raw[i] * scale,
+  }))
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
+import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
 import './TreasuryDashboard.css'
@@ -184,7 +185,7 @@ export function TreasuryDashboard() {
 
         const { data, error } = await supabase
           .from('transactions')
-          .select('amount,payee,date')
+          .select('amount,payee,date,institution')
           .eq('user_id', user.id)
           .order('date', { ascending: false })
 
@@ -270,6 +271,8 @@ export function TreasuryDashboard() {
       monthlyOppCost,
     }
   }, [txnRows])
+
+  const concentration = useMemo(() => computeConcentrationFromTransactions(txnRows), [txnRows])
 
   useEffect(() => {
     if (txnLoading || burnSummary.total === 0) {
@@ -551,49 +554,91 @@ export function TreasuryDashboard() {
         </article>
 
         {/* Concentration */}
-        <article className="tdash__card tdash__card--critical">
+        <article
+          className={
+            concentration.riskTone === 'red'
+              ? 'tdash__card tdash__card--critical'
+              : 'tdash__card'
+          }
+        >
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Concentration Risk</h2>
-            <span className="tdash__badge tdash__badge--red">High Risk</span>
-          </div>
-          <p className="tdash__card-sub">Single-institution exposure vs policy and FSCS limits</p>
-          <div className="tdash__stack" aria-hidden>
-            <div className="tdash__stack-seg" style={{ width: '78%', background: '#c4704f' }} />
-            <div className="tdash__stack-seg" style={{ width: '12%', background: '#e8a87c' }} />
-            <div className="tdash__stack-seg" style={{ width: '10%', background: '#78716c' }} />
-          </div>
-          <div className="tdash__stack-labels">
-            <span>78% Barclays Current</span>
-            <span>12% Barclays Savings</span>
-            <span>10% Starling</span>
-          </div>
-          <div>
-            <div className="tdash__acct-row">
-              <span className="tdash__bank-badge">BARC</span>
-              <span className="tdash__acct-name">Business Current ···4240</span>
-              <span className="tdash__acct-rate">{formatPct(0.1, 2)}</span>
-              <span className="tdash__acct-bal">{formatGBP(3_759_600)}</span>
-              <span className="tdash__acct-pct">78%</span>
-            </div>
-            <div className="tdash__acct-row">
-              <span className="tdash__bank-badge">BARC</span>
-              <span className="tdash__acct-name">Business Savings ···8812</span>
-              <span className="tdash__acct-rate">{formatPct(1.85, 2)}</span>
-              <span className="tdash__acct-bal">{formatGBP(578_400)}</span>
-              <span className="tdash__acct-pct">12%</span>
-            </div>
-            <div className="tdash__acct-row">
-              <span className="tdash__bank-badge">STAR</span>
-              <span className="tdash__acct-name">Primary ···1193</span>
-              <span className="tdash__acct-rate">{formatPct(2.1, 2)}</span>
-              <span className="tdash__acct-bal">{formatGBP(482_000)}</span>
-              <span className="tdash__acct-pct">10%</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              {txnLoading ? (
+                <span className="tdash__badge tdash__badge--neutral">…</span>
+              ) : txnRows.length === 0 ? null : (
+                <span
+                  className={`tdash__badge${
+                    concentration.riskTone === 'red'
+                      ? ' tdash__badge--red'
+                      : concentration.riskTone === 'amber'
+                        ? ' tdash__badge--amber'
+                        : ' tdash__badge--neutral'
+                  }`}
+                >
+                  {concentration.riskLabel} · top {formatPct(concentration.maxPct, 1)}
+                </span>
+              )}
+              <Link className="tdash__card-link" to="/app/concentration">
+                Full detail
+              </Link>
             </div>
           </div>
-          <p className="tdash__warn-foot">
-            <strong>{formatGBP(3_759_600)}</strong> unprotected above FSCS (£85,000). Recommend sweep to second
-            legal entity + T-Bill sleeve within 10 business days.
+          <p className="tdash__card-sub">
+            Single-institution exposure vs policy and FSCS limits. Each row uses the bank you chose when importing the CSV.
           </p>
+          {txnLoading ? (
+            <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading concentration">
+              <span className="ds-skeleton ds-skeleton--line" />
+              <span className="ds-skeleton ds-skeleton--line ds-skeleton--short" />
+            </div>
+          ) : txnRows.length === 0 ? (
+            <div className="tdash__burn-warn">
+              Upload a bank statement to see concentration by institution.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Go to upload
+              </Link>
+            </div>
+          ) : concentration.totalCash <= 0 ? (
+            <p className="tdash__card-sub" style={{ marginTop: '0.5rem' }}>
+              Net cash from transactions is not positive — add inflows or check your import.
+            </p>
+          ) : (
+            <>
+              <div className="tdash__stack" aria-hidden>
+                {concentration.barSegments.map((seg) => (
+                  <div
+                    key={seg.name}
+                    className="tdash__stack-seg"
+                    style={{ width: `${seg.widthPct}%`, background: seg.color }}
+                  />
+                ))}
+              </div>
+              <div className="tdash__stack-labels">
+                {concentration.barSegments.map((seg) => (
+                  <span key={seg.name}>
+                    {formatPct((seg.balance / concentration.totalCash) * 100, 1)} {seg.name}
+                  </span>
+                ))}
+              </div>
+              <div>
+                {concentration.institutionRows
+                  .filter((r) => Math.abs(r.balance) > 0.005)
+                  .map((r) => (
+                    <div key={r.name} className="tdash__acct-row tdash__acct-row--concentration">
+                      <span className="tdash__bank-badge">{r.badge}</span>
+                      <span className="tdash__acct-name">{r.name}</span>
+                      <span className="tdash__acct-bal">{formatGBP(Math.round(r.balance))}</span>
+                      <span className="tdash__acct-pct">{formatPct(r.pctOfTotal, 1)}</span>
+                    </div>
+                  ))}
+              </div>
+              <p className="tdash__warn-foot">
+                <strong>{formatGBP(Math.round(concentration.unprotectedTotal))}</strong> total unprotected above FSCS
+                (£85,000 per institution). Review sweeps and second-bank structures if material.
+              </p>
+            </>
+          )}
         </article>
 
         {/* Runway */}

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { CSV_SOURCE_INSTITUTIONS } from '../constants/institutions'
 import { supabase } from '../supabase'
 import './UploadPage.css'
 
@@ -176,9 +177,15 @@ export function UploadPage() {
   })
   const [importing, setImporting] = useState(false)
   const [success, setSuccess] = useState('')
+  const [uploadInstitution, setUploadInstitution] = useState('')
 
   const mappingComplete =
-    mapping.date && mapping.amount && mapping.description && mapping.balance && headers.length > 0
+    Boolean(uploadInstitution) &&
+    mapping.date &&
+    mapping.amount &&
+    mapping.description &&
+    mapping.balance &&
+    headers.length > 0
 
   const selected = useMemo(() => new Set(Object.values(mapping).filter(Boolean)), [mapping])
 
@@ -190,6 +197,7 @@ export function UploadPage() {
     setPreviewRows([])
     setAllRows([])
     setMapping({ date: '', amount: '', description: '', balance: '' })
+    setUploadInstitution('')
 
     if (!file) return
     if (!isCsvFile(file)) {
@@ -274,6 +282,7 @@ export function UploadPage() {
             amount,
             payee,
             balance,
+            institution: uploadInstitution,
             raw_data: raw,
           }
         })
@@ -414,6 +423,26 @@ export function UploadPage() {
             </div>
 
             <div className="upload__map-grid">
+              <div className="upload__field" style={{ gridColumn: '1 / -1' }}>
+                <span className="upload__label">Bank this CSV is from</span>
+                <select
+                  className="upload__select"
+                  value={uploadInstitution}
+                  onChange={(e) => setUploadInstitution(e.target.value)}
+                  aria-required="true"
+                >
+                  <option value="">Select bank…</option>
+                  {CSV_SOURCE_INSTITUTIONS.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <p className="upload__zone-hint" style={{ marginTop: '0.35rem' }}>
+                  All rows in this file are treated as this account — payee names are not used for concentration.
+                </p>
+              </div>
+
               <div className="upload__field">
                 <span className="upload__label">Transaction Date</span>
                 <select

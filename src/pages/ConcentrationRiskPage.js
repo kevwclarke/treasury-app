@@ -1,136 +1,178 @@
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { useUserTransactions } from '../hooks/useUserTransactions'
 import '../components/DetailPage.css'
-
-const INSTITUTIONS = [
-  { name: 'Barclays', type: 'Business Current', last4: '4240', balance: 3_759_600, rate: 0.1 },
-  { name: 'Barclays', type: 'Business Savings', last4: '8812', balance: 578_400, rate: 1.85 },
-  { name: 'Starling', type: 'Primary', last4: '1193', balance: 482_000, rate: 2.1 },
-]
-
-const FSCS_LIMIT = 85_000
+import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
+import { formatGBP, formatPct } from '../utils/treasuryFormat'
 
 export function ConcentrationRiskPage() {
-  const total = INSTITUTIONS.reduce((s, a) => s + a.balance, 0)
-  const pct = (b) => Math.round((b / total) * 1000) / 10
-  const topPct = pct(INSTITUTIONS[0].balance)
-  const risk =
-    topPct < 50 ? { label: 'Lower risk', tone: 'green' } : topPct <= 75 ? { label: 'Elevated', tone: 'amber' } : { label: 'High risk', tone: 'red' }
+  const { rows, loading, error } = useUserTransactions()
+  const concentration = useMemo(() => computeConcentrationFromTransactions(rows), [rows])
 
-  let protectedTotal = 0
-  const rows = INSTITUTIONS.map((r) => {
-    const prot = Math.min(r.balance, FSCS_LIMIT)
-    const unprot = Math.max(0, r.balance - FSCS_LIMIT)
-    protectedTotal += prot
-    return { ...r, sharePct: pct(r.balance), prot, unprot }
-  })
-  const unprotectedTotal = Math.max(0, total - protectedTotal)
+  const {
+    totalCash,
+    institutionRows,
+    barSegments,
+    maxPct,
+    riskTone,
+    riskLabel,
+    unprotectedTotal,
+    protectedTotal,
+  } = concentration
+
+  const visibleRows = institutionRows.filter((r) => Math.abs(r.balance) > 0.005)
 
   return (
     <div className="detail-page">
       <header className="detail-hero">
         <h1 className="detail-title">Concentration Risk</h1>
-        <p className="detail-sub">FSCS protection and counterparty exposure</p>
+        <p className="detail-sub">FSCS protection and counterparty exposure from your uploaded transactions</p>
       </header>
 
-      <section className="detail-section">
-        <h2 className="detail-section__title">Exposure overview</h2>
-        <div style={{ display: 'flex', height: '1.25rem', borderRadius: '6px', overflow: 'hidden', marginBottom: '0.75rem' }}>
-          {INSTITUTIONS.map((r, i) => (
-            <div
-              key={i}
-              style={{
-                width: `${pct(r.balance)}%`,
-                background: i === 0 ? '#c4704f' : i === 1 ? '#e8a87c' : '#78716c',
-              }}
-              title={`${r.name} ${pct(r.balance)}%`}
-            />
-          ))}
-        </div>
-        <p className="detail-muted" style={{ marginBottom: '0.75rem' }}>
-          {INSTITUTIONS.map((r) => `${pct(r.balance)}% ${r.name}`).join(' · ')}
-        </p>
-        <span
-          className={`detail-badge ${
-            risk.tone === 'green' ? 'detail-badge--green' : risk.tone === 'amber' ? '' : 'detail-badge--red'
-          }`}
-          style={
-            risk.tone === 'amber'
-              ? { background: '#c27803', color: '#fff' }
-              : undefined
-          }
-        >
-          {risk.label} · top bank {topPct}%
-        </span>
-        <p className="detail-section__lead" style={{ marginTop: '1rem' }}>
-          Placeholder allocation — connect bank feeds for live balances.
-        </p>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Account detail</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="detail-table">
-            <thead>
-              <tr>
-                <th>Institution</th>
-                <th>Account</th>
-                <th>Last 4</th>
-                <th>Balance</th>
-                <th>% of total</th>
-                <th>Rate</th>
-                <th>FSCS protected</th>
-                <th>Unprotected</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.last4}>
-                  <td>{r.name}</td>
-                  <td>{r.type}</td>
-                  <td>···{r.last4}</td>
-                  <td>
-                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(r.balance)}
-                  </td>
-                  <td>{r.sharePct}%</td>
-                  <td>{r.rate}%</td>
-                  <td>
-                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(r.prot)}
-                  </td>
-                  <td className="text-red">
-                    {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(r.unprot)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">FSCS calculator</h2>
-        <p className="detail-section__lead">
-          The Financial Services Compensation Scheme protects up to £85,000 per person per authorised institution for
-          eligible deposits.
-        </p>
-        <div className="detail-grid3">
-          <div className="detail-stat">
-            <p className="detail-stat__cap">Total protected</p>
-            <p className="detail-stat__val detail-stat__val--green">
-              {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(protectedTotal)}
+      {loading ? (
+        <section className="detail-section">
+          <p className="detail-muted">Loading transactions…</p>
+        </section>
+      ) : error ? (
+        <section className="detail-section">
+          <div className="detail-warn detail-warn--red">{error}</div>
+        </section>
+      ) : rows.length === 0 ? (
+        <section className="detail-section">
+          <h2 className="detail-section__title">No transactions yet</h2>
+          <p className="detail-section__lead">
+            Import a bank CSV to attribute balances by institution and calculate FSCS exposure.
+          </p>
+          <Link className="detail-btn detail-btn--dark" to="/upload" style={{ marginTop: '0.75rem' }}>
+            Upload statement
+          </Link>
+        </section>
+      ) : (
+        <>
+          <section className="detail-section">
+            <h2 className="detail-section__title">Exposure overview</h2>
+            <p className="detail-section__lead" style={{ marginBottom: '0.75rem' }}>
+              Total cash (net of all transactions):{' '}
+              <strong>{formatGBP(Math.round(totalCash))}</strong>
             </p>
-          </div>
-          <div className="detail-stat">
-            <p className="detail-stat__cap">Total unprotected</p>
-            <p className="detail-stat__val detail-stat__val--salmon">
-              {new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(unprotectedTotal)}
+            {totalCash <= 0 ? (
+              <p className="detail-muted">Net cash is not positive — concentration percentages are not meaningful until inflows exceed outflows.</p>
+            ) : (
+              <>
+                <div
+                  style={{
+                    display: 'flex',
+                    height: '1.25rem',
+                    borderRadius: '999px',
+                    overflow: 'hidden',
+                    marginBottom: '0.75rem',
+                  }}
+                  aria-hidden
+                >
+                  {barSegments.map((seg) => (
+                    <div
+                      key={seg.name}
+                      style={{
+                        width: `${seg.widthPct}%`,
+                        background: seg.color,
+                      }}
+                      title={`${seg.name} ${formatPct((seg.balance / totalCash) * 100, 1)}`}
+                    />
+                  ))}
+                </div>
+                <p className="detail-muted" style={{ marginBottom: '0.75rem' }}>
+                  {barSegments.map((seg) => `${formatPct((seg.balance / totalCash) * 100, 1)} ${seg.name}`).join(' · ')}
+                </p>
+              </>
+            )}
+            <span
+              className={`detail-badge ${
+                riskTone === 'green' ? 'detail-badge--green' : riskTone === 'amber' ? '' : 'detail-badge--red'
+              }`}
+              style={
+                riskTone === 'amber'
+                  ? { background: '#c27803', color: '#fff' }
+                  : undefined
+              }
+            >
+              {riskLabel} · top institution {formatPct(maxPct, 1)}
+            </span>
+            <p className="detail-section__lead" style={{ marginTop: '1rem' }}>
+              Each transaction is tagged with the bank you selected when uploading the CSV. Imports done before this
+              feature may show as &ldquo;Other&rdquo; until you re-upload with a bank chosen.
             </p>
-          </div>
-        </div>
-        {unprotectedTotal > 500_000 ? (
-          <div className="detail-warn detail-warn--red" style={{ marginTop: '1rem' }}>
-            Unprotected cash exceeds £500,000 — review sweeps and second legal entity structures urgently.
-          </div>
-        ) : null}
-      </section>
+          </section>
+
+          <section className="detail-section">
+            <h2 className="detail-section__title">Institution balances</h2>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="detail-table">
+                <thead>
+                  <tr>
+                    <th>Institution</th>
+                    <th>Balance</th>
+                    <th>% of total cash</th>
+                    <th>FSCS protected</th>
+                    <th>Unprotected</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="detail-muted">
+                        No attributed institution balances (all activity may be excluded, e.g. AWS-only).
+                      </td>
+                    </tr>
+                  ) : (
+                    visibleRows.map((r) => (
+                      <tr key={r.name}>
+                        <td>{r.name}</td>
+                        <td>{formatGBP(Math.round(r.balance))}</td>
+                        <td>{formatPct(r.pctOfTotal, 1)}</td>
+                        <td>{formatGBP(Math.round(r.protectedAmt))}</td>
+                        <td className="text-red">{formatGBP(Math.round(r.unprotectedAmt))}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section className="detail-section">
+            <h2 className="detail-section__title">FSCS calculator</h2>
+            <p className="detail-section__lead">
+              The Financial Services Compensation Scheme protects up to £85,000 per person per authorised institution for
+              eligible deposits. Unprotected = max(0, balance − £85,000) per institution (positive balances only).
+            </p>
+            <div className="detail-grid3">
+              <div className="detail-stat">
+                <p className="detail-stat__cap">Total protected (capped)</p>
+                <p className="detail-stat__val detail-stat__val--green">
+                  {formatGBP(Math.round(protectedTotal))}
+                </p>
+              </div>
+              <div className="detail-stat">
+                <p className="detail-stat__cap">Total unprotected</p>
+                <p className="detail-stat__val detail-stat__val--salmon">
+                  {formatGBP(Math.round(unprotectedTotal))}
+                </p>
+              </div>
+            </div>
+            {unprotectedTotal > 0 ? (
+              <div className="detail-warn detail-warn--red" style={{ marginTop: '1rem' }}>
+                <strong>{formatGBP(Math.round(unprotectedTotal))}</strong> sits above the FSCS £85,000 limit across
+                institutions — consider spreading eligible deposits and reviewing non-bank &ldquo;Other&rdquo; balances.
+              </div>
+            ) : null}
+            {unprotectedTotal > 500_000 ? (
+              <div className="detail-warn detail-warn--red" style={{ marginTop: '0.75rem' }}>
+                Unprotected cash exceeds £500,000 — review sweeps and second legal entity structures urgently.
+              </div>
+            ) : null}
+          </section>
+        </>
+      )}
 
       <section className="detail-section">
         <h2 className="detail-section__title">Recommendations</h2>
