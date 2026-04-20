@@ -144,7 +144,7 @@ export function RunwayBurnPage() {
   return (
     <div className="detail-page">
       <header className="detail-hero">
-        <h1 className="detail-title">Runway and Burn</h1>
+        <h1 className="detail-title">Runway & Burn</h1>
         <p className="detail-sub">Survival timeline and spend intelligence</p>
       </header>
 
@@ -201,7 +201,7 @@ export function RunwayBurnPage() {
 
       <section className="detail-section">
         <h2 className="detail-section__title">Burn chart (last 12 months)</h2>
-        <p className="detail-section__lead">Stacked by category. Trend line overlaid (illustrative).</p>
+        <p className="detail-section__lead">Where your cash is going, month by month</p>
         {loading ? (
           <p className="detail-muted">Loading…</p>
         ) : error ? (
@@ -245,7 +245,8 @@ export function RunwayBurnPage() {
       </section>
 
       <section className="detail-section">
-        <h2 className="detail-section__title">Category drill-down</h2>
+        <h2 className="detail-section__title">Burn Rate Breakdown</h2>
+        <p className="detail-section__lead">Where your cash is going, month by month</p>
         <table className="detail-table">
           <thead>
             <tr>

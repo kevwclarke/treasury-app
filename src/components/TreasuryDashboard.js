@@ -762,7 +762,7 @@ export function TreasuryDashboard() {
               </span>
             </div>
           </div>
-          <p className="tdash__card-sub">By category, last 90 days, auto-categorised</p>
+          <p className="tdash__card-sub">Where your cash is going, month by month</p>
           {txnLoading ? (
             <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading burn breakdown">
               <span className="ds-skeleton ds-skeleton--value-lg" />
