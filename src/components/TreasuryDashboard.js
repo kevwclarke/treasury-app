@@ -9,6 +9,7 @@ import {
   FUNDRAISE_RUNWAY_ALERT_MONTHS,
 } from '../utils/treasuryRunway'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
+import { AiTreasuryActions } from './AiTreasuryActions'
 import './TreasuryDashboard.css'
 
 function IconClock() {
@@ -481,6 +482,16 @@ export function TreasuryDashboard() {
           <Sparkline stroke="#c27803" />
         </article>
       </section>
+
+      <AiTreasuryActions
+        txnLoading={txnLoading}
+        txnError={txnError}
+        txnRows={txnRows}
+        runwayMetrics={runwayMetrics}
+        yieldSummary={yieldSummary}
+        concentration={concentration}
+        burnSummary={burnSummary}
+      />
 
       <div className="tdash__grid">
         {/* Yield gap */}

@@ -1,0 +1,188 @@
+/* AI Treasury Actions — FT / Bloomberg editorial */
+.ai-actions {
+  --ai-ink: #1a1614;
+  --ai-muted: #57534e;
+  --ai-cream: #faf7f2;
+  --ai-salmon: #c4704f;
+  --ai-green: #2d6a4f;
+  --ai-amber: #c27803;
+  --ai-red: #b42318;
+  margin: 0 0 1.75rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+  border-radius: 12px;
+  border: 1px solid rgba(26, 22, 20, 0.08);
+  background: #ffffff;
+  box-shadow: var(--ds-shadow-card, 0 1px 3px rgba(0, 0, 0, 0.06));
+  font-family: var(--ds-font-body, inherit);
+  color: var(--ai-ink);
+}
+
+.ai-actions__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.ai-actions__title {
+  margin: 0;
+  font-family: var(--ds-font-display, inherit);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ai-ink);
+}
+
+.ai-actions__lead {
+  margin: 0.35rem 0 0;
+  max-width: 42rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ai-muted);
+}
+
+.ai-actions__refresh {
+  flex-shrink: 0;
+}
+
+.ai-actions__cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 960px) {
+  .ai-actions__cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-actions__card {
+  display: flex;
+  flex-direction: column;
+  min-height: 11.5rem;
+  padding: 1rem 1rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid rgba(26, 22, 20, 0.08);
+  background: rgba(250, 247, 242, 0.65);
+}
+
+.ai-actions__card--loading {
+  min-height: 12rem;
+  background: linear-gradient(
+    110deg,
+    rgba(250, 247, 242, 0.35) 0%,
+    rgba(238, 233, 226, 0.95) 45%,
+    rgba(250, 247, 242, 0.35) 90%
+  );
+  background-size: 200% 100%;
+  animation: ai-actions-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes ai-actions-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.ai-actions__rank {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ai-muted);
+  margin-bottom: 0.35rem;
+}
+
+.ai-actions__card-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ai-ink);
+}
+
+.ai-actions__card-body {
+  margin: 0;
+  flex: 1;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ai-muted);
+}
+
+.ai-actions__impact {
+  margin-top: 0.75rem;
+  font-size: 1.375rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ai-green);
+  letter-spacing: -0.02em;
+}
+
+.ai-actions__impact-cap {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+.ai-actions__foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.ai-actions__effort {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ai-actions__effort--low {
+  background: rgba(45, 106, 79, 0.12);
+  color: var(--ai-green);
+}
+
+.ai-actions__effort--medium {
+  background: rgba(194, 120, 3, 0.12);
+  color: #92400e;
+}
+
+.ai-actions__effort--high {
+  background: rgba(180, 35, 24, 0.08);
+  color: var(--ai-red);
+}
+
+.ai-actions__hint,
+.ai-actions__error {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--ai-muted);
+}
+
+.ai-actions__error {
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: rgba(26, 22, 20, 0.04);
+  border: 1px solid rgba(26, 22, 20, 0.08);
+}
+
+.ai-actions__hint a {
+  color: var(--ai-salmon);
+  font-weight: 600;
+}
