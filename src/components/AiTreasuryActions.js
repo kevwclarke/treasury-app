@@ -9,11 +9,8 @@ function fmtComma(n) {
   return Math.round(Number(n) || 0).toLocaleString('en-GB')
 }
 
-function buildUserPrompt({ yieldSummary, concentration, runwayMetrics, burnSummary }) {
-  const totalCash = fmtComma(yieldSummary.totalCash)
-  const annualOpp = fmtComma(yieldSummary.annualOppCost)
-  const currentYield = YIELD_CURRENT_PCT.toFixed(2)
-  const bestRate = YIELD_BEST_PCT.toFixed(2)
+/** Payload for POST /api/treasury-actions (must match lib/treasuryAnthropicServer.cjs). */
+function buildTreasuryActionMetrics({ yieldSummary, concentration, runwayMetrics, burnSummary }) {
   const topInstRow =
     concentration.institutionRows?.find((r) => r.balance > 0) ?? concentration.institutionRows?.[0]
   const concentrationPct =
@@ -21,18 +18,25 @@ function buildUserPrompt({ yieldSummary, concentration, runwayMetrics, burnSumma
       ? Math.min(100, Math.max(0, Math.abs(topInstRow.pctOfTotal))).toFixed(1)
       : '0.0'
   const topInstitution = topInstRow?.name && topInstRow.balance !== 0 ? topInstRow.name : 'None'
-  const unprotected = fmtComma(concentration.unprotectedTotal)
-  const monthlyBurn = fmtComma(Math.round(runwayMetrics.monthlyBurn || 0))
-  const runway =
-    runwayMetrics.baseRunwayMo != null && Number.isFinite(runwayMetrics.baseRunwayMo)
-      ? runwayMetrics.baseRunwayMo.toFixed(1)
-      : '0'
   const cats = burnSummary.categories || []
   const topCat = cats.reduce((best, c) => (c.amount > (best?.amount ?? 0) ? c : best), cats[0])
-  const topCategory = topCat?.amount > 0 ? topCat.name : 'None'
-  const topCategoryPct = topCat?.amount > 0 ? topCat.pct : 0
 
-  return `This company has £${totalCash} in cash earning ${currentYield}% when the best available same-liquidity rate is ${bestRate}%. Their annual opportunity cost is £${annualOpp}. They have ${concentrationPct}% of cash in ${topInstitution} with £${unprotected} unprotected by FSCS. Their monthly burn is £${monthlyBurn} giving ${runway} months runway. Their largest spend category is ${topCategory} at ${topCategoryPct}% of burn. Give exactly 3 prioritised actions ranked by financial impact. For each action provide: a short title, the specific action to take, the exact pound value impact per year, and effort level as Low Medium or High.`
+  return {
+    totalCash: fmtComma(yieldSummary.totalCash),
+    currentYield: YIELD_CURRENT_PCT.toFixed(2),
+    bestRate: YIELD_BEST_PCT.toFixed(2),
+    annualOppCost: fmtComma(yieldSummary.annualOppCost),
+    concentrationPct,
+    topInstitution,
+    unprotectedAmount: fmtComma(concentration.unprotectedTotal),
+    monthlyBurn: fmtComma(Math.round(runwayMetrics.monthlyBurn || 0)),
+    runway:
+      runwayMetrics.baseRunwayMo != null && Number.isFinite(runwayMetrics.baseRunwayMo)
+        ? runwayMetrics.baseRunwayMo.toFixed(1)
+        : '0',
+    topCategory: topCat?.amount > 0 ? topCat.name : 'None',
+    topCategoryPct: topCat?.amount > 0 ? topCat.pct : 0,
+  }
 }
 
 function effortClass(effort) {
@@ -58,14 +62,13 @@ export function AiTreasuryActions({
   const abortRef = useRef(null)
   const didAutoFetchRef = useRef(false)
 
-  const userPrompt = useMemo(
-    () => buildUserPrompt({ yieldSummary, concentration, runwayMetrics, burnSummary }),
+  const metrics = useMemo(
+    () => buildTreasuryActionMetrics({ yieldSummary, concentration, runwayMetrics, burnSummary }),
     [yieldSummary, concentration, runwayMetrics, burnSummary],
   )
 
-  const hasApiKey = Boolean(process.env.REACT_APP_ANTHROPIC_API_KEY?.trim())
   const hasTxn = (txnRows?.length ?? 0) > 0
-  const canRequest = hasApiKey && hasTxn && !txnLoading && !txnError
+  const canRequest = hasTxn && !txnLoading && !txnError
 
   const runFetch = useCallback(
     async (isManual) => {
@@ -77,7 +80,7 @@ export function AiTreasuryActions({
       setError('')
       if (isManual) setActions(null)
       try {
-        const next = await fetchTreasuryAnthropicActions({ userPrompt, signal: ac.signal })
+        const next = await fetchTreasuryAnthropicActions({ metrics, signal: ac.signal })
         setActions(next)
       } catch (e) {
         if (e?.name === 'AbortError') return
@@ -87,7 +90,7 @@ export function AiTreasuryActions({
         setLoading(false)
       }
     },
-    [canRequest, userPrompt],
+    [canRequest, metrics],
   )
 
   useEffect(() => {
@@ -102,7 +105,6 @@ export function AiTreasuryActions({
 
   const showSkeleton = canRequest && (loading || (actions === null && !error))
   const showPlaceholder = !hasTxn && !txnLoading
-  const showKeyHint = hasTxn && !hasApiKey && !txnLoading
 
   return (
     <section className="ai-actions" aria-labelledby="ai-treasury-actions-heading">
@@ -132,13 +134,6 @@ export function AiTreasuryActions({
       {showPlaceholder ? (
         <p className="ai-actions__hint">
           Upload transactions to generate AI treasury actions. <Link to="/upload">Upload statement</Link>
-        </p>
-      ) : null}
-
-      {showKeyHint ? (
-        <p className="ai-actions__hint">
-          Add <code style={{ fontSize: '0.75em' }}>REACT_APP_ANTHROPIC_API_KEY</code> to{' '}
-          <code style={{ fontSize: '0.75em' }}>.env.local</code> and restart the dev server.
         </p>
       ) : null}
 
