@@ -103,6 +103,17 @@
   color: #2d6a4f;
 }
 
+.detail-stat__val--red {
+  color: #b42318;
+}
+
+.detail-stat__note {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #78716c;
+}
+
 .detail-input {
   width: 100%;
   max-width: 14rem;
@@ -347,4 +358,57 @@
 .text-red {
   color: #b42318;
   font-weight: 600;
+}
+
+/* Liquidity buffer full page */
+.detail-liq-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem 2rem;
+}
+
+.detail-liq-thresholds {
+  flex: 1;
+  min-width: 12rem;
+}
+
+.detail-liq-thresh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.8125rem;
+  border-bottom: 1px solid rgba(28, 25, 23, 0.06);
+}
+
+.detail-liq-thresh__cap {
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.625rem;
+  color: #57534e;
+}
+
+.detail-liq-thresh__val {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-liq-thresh--ok .detail-liq-thresh__val {
+  color: #2d6a4f;
+}
+
+.detail-liq-thresh--warn .detail-liq-thresh__val {
+  color: #b45309;
+}
+
+.detail-liq-thresh--risk .detail-liq-thresh__val {
+  color: #b42318;
+}
+
+.detail-liq-foot {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: #57534e;
 }

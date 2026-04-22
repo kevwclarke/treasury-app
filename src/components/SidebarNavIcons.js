@@ -45,6 +45,12 @@ export function SidebarNavIcon({ name }) {
           <circle cx="18" cy="5" r="1.5" />
         </svg>
       )
+    case 'liquidity':
+      return (
+        <svg {...p} {...stroke}>
+          <path d="M12 21a7 7 0 007-7c0-4-7-13-7-13S5 10 5 14a7 7 0 007 7z" />
+        </svg>
+      )
     case 'cashflow':
       return (
         <svg {...p} {...stroke}>

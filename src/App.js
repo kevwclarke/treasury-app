@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { DashboardLayout } from './components/DashboardLayout'
 import { LandingPage } from './components/LandingPage'
 import { LoginPage } from './components/LoginPage'
+import { SignUpPage } from './components/SignUpPage'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { TreasuryDashboard } from './components/TreasuryDashboard'
 import { UploadPage } from './components/UploadPage'
@@ -13,6 +14,7 @@ import { FxExposurePage } from './pages/FxExposurePage'
 import { InvestorReportPage } from './pages/InvestorReportPage'
 import { OpportunitiesPage } from './pages/OpportunitiesPage'
 import { PeerBenchmarksPage } from './pages/PeerBenchmarksPage'
+import { LiquidityBufferPage } from './pages/LiquidityBufferPage'
 import { RunwayBurnPage } from './pages/RunwayBurnPage'
 import { ScenarioModellerFullPage } from './pages/ScenarioModellerFullPage'
 import { TaxTrackerPage } from './pages/TaxTrackerPage'
@@ -26,12 +28,14 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignUpPage />} />
         <Route path="/app" element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             <Route index element={<TreasuryDashboard />} />
             <Route path="yield" element={<YieldOptimisationPage />} />
             <Route path="concentration" element={<ConcentrationRiskPage />} />
             <Route path="runway" element={<RunwayBurnPage />} />
+            <Route path="liquidity" element={<LiquidityBufferPage />} />
             <Route path="cashflow" element={<CashFlowPage />} />
             <Route path="fx" element={<FxExposurePage />} />
             <Route path="opportunities" element={<OpportunitiesPage />} />

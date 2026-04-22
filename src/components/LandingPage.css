@@ -29,6 +29,40 @@
   color: #5c2f1b;
 }
 
+.landing__header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.landing__signup {
+  font-family: var(--ds-font-body);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #faf7f2;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #c4704f 0%, #a85a3d 100%);
+  border: 1px solid rgba(90, 50, 38, 0.35);
+  box-shadow: 0 1px 3px rgba(90, 50, 38, 0.12);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.landing__signup:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(90, 50, 38, 0.18);
+}
+
+.landing__signup:focus-visible {
+  outline: 2px solid #c4704f;
+  outline-offset: 3px;
+}
+
 .landing__sign-in {
   font-family: var(--ds-font-body);
   font-size: 0.875rem;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
 import './LoginPage.css'
 
@@ -112,6 +112,13 @@ export function LoginPage() {
             {submitting ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <p className="login-page__footer">
+          Don&apos;t have an account?{' '}
+          <Link className="login-page__footer-link" to="/signup">
+            Sign up
+          </Link>
+        </p>
       </div>
     </div>
   )

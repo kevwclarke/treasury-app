@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
@@ -8,9 +8,41 @@ import {
   computeRunwayFromTransactions,
   FUNDRAISE_RUNWAY_ALERT_MONTHS,
 } from '../utils/treasuryRunway'
+import {
+  buildCashflowMonthlySeries,
+  cashflowWeeklyLowCashWarning,
+  computeCashflowSummary,
+  detectRecurringTransactions,
+  seriesToBarHeights,
+} from '../utils/treasuryCashflow'
+import {
+  computeLiquidityBuffer,
+  LIQUIDITY_MIN_MONTHS,
+  LIQUIDITY_TARGET_MONTHS,
+} from '../utils/treasuryLiquidity'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
 import { AiTreasuryActions } from './AiTreasuryActions'
+import { LiquidityBufferGauge } from './LiquidityBufferGauge'
+import { TreasuryOnboarding } from './TreasuryOnboarding'
 import './TreasuryDashboard.css'
+
+const SESSION_SKIP_EMPTY_ONBOARD = 'treasury_skip_empty_onboarding'
+
+const IMPORT_WELCOME_COPY = 'Your data is ready — here is your treasury health'
+
+function liquidityCurrentCaption(liq) {
+  if (liq.monthlyBurn <= 0) return 'No outflows in last 90 days'
+  if (liq.bufferMonths == null) return '—'
+  if (liq.bufferMonths < LIQUIDITY_MIN_MONTHS) return 'Below minimum'
+  if (liq.bufferMonths <= LIQUIDITY_TARGET_MONTHS) return 'Between min & target'
+  return 'Above target'
+}
+
+function liquidityThreshClass(band) {
+  if (band === 'red') return 'tdash__thresh--liq-risk'
+  if (band === 'amber') return 'tdash__thresh--liq-warn'
+  return 'tdash__thresh--liq-ok'
+}
 
 function IconClock() {
   return (
@@ -39,48 +71,7 @@ function Sparkline({ stroke = '#1a1614' }) {
   )
 }
 
-function LiquidityDonut({ months, targetMonths }) {
-  const r = 34
-  const c = 2 * Math.PI * r
-  const pct = Math.min(1, months / targetMonths)
-  const dash = `${pct * c} ${c}`
-
-  return (
-    <svg className="tdash__donut" viewBox="0 0 80 80" aria-hidden>
-      <circle cx="40" cy="40" r={r} fill="none" stroke="rgba(26,22,20,0.08)" strokeWidth="8" />
-      <circle
-        cx="40"
-        cy="40"
-        r={r}
-        fill="none"
-        stroke="#c4704f"
-        strokeWidth="8"
-        strokeDasharray={dash}
-        strokeLinecap="round"
-        transform="rotate(-90 40 40)"
-      />
-      <text x="40" y="36" textAnchor="middle" className="tdash__donut-val">
-        {months.toLocaleString('en-GB', { maximumFractionDigits: 1 })}
-      </text>
-      <text x="40" y="50" textAnchor="middle" className="tdash__donut-cap">
-        months
-      </text>
-    </svg>
-  )
-}
-
 const TIME_FILTERS = ['1M', '3M', '6M', '1Y']
-
-const CF_MONTHS = [
-  { label: 'Jan', h: 42, proj: false },
-  { label: 'Feb', h: 55, proj: false },
-  { label: 'Mar', h: 48, proj: false },
-  { label: 'Apr', h: 62, proj: false },
-  { label: 'May', h: 38, proj: true },
-  { label: 'Jun', h: 44, proj: true },
-  { label: 'Jul', h: 51, proj: true },
-  { label: 'Aug', h: 47, proj: true },
-]
 
 const PEER_BENCHMARK_ROWS = [
   {
@@ -146,6 +137,7 @@ function analyseTermSheet(amountGbp, structure) {
 }
 
 export function TreasuryDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [timeFilter, setTimeFilter] = useState('3M')
   const [burnSlider, setBurnSlider] = useState(8)
   const [hireSlider, setHireSlider] = useState(3)
@@ -161,6 +153,15 @@ export function TreasuryDashboard() {
   const [txnRows, setTxnRows] = useState([])
   const [cfChartReady, setCfChartReady] = useState(false)
   const [burnBarsReady, setBurnBarsReady] = useState(false)
+  const [onboardingSkipped, setOnboardingSkipped] = useState(
+    () => typeof window !== 'undefined' && sessionStorage.getItem(SESSION_SKIP_EMPTY_ONBOARD) === '1',
+  )
+  const [importToast, setImportToast] = useState('')
+
+  const skipEmptyOnboarding = useCallback(() => {
+    sessionStorage.setItem(SESSION_SKIP_EMPTY_ONBOARD, '1')
+    setOnboardingSkipped(true)
+  }, [])
 
   const { runwayMo, burnModel } = useMemo(() => {
     const baseRunway = 18.4
@@ -192,7 +193,7 @@ export function TreasuryDashboard() {
           .from('transactions')
           .select('amount,payee,date,institution')
           .eq('user_id', user.id)
-          .order('date', { ascending: false })
+          .order('date', { ascending: true })
 
         if (error) throw error
         if (cancelled) return
@@ -213,9 +214,25 @@ export function TreasuryDashboard() {
   }, [])
 
   useEffect(() => {
-    const id = requestAnimationFrame(() => setCfChartReady(true))
-    return () => cancelAnimationFrame(id)
-  }, [])
+    if (txnLoading || !txnRows.length) {
+      setCfChartReady(false)
+      return undefined
+    }
+    const t = window.setTimeout(() => setCfChartReady(true), 120)
+    return () => window.clearTimeout(t)
+  }, [txnLoading, txnRows.length])
+
+  useEffect(() => {
+    if (searchParams.get('treasuryReady') !== '1' || txnLoading) return undefined
+    if (txnRows.length === 0) {
+      setSearchParams({}, { replace: true })
+      return undefined
+    }
+    setImportToast(IMPORT_WELCOME_COPY)
+    setSearchParams({}, { replace: true })
+    const tid = window.setTimeout(() => setImportToast(''), 7200)
+    return () => window.clearTimeout(tid)
+  }, [searchParams, setSearchParams, txnLoading, txnRows.length])
 
   const since90dIso = useMemo(() => new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(), [])
 
@@ -281,6 +298,24 @@ export function TreasuryDashboard() {
 
   const runwayMetrics = useMemo(() => computeRunwayFromTransactions(txnRows), [txnRows])
 
+  const cashflowSummary = useMemo(() => computeCashflowSummary(txnRows), [txnRows])
+
+  const cashflowMonthlySeries = useMemo(
+    () => buildCashflowMonthlySeries(txnRows, cashflowSummary, 90),
+    [txnRows, cashflowSummary],
+  )
+
+  const cashflowBars = useMemo(() => seriesToBarHeights(cashflowMonthlySeries), [cashflowMonthlySeries])
+
+  const recurringTxns = useMemo(() => detectRecurringTransactions(txnRows), [txnRows])
+
+  const cashflowLowCash = useMemo(
+    () => cashflowWeeklyLowCashWarning(cashflowSummary, 13),
+    [cashflowSummary],
+  )
+
+  const liquidity = useMemo(() => computeLiquidityBuffer(txnRows), [txnRows])
+
   const showFundraiseAlert =
     !txnLoading &&
     (txnRows?.length ?? 0) > 0 &&
@@ -297,8 +332,31 @@ export function TreasuryDashboard() {
     return () => window.clearTimeout(t)
   }, [txnLoading, burnSummary.total])
 
+  const showEmptyOnboarding = !txnLoading && !txnError && txnRows.length === 0 && !onboardingSkipped
+
+  if (showEmptyOnboarding) {
+    return (
+      <div className="tdash tdash--onboarding">
+        <TreasuryOnboarding onSkip={skipEmptyOnboarding} />
+      </div>
+    )
+  }
+
   return (
     <div className="tdash">
+      {importToast ? (
+        <div className="tdash__toast" role="status">
+          <span className="tdash__toast-text">{importToast}</span>
+          <button
+            type="button"
+            className="tdash__toast-dismiss"
+            onClick={() => setImportToast('')}
+            aria-label="Dismiss notification"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       <header className="tdash__topbar">
         <div className="tdash__title-block">
           <h1 className="tdash__page-title">Treasury Dashboard</h1>
@@ -911,71 +969,198 @@ export function TreasuryDashboard() {
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Cash Flow Forecast</h2>
           </div>
-          <p className="tdash__card-sub">Trailing inflows/outflows with forward projection from burn + ARR cadence</p>
-          <div className="tdash__cf-stats">
-            <div className="tdash__cf-stat">
-              <p className="tdash__cf-stat-cap">Avg Monthly In</p>
-              <p className="tdash__cf-stat-val tdash__cf-stat-val--in">{formatGBP(412_000)}</p>
+          <p className="tdash__card-sub">
+            Monthly net movement from your import, then a 90-day projection using average inflow and outflow.
+          </p>
+          {txnLoading ? (
+            <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading cash flow">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+              <span className="ds-skeleton ds-skeleton--line" />
             </div>
-            <div className="tdash__cf-stat">
-              <p className="tdash__cf-stat-cap">Avg Monthly Out</p>
-              <p className="tdash__cf-stat-val tdash__cf-stat-val--out">{formatGBP(318_000)}</p>
-            </div>
-            <div className="tdash__cf-stat">
-              <p className="tdash__cf-stat-cap">Net Monthly</p>
-              <p className="tdash__cf-stat-val tdash__cf-stat-val--net">{formatGBP(94_000)}</p>
-            </div>
-          </div>
-          <div
-            className={`tdash__cf-chart${cfChartReady ? ' tdash__cf-chart--ready' : ''}`}
-            role="img"
-            aria-label="Monthly cash movement, dotted line is today"
-          >
-            {CF_MONTHS.map((m) => (
-              <div key={m.label} className="tdash__cf-col">
-                <div
-                  className={`tdash__cf-bar${m.proj ? ' tdash__cf-bar--proj' : ''}`}
-                  style={{ height: `${m.h}%` }}
-                />
-                <span className="tdash__cf-month">{m.label}</span>
+          ) : !txnRows.length ? (
+            <p className="detail-muted" style={{ margin: 0 }}>
+              Upload a bank statement to see cash flow.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Upload statement
+              </Link>
+            </p>
+          ) : (
+            <>
+              <div className="tdash__cf-stats">
+                <div className="tdash__cf-stat">
+                  <p className="tdash__cf-stat-cap">Avg Monthly In</p>
+                  <p className="tdash__cf-stat-val tdash__cf-stat-val--in">
+                    {formatGBP(Math.round(cashflowSummary.avgMonthlyIn))}
+                  </p>
+                </div>
+                <div className="tdash__cf-stat">
+                  <p className="tdash__cf-stat-cap">Avg Monthly Out</p>
+                  <p className="tdash__cf-stat-val tdash__cf-stat-val--out">
+                    {formatGBP(Math.round(cashflowSummary.avgMonthlyOut))}
+                  </p>
+                </div>
+                <div className="tdash__cf-stat">
+                  <p className="tdash__cf-stat-cap">Net Monthly</p>
+                  <p className="tdash__cf-stat-val tdash__cf-stat-val--net">
+                    {formatGBP(Math.round(cashflowSummary.netMonthly))}
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
+              {cashflowLowCash ? (
+                <div
+                  className="tdash__alert tdash__alert--amber"
+                  style={{ marginTop: '0.75rem', marginBottom: '0.5rem' }}
+                  role="status"
+                >
+                  <div className="tdash__alert-main">
+                    <IconClock />
+                    <div>
+                      <p className="tdash__alert-title">Low cash trajectory</p>
+                      <p className="tdash__alert-meta">
+                        Projected balance within the next ~90 days falls below one month of average outflow (
+                        {formatGBP(Math.round(cashflowSummary.avgMonthlyOut))}). Review timing of inflows and liquidity
+                        buffers.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+              <div
+                className={`tdash__cf-chart${cfChartReady ? ' tdash__cf-chart--ready' : ''}`}
+                role="img"
+                aria-label="Monthly net cash movement; shaded bars are projected from averages"
+              >
+                {cashflowBars.map((m, i) => (
+                  <div key={m.key} className="tdash__cf-col">
+                    <div
+                      className={`tdash__cf-bar${m.proj ? ' tdash__cf-bar--proj' : ''}${m.neg ? ' tdash__cf-bar--neg' : ''}`}
+                      style={{
+                        height: `${m.hPct}%`,
+                        animationDelay: cfChartReady ? `${i * 0.04}s` : undefined,
+                      }}
+                    />
+                    <span className="tdash__cf-month">{m.label}</span>
+                  </div>
+                ))}
+              </div>
+              {recurringTxns.length > 0 ? (
+                <div style={{ marginTop: '1rem' }}>
+                  <p
+                    className="tdash__stat-cap"
+                    style={{ marginBottom: '0.5rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}
+                  >
+                    Recurring transactions
+                  </p>
+                  <table className="detail-table" style={{ fontSize: '0.8125rem' }}>
+                    <thead>
+                      <tr>
+                        <th>Payee</th>
+                        <th>Amount</th>
+                        <th>Frequency</th>
+                        <th>Next expected</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recurringTxns.map((r) => (
+                        <tr key={r.payee}>
+                          <td>{r.payee}</td>
+                          <td>{formatGBP(Math.round(r.amount))}</td>
+                          <td>{r.frequency}</td>
+                          <td>{r.nextExpected}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </>
+          )}
         </article>
 
         {/* Liquidity buffer */}
         <article className="tdash__card">
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Liquidity Buffer</h2>
+            <Link className="tdash__card-link" to="/app/liquidity">
+              Full detail
+            </Link>
           </div>
-          <p className="tdash__card-sub">Operating cash coverage of known obligations (next 3 months)</p>
-          <div className="tdash__liq-gauge-wrap">
-            <LiquidityDonut months={4.2} targetMonths={6} />
-            <div className="tdash__thresholds">
-              <div className="tdash__thresh">
-                <span className="tdash__thresh-cap">3 mo minimum</span>
-                <span className="tdash__thresh-val">{formatGBP(795_000)}</span>
-              </div>
-              <div className="tdash__thresh">
-                <span className="tdash__thresh-cap">6 mo target</span>
-                <span className="tdash__thresh-val">{formatGBP(1_590_000)}</span>
-              </div>
-              <div className="tdash__thresh tdash__thresh--ok">
-                <span className="tdash__thresh-cap">Current · 4.2 mo</span>
-                <span className="tdash__thresh-val">✓ Above min</span>
-              </div>
+          <p className="tdash__card-sub">
+            Accessible cash from your import vs average monthly outflow (last 90 days). Ring ticks:{' '}
+            {LIQUIDITY_MIN_MONTHS} mo minimum and {LIQUIDITY_TARGET_MONTHS} mo target on a {LIQUIDITY_TARGET_MONTHS}
+            -month scale.
+          </p>
+          {txnLoading ? (
+            <div className="tdash__burn-skel" aria-busy="true" aria-label="Loading liquidity">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+              <span className="ds-skeleton ds-skeleton--line" />
             </div>
-          </div>
-          <div className="tdash__liq-rows">
-            <div className="tdash__liq-row">
-              <span>3-month obligations</span>
-              <strong>{formatGBP(795_000)}</strong>
-            </div>
-            <div className="tdash__liq-row">
-              <span>Buffer excess</span>
-              <strong style={{ color: '#2d6a4f' }}>{formatGBP(238_000)}</strong>
-            </div>
-          </div>
+          ) : !txnRows.length ? (
+            <p className="detail-muted" style={{ margin: 0 }}>
+              Upload a bank statement to model your liquidity buffer.{' '}
+              <Link className="tdash__card-link" to="/upload">
+                Upload statement
+              </Link>
+            </p>
+          ) : (
+            <>
+              <div className="tdash__liq-gauge-wrap">
+                <LiquidityBufferGauge bufferMonths={liquidity.bufferMonths} band={liquidity.band} size={80} />
+                <div className="tdash__thresholds">
+                  <div className="tdash__thresh">
+                    <span className="tdash__thresh-cap">{LIQUIDITY_MIN_MONTHS} mo minimum</span>
+                    <span className="tdash__thresh-val">{formatGBP(Math.round(liquidity.minCash3mo))}</span>
+                  </div>
+                  <div className="tdash__thresh">
+                    <span className="tdash__thresh-cap">{LIQUIDITY_TARGET_MONTHS} mo target</span>
+                    <span className="tdash__thresh-val">{formatGBP(Math.round(liquidity.targetCash6mo))}</span>
+                  </div>
+                  <div className={`tdash__thresh ${liquidityThreshClass(liquidity.band)}`}>
+                    <span className="tdash__thresh-cap">
+                      Current ·{' '}
+                      {liquidity.bufferMonths != null && Number.isFinite(liquidity.bufferMonths)
+                        ? `${liquidity.bufferMonths.toLocaleString('en-GB', { maximumFractionDigits: 1 })} mo`
+                        : liquidity.monthlyBurn <= 0
+                          ? '∞'
+                          : '—'}
+                    </span>
+                    <span className="tdash__thresh-val">{formatGBP(Math.round(liquidity.totalCash))}</span>
+                  </div>
+                </div>
+              </div>
+              <p className="tdash__liq-foot">{liquidityCurrentCaption(liquidity)}</p>
+              <div className="tdash__liq-rows">
+                <div className="tdash__liq-row">
+                  <span>3-month obligations</span>
+                  <strong>{formatGBP(Math.round(liquidity.obligations3mo))}</strong>
+                </div>
+                <div className="tdash__liq-row">
+                  <span>Buffer excess</span>
+                  <strong
+                    style={{
+                      color: liquidity.bufferExcess < 0 ? '#b42318' : '#2d6a4f',
+                    }}
+                  >
+                    {formatGBP(Math.round(liquidity.bufferExcess))}
+                  </strong>
+                </div>
+              </div>
+              <p className="tdash__liq-yield-msg">
+                {liquidity.eligibleForYield > 0 ? (
+                  <>
+                    Only cash above the {LIQUIDITY_TARGET_MONTHS}-month target buffer is eligible for yield
+                    optimisation: <strong>{formatGBP(Math.round(liquidity.eligibleForYield))}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Cash above the {LIQUIDITY_TARGET_MONTHS}-month target buffer is eligible for yield optimisation.
+                    On your current import that amount is <strong>{formatGBP(0)}</strong> (target buffer{' '}
+                    {formatGBP(Math.round(liquidity.targetCash6mo))}).
+                  </>
+                )}
+              </p>
+            </>
+          )}
         </article>
 
         {/* FX */}

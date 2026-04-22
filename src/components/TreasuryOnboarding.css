@@ -1,0 +1,168 @@
+/* Onboarding — FT × Bloomberg, warm editorial */
+.tdash-onboard {
+  min-height: min(70vh, 44rem);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem 3rem;
+  background: linear-gradient(165deg, rgba(250, 247, 242, 0.98) 0%, rgba(255, 255, 255, 0.92) 48%, rgba(250, 247, 242, 0.88) 100%);
+  border: 1px solid var(--td-card-border);
+  border-radius: 14px;
+  box-shadow: var(--td-card-shadow);
+}
+
+.tdash-onboard__inner {
+  max-width: 36rem;
+  width: 100%;
+}
+
+.tdash-onboard__eyebrow {
+  margin: 0 0 0.75rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--td-salmon);
+}
+
+.tdash-onboard__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--td-serif);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--td-ink);
+}
+
+.tdash-onboard__sub {
+  margin: 0 0 2rem;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--td-muted);
+}
+
+.tdash-onboard__steps {
+  list-style: none;
+  margin: 0 0 2.25rem;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.tdash-onboard__step {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1rem 1.125rem;
+  background: var(--td-card);
+  border: 1px solid var(--td-card-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 0 rgba(26, 22, 20, 0.04);
+}
+
+.tdash-onboard__step-num {
+  flex-shrink: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--td-serif);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(145deg, rgba(196, 112, 79, 0.98), rgba(154, 88, 62, 0.98));
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.tdash-onboard__step-body {
+  min-width: 0;
+}
+
+.tdash-onboard__step-title {
+  margin: 0 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--td-ink);
+}
+
+.tdash-onboard__step-label {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--td-muted);
+  margin-right: 0.35rem;
+}
+
+.tdash-onboard__step-text {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--td-muted);
+}
+
+.tdash-onboard__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+}
+
+.tdash-onboard__btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.95rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-decoration: none;
+  color: #faf7f2;
+  background: linear-gradient(180deg, #c4704f 0%, #a85a3d 100%);
+  border: 1px solid rgba(90, 50, 38, 0.35);
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(90, 50, 38, 0.18);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.tdash-onboard__btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(90, 50, 38, 0.22);
+}
+
+.tdash-onboard__btn-primary:focus-visible {
+  outline: 2px solid var(--td-salmon);
+  outline-offset: 3px;
+}
+
+.tdash-onboard__skip {
+  align-self: center;
+  padding: 0.35rem 0.5rem;
+  font: inherit;
+  font-size: 0.8125rem;
+  color: var(--td-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  text-decoration-color: rgba(87, 83, 78, 0.35);
+}
+
+.tdash-onboard__skip:hover {
+  color: var(--td-ink);
+  text-decoration-color: rgba(26, 22, 20, 0.35);
+}
+
+.tdash-onboard__skip:focus-visible {
+  outline: 2px solid var(--td-salmon);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

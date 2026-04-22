@@ -29,9 +29,14 @@ export function LandingPage() {
         <span className="landing__wordmark" aria-hidden="true">
           Treasury
         </span>
-        <Link className="landing__sign-in" to="/login">
-          Sign in
-        </Link>
+        <div className="landing__header-actions">
+          <Link className="landing__signup" to="/signup">
+            Get started
+          </Link>
+          <Link className="landing__sign-in" to="/login">
+            Sign in
+          </Link>
+        </div>
       </header>
 
       <main className="landing__main">

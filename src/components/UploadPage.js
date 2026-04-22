@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CSV_SOURCE_INSTITUTIONS } from '../constants/institutions'
 import { supabase } from '../supabase'
@@ -176,7 +176,7 @@ export function UploadPage() {
     balance: '',
   })
   const [importing, setImporting] = useState(false)
-  const [success, setSuccess] = useState('')
+  const [importCelebration, setImportCelebration] = useState(false)
   const [uploadInstitution, setUploadInstitution] = useState('')
 
   const mappingComplete =
@@ -189,9 +189,15 @@ export function UploadPage() {
 
   const selected = useMemo(() => new Set(Object.values(mapping).filter(Boolean)), [mapping])
 
+  useEffect(() => {
+    if (!importCelebration) return undefined
+    const id = window.setTimeout(() => navigate('/app?treasuryReady=1', { replace: true }), 1700)
+    return () => window.clearTimeout(id)
+  }, [importCelebration, navigate])
+
   async function handleFile(file) {
     setError('')
-    setSuccess('')
+    setImportCelebration(false)
     setFileName('')
     setHeaders([])
     setPreviewRows([])
@@ -252,7 +258,7 @@ export function UploadPage() {
   async function handleConfirmImport() {
     if (!mappingComplete || importing) return
     setError('')
-    setSuccess('')
+    setImportCelebration(false)
     setImporting(true)
 
     try {
@@ -288,27 +294,13 @@ export function UploadPage() {
         })
         .filter(Boolean)
 
-      // Debug instrumentation: confirm we are processing the right number of rows.
-      // eslint-disable-next-line no-console
-      console.log('[CSV import] parsed rows:', allRows.length)
-      // eslint-disable-next-line no-console
-      console.log('[CSV import] mapping:', mapping)
-      // eslint-disable-next-line no-console
-      console.log('[CSV import] normalised transactions:', txs.length)
-
       if (!txs.length) {
         setError('No importable rows found. Check your column mapping and CSV formatting.')
         return
       }
 
-      let imported = 0
       for (const batch of chunk(txs, 500)) {
-        // eslint-disable-next-line no-console
-        console.log('[CSV import] inserting batch size:', batch.length)
-        const { data, error: insertError } = await supabase
-          .from('transactions')
-          .insert(batch)
-          .select('id')
+        const { error: insertError } = await supabase.from('transactions').insert(batch).select('id')
         if (insertError) {
           if ((insertError?.message ?? '').toLowerCase().includes('relation') &&
               (insertError?.message ?? '').toLowerCase().includes('does not exist')) {
@@ -318,11 +310,9 @@ export function UploadPage() {
           }
           throw insertError
         }
-        imported += data?.length ?? 0
       }
 
-      setSuccess(`Imported ${imported.toLocaleString('en-GB')} transactions.`)
-      setTimeout(() => navigate('/app', { replace: true }), 2000)
+      setImportCelebration(true)
     } catch (e) {
       setError(e?.message ?? 'Import failed.')
     } finally {
@@ -335,7 +325,7 @@ export function UploadPage() {
   }
 
   return (
-    <div className="upload">
+    <div className={`upload${importCelebration ? ' upload--celebrating' : ''}`}>
       <h1 className="upload__title">Upload bank statement</h1>
       <p className="upload__sub">
         Import a bank CSV to power yield gap, concentration, runway, burn, and forecast modules.
@@ -385,7 +375,28 @@ export function UploadPage() {
       </div>
 
       {error ? <div className="upload__error">{error}</div> : null}
-      {success ? <div className="upload__success">{success}</div> : null}
+
+      {importCelebration ? (
+        <div className="upload__celebrate" role="status" aria-live="polite">
+          <div className="upload__celebrate-card">
+            <div className="upload__celebrate-check" aria-hidden>
+              <svg viewBox="0 0 48 48" width="48" height="48" fill="none">
+                <circle className="upload__celebrate-ring" cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="2" />
+                <path
+                  className="upload__celebrate-tick"
+                  d="M14 24.5l7 7 13-14"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p className="upload__celebrate-title">Import complete</p>
+            <p className="upload__celebrate-sub">Taking you to your treasury health…</p>
+          </div>
+        </div>
+      ) : null}
 
       {headers.length ? (
         <>

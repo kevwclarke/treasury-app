@@ -12,6 +12,7 @@
 
 - Landing / waitlist at `/`
 - Login at `/login`
+- Sign up at `/signup`
 
 **Authenticated (shell: dark sidebar + cream main — same layout for all below)**
 

@@ -225,3 +225,101 @@
   cursor: not-allowed;
 }
 
+.upload--celebrating {
+  position: relative;
+}
+
+.upload__celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(26, 22, 20, 0.28);
+  backdrop-filter: blur(4px);
+  animation: uploadCelebrateFade 0.35s ease forwards;
+}
+
+@keyframes uploadCelebrateFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.upload__celebrate-card {
+  max-width: 22rem;
+  width: 100%;
+  padding: 2rem 1.75rem 2.25rem;
+  text-align: center;
+  background: #faf7f2;
+  border: 1px solid rgba(26, 22, 20, 0.1);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(26, 22, 20, 0.12);
+  animation: uploadCelebratePop 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes uploadCelebratePop {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.upload__celebrate-check {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+  color: #2d6a4f;
+}
+
+.upload__celebrate-ring {
+  opacity: 0;
+  animation: uploadRingIn 0.45s ease 0.1s forwards;
+}
+
+.upload__celebrate-tick {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: uploadTickDraw 0.55s ease 0.35s forwards;
+}
+
+@keyframes uploadRingIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes uploadTickDraw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.upload__celebrate-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--ds-font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: #1a1614;
+}
+
+.upload__celebrate-sub {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #57534e;
+}
+

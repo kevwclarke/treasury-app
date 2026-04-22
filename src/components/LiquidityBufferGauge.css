@@ -1,0 +1,9 @@
+.liq-gauge {
+  flex-shrink: 0;
+  display: block;
+}
+
+.liq-gauge__val,
+.liq-gauge__cap {
+  font-family: var(--td-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif);
+}
