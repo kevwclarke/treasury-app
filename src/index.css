@@ -7,8 +7,42 @@
 body {
   margin: 0;
   font-family: var(--ds-font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ds-text-body);
+  background: var(--ds-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Thin navy bar while dashboard data / PDF generation is in flight */
+body.app-data-loading::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  z-index: 10001;
+  pointer-events: none;
+  background: var(--ds-brand);
+  transform-origin: 0 50%;
+  animation: app-data-loading-bar 1.05s ease-in-out infinite;
+}
+
+@keyframes app-data-loading-bar {
+  0% {
+    transform: scaleX(0.12);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scaleX(0.72);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(0.12);
+    opacity: 0.85;
+  }
 }
 
 code {

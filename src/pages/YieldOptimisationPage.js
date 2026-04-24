@@ -26,15 +26,15 @@ function BoeRateChart() {
 
   return (
     <svg className="detail-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="BoE base rate last 12 months">
-      <rect width={w} height={h} fill="rgba(28,25,23,0.02)" rx="8" />
-      <text x={pad} y={20} fontSize="11" fill="#57534e" fontFamily="'DM Sans', sans-serif">
+      <rect width={w} height={h} fill="#FAFAFA" rx="8" />
+      <text x={pad} y={20} fontSize="11" fill="#6B7280" fontFamily="'Inter', 'DM Sans', sans-serif">
         Bank of England base rate — reference (illustrative)
       </text>
-      <polyline fill="none" stroke="#c4704f" strokeWidth="2.5" points={pts} />
+      <polyline fill="none" stroke="#1E3A5F" strokeWidth="2.5" points={pts} />
       {BOE_HISTORY.map((r, i) => {
         const x = pad + i * xStep
         const y = pad + (1 - (r - minR) / (maxR - minR || 1)) * (h - pad * 2)
-        return <circle key={i} cx={x} cy={y} r="3" fill="#1a1614" />
+        return <circle key={i} cx={x} cy={y} r="3" fill="#1E3A5F" />
       })}
     </svg>
   )

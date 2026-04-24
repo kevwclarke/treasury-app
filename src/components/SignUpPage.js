@@ -51,7 +51,7 @@ export function SignUpPage() {
     }
 
     if (data?.session) {
-      navigate('/app', { replace: true })
+      navigate('/onboarding', { replace: true })
       return
     }
 
@@ -69,7 +69,7 @@ export function SignUpPage() {
   }
 
   if (session) {
-    return <Navigate to="/app" replace />
+    return <Navigate to="/onboarding" replace />
   }
 
   if (emailSent) {

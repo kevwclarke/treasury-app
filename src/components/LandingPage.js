@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getPrivacyContactEmail } from '../constants/privacyContact'
 import './LandingPage.css'
 
 const BENEFITS = [
@@ -40,16 +41,26 @@ export function LandingPage() {
       </header>
 
       <main className="landing__main">
-        <div className="landing__column">
-          <p className="landing__kicker">Treasury intelligence</p>
-          <h1 className="landing__headline">Your cash is losing money. Find out how much.</h1>
-          <p className="landing__subhead">
-            Most funded startups have millions sitting in a current account earning almost nothing. We
-            show you exactly what it&apos;s costing you — and tell you specifically what to do about
-            it.
-          </p>
+        <div className="landing__hero">
+          <div className="landing__column">
+            <div className="landing__hero-stat">
+              <p className="landing__hero-stat-value">£250,000</p>
+              <p className="landing__hero-stat-caption">
+                average annual opportunity cost for a Series A startup
+              </p>
+            </div>
+            <p className="landing__kicker">Treasury intelligence</p>
+            <h1 className="landing__headline">
+              Your cash is losing money. Find out{' '}
+              <span className="landing__headline-accent">how much.</span>
+            </h1>
+            <p className="landing__subhead">
+              Most funded startups have millions sitting in a current account earning almost nothing. We
+              show you exactly what it&apos;s costing you — and tell you specifically what to do about
+              it.
+            </p>
 
-          <ul className="landing__benefits" aria-label="What you get">
+            <ul className="landing__benefits" aria-label="What you get">
             {BENEFITS.map((line) => (
               <li key={line} className="landing__benefit">
                 <span className="landing__benefit-dash" aria-hidden="true">
@@ -58,50 +69,67 @@ export function LandingPage() {
                 <span>{line}</span>
               </li>
             ))}
-          </ul>
+            </ul>
 
-          {status === 'done' ? (
-            <p className="landing__confirm" role="status">
-              Thanks — you&apos;re on the list. We&apos;ll be in touch.
+            {status === 'done' ? (
+              <p className="landing__confirm" role="status">
+                Thanks — you&apos;re on the list. We&apos;ll be in touch.
+              </p>
+            ) : (
+              <form className="landing__form" onSubmit={handleWaitlistSubmit} noValidate>
+                <div className="landing__form-row">
+                  <label className="landing__visually-hidden" htmlFor="waitlist-email">
+                    Email
+                  </label>
+                  <input
+                    id="waitlist-email"
+                    className="landing__input"
+                    type="email"
+                    name="email"
+                    autoComplete="email"
+                    placeholder="Work email"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value)
+                      if (status === 'invalid') setStatus('idle')
+                    }}
+                    aria-invalid={status === 'invalid'}
+                    aria-describedby={status === 'invalid' ? 'waitlist-email-hint' : undefined}
+                  />
+                  <button className="landing__cta" type="submit">
+                    Join the waitlist
+                  </button>
+                </div>
+                {status === 'invalid' ? (
+                  <p id="waitlist-email-hint" className="landing__hint" role="alert">
+                    Enter a valid email address.
+                  </p>
+                ) : null}
+              </form>
+            )}
+
+            <p className="landing__footnote">
+              Built for CFOs and Finance Directors at funded startups.
             </p>
-          ) : (
-            <form className="landing__form" onSubmit={handleWaitlistSubmit} noValidate>
-              <div className="landing__form-row">
-                <label className="landing__visually-hidden" htmlFor="waitlist-email">
-                  Email
-                </label>
-                <input
-                  id="waitlist-email"
-                  className="landing__input"
-                  type="email"
-                  name="email"
-                  autoComplete="email"
-                  placeholder="Work email"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value)
-                    if (status === 'invalid') setStatus('idle')
-                  }}
-                  aria-invalid={status === 'invalid'}
-                  aria-describedby={status === 'invalid' ? 'waitlist-email-hint' : undefined}
-                />
-                <button className="landing__cta" type="submit">
-                  Join the waitlist
-                </button>
-              </div>
-              {status === 'invalid' ? (
-                <p id="waitlist-email-hint" className="landing__hint" role="alert">
-                  Enter a valid email address.
-                </p>
-              ) : null}
-            </form>
-          )}
-
-          <p className="landing__footnote">
-            Built for CFOs and Finance Directors at funded startups.
-          </p>
+          </div>
         </div>
       </main>
+
+      <footer className="landing__site-footer">
+        <span className="landing__legal">© 2026</span>
+        <span className="landing__legal-sep" aria-hidden="true">
+          {' · '}
+        </span>
+        <Link className="landing__legal-link" to="/privacy">
+          Privacy Policy
+        </Link>
+        <span className="landing__legal-sep" aria-hidden="true">
+          {' · '}
+        </span>
+        <a className="landing__legal-link" href={`mailto:${getPrivacyContactEmail()}`}>
+          Contact
+        </a>
+      </footer>
     </div>
   )
 }

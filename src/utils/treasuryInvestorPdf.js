@@ -1,12 +1,12 @@
 import { jsPDF } from 'jspdf'
 import { formatGBP, formatPct } from './treasuryFormat'
 
-/** #C4704F */
-const ACCENT = [196, 112, 79]
-/** Dark header / body */
-const INK = [26, 22, 20]
-const HEADER_BG = [28, 25, 23]
-const MUTED = [87, 83, 78]
+/** Deep navy brand */
+const ACCENT = [30, 58, 95]
+/** Primary text */
+const INK = [15, 15, 15]
+const HEADER_BG = [30, 58, 95]
+const MUTED = [107, 114, 128]
 const PAGE_W = 210
 const PAGE_H = 297
 const M = 18

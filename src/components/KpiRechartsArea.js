@@ -63,7 +63,7 @@ function TooltipContent({ active, payload, variant }) {
  *   stroke: string,
  * }} props
  */
-export function KpiRechartsArea({ variant, data, stroke = '#1a1614' }) {
+export function KpiRechartsArea({ variant, data, stroke = '#0f0f0f' }) {
   const rawId = useId()
   const gradId = useMemo(() => `kpi-grad-${rawId.replace(/:/g, '')}`, [rawId])
 
@@ -101,7 +101,7 @@ export function KpiRechartsArea({ variant, data, stroke = '#1a1614' }) {
           <CartesianGrid stroke="#ece8e4" strokeDasharray="4 4" vertical={false} />
           <XAxis
             dataKey="xLabel"
-            tick={{ fill: '#78716c', fontSize: 10, fontWeight: 500 }}
+            tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 500 }}
             tickLine={false}
             axisLine={{ stroke: 'rgba(26,22,20,0.12)' }}
             interval={0}
@@ -111,7 +111,7 @@ export function KpiRechartsArea({ variant, data, stroke = '#1a1614' }) {
             domain={yDomain}
             ticks={yTicks}
             tickFormatter={(v) => formatYTick(variant, v)}
-            tick={{ fill: '#78716c', fontSize: 10, fontWeight: 500 }}
+            tick={{ fill: '#6B7280', fontSize: 10, fontWeight: 500 }}
             tickLine={false}
             axisLine={{ stroke: 'rgba(26,22,20,0.12)' }}
             width={variant === 'runway' ? 48 : 52}

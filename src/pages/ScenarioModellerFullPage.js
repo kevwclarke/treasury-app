@@ -55,7 +55,7 @@ export function ScenarioModellerFullPage() {
   }, [totalCash, adjustedMonthlyBurn])
 
   const runwayColor =
-    runwayMonths > 18 ? '#2d6a4f' : runwayMonths >= 12 ? '#c27803' : '#b42318'
+    runwayMonths > 18 ? '#1E3A5F' : runwayMonths >= 12 ? '#D97706' : '#DC2626'
 
   const chartPolylinePoints = useMemo(() => {
     const w = 680
@@ -199,14 +199,14 @@ export function ScenarioModellerFullPage() {
         {totalCash <= 0 ? (
           <p className="detail-muted">Import transactions on the dashboard / upload page to establish net cash.</p>
         ) : null}
-        <div style={{ marginTop: 16, height: 14, borderRadius: 999, background: 'linear-gradient(90deg,#b42318,#c27803,#2d6a4f)', position: 'relative' }}>
+        <div style={{ marginTop: 16, height: 14, borderRadius: 999, background: 'linear-gradient(90deg,#DC2626,#D97706,#1E3A5F)', position: 'relative' }}>
           <div
             style={{
               position: 'absolute',
               top: -6,
               width: 4,
               height: 26,
-              background: '#1c1917',
+              background: '#1E3A5F',
               left: `${Math.min(100, Math.max(0, (runwayMonths / 48) * 100))}%`,
               transform: 'translateX(-2px)',
               borderRadius: 2,
@@ -214,7 +214,7 @@ export function ScenarioModellerFullPage() {
           />
         </div>
         <p className="detail-muted" style={{ marginTop: 8 }}>
-          Red below 12 months · amber 12–18 · green above 18
+          Red below 12 months · amber 12–18 · strong runway above 18
         </p>
       </section>
 
@@ -222,9 +222,9 @@ export function ScenarioModellerFullPage() {
         <h2 className="detail-section__title">Modelled cash balance</h2>
         <p className="detail-section__lead">Projected end-of-month cash: starting balance minus adjusted burn each month.</p>
         <svg viewBox="0 0 720 200" className="detail-chart" role="img" aria-label="Projected cash over 24 months">
-          <rect width="720" height="200" fill="rgba(28,25,23,0.02)" rx="8" />
-          <line x1="24" y1="180" x2="704" y2="180" stroke="rgba(28,25,23,0.12)" />
-          <polyline fill="none" stroke="#c4704f" strokeWidth="2.5" points={chartPolylinePoints} />
+          <rect width="720" height="200" fill="#FAFAFA" rx="8" />
+          <line x1="24" y1="180" x2="704" y2="180" stroke="#E5E7EB" />
+          <polyline fill="none" stroke="#1E3A5F" strokeWidth="2.5" points={chartPolylinePoints} />
         </svg>
       </section>
 

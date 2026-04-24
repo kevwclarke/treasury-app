@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase'
+import { useCompanyProfile } from '../hooks/useCompanyProfile'
 import { SidebarNavIcon } from './SidebarNavIcons'
 import './DashboardLayout.css'
 
@@ -14,7 +15,7 @@ const NAV_SECTIONS = [
   {
     label: 'Intelligence',
     items: [
-      { to: '/app/yield', label: 'Yield Optimisation', badge: '3', icon: 'yield' },
+      { to: '/app/yield', label: 'Yield Optimisation', icon: 'yield' },
       { to: '/app/concentration', label: 'Concentration Risk', icon: 'concentration' },
       { to: '/app/runway', label: 'Runway & Burn', icon: 'runway' },
       { to: '/app/liquidity', label: 'Liquidity Buffer', icon: 'liquidity' },
@@ -42,13 +43,32 @@ const NAV_SECTIONS = [
   },
 ]
 
+function initialsFromCompanyName(name) {
+  const t = (name || '').trim()
+  if (!t) return 'YC'
+  const parts = t.split(/\s+/).filter((w) => w.length > 0)
+  if (parts.length >= 2) {
+    const a = parts[0][0] || ''
+    const b = parts[parts.length - 1][0] || ''
+    return (a + b).toUpperCase().slice(0, 2)
+  }
+  return t.slice(0, 2).toUpperCase()
+}
+
 export function DashboardLayout() {
   const navigate = useNavigate()
+  const { profile, loading: profileLoading } = useCompanyProfile()
 
   async function handleLogout() {
     await supabase.auth.signOut()
     navigate('/login', { replace: true })
   }
+
+  const displayName =
+    profileLoading ? '…' : profile?.company_name?.trim() ? profile.company_name.trim() : 'Your Company'
+  const stageLine =
+    profileLoading ? '…' : profile?.funding_stage ? `${profile.funding_stage} · UK` : '—'
+  const avatarLetters = profileLoading ? '··' : initialsFromCompanyName(profile?.company_name)
 
   return (
     <div className="dashboard">
@@ -56,13 +76,24 @@ export function DashboardLayout() {
         <div className="dashboard__brand">
           <div className="dashboard__brand-row">
             <span className="dashboard__brand-avatar" aria-hidden>
-              NL
+              {avatarLetters}
             </span>
             <div className="dashboard__brand-text">
-              <span className="dashboard__brand-name">Northwind Labs</span>
-              <span className="dashboard__brand-stage">Series B · UK</span>
+              <span className="dashboard__brand-name">{displayName}</span>
+              <span className="dashboard__brand-stage">{stageLine}</span>
             </div>
           </div>
+          <NavLink
+            end
+            to="/app/profile"
+            className={({ isActive }) =>
+              ['dashboard__profile-link', isActive ? 'dashboard__profile-link--active' : '']
+                .filter(Boolean)
+                .join(' ')
+            }
+          >
+            Profile
+          </NavLink>
           <p className="dashboard__sync">
             <span className="dashboard__sync-dot" aria-hidden />
             Synced 12 min ago
@@ -95,7 +126,7 @@ export function DashboardLayout() {
                         <span className="dashboard__nav-link-text">{item.label}</span>
                       </span>
                       {item.badge ? (
-                        <span className="dashboard__nav-badge" aria-label="3 alerts">
+                        <span className="dashboard__nav-badge" aria-label={`${item.badge} alerts`}>
                           {item.badge}
                         </span>
                       ) : null}

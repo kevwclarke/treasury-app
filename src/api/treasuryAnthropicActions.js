@@ -1,6 +1,8 @@
 /**
  * Production: POST to Vercel `/api/treasury-actions` (no browser → Anthropic; avoids CORS).
  * Localhost: call Anthropic from the browser using REACT_APP_ANTHROPIC_API_KEY (CRA injects at build time).
+ *
+ * Advisor system prompt: `SYSTEM_PROMPT` in `../lib/treasuryAnthropicShared.js` (shared with the API route).
  */
 
 import {

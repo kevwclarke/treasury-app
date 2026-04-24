@@ -41,3 +41,12 @@ export function computeTreasuryHealthScore100(p) {
 
   return Math.max(0, Math.round(score))
 }
+
+/** Display band for colour-coding the score in the UI. */
+export function getTreasuryHealthScoreBand(score) {
+  const n = Number(score)
+  if (!Number.isFinite(n)) return 'warn'
+  if (n >= 80) return 'good'
+  if (n >= 60) return 'warn'
+  return 'risk'
+}

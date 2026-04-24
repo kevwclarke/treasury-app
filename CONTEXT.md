@@ -14,7 +14,7 @@
 - Login at `/login`
 - Sign up at `/signup`
 
-**Authenticated (shell: dark sidebar + cream main — same layout for all below)**
+**Authenticated (shell: near-black sidebar + white main — same layout for all below)**
 
 - Treasury dashboard (overview cards) at `/app`
 - CSV upload at `/upload`
@@ -45,7 +45,7 @@
 
 ## Design style
 
-FT meets Bloomberg. Salmon pink and cream tones, dark text, clean editorial typography.
+Deep navy brand (`#1E3A5F`) on white: CTAs, links, positive runway/inflows, and sidebar active state; red for opportunity cost and material negatives; amber only for warning-severity alerts. Typography is Inter throughout (Google Fonts), with a premium SaaS scale for headings, KPI numerals, and muted body copy.
 
 ## Modules to build (in order)
 

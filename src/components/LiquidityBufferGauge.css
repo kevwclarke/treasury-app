@@ -5,5 +5,5 @@
 
 .liq-gauge__val,
 .liq-gauge__cap {
-  font-family: var(--td-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif);
+  font-family: var(--ds-font-display);
 }

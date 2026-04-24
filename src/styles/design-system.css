@@ -1,15 +1,56 @@
-/* Global design tokens — premium treasury UI */
+/* Deep navy brand — B2B treasury UI tokens */
 :root {
-  --ds-font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  --ds-font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
-  --ds-terracotta: #c4704f;
-  --ds-cream: #faf7f2;
-  --ds-sidebar: #1a1614;
-  --ds-ink: #1a1614;
-  --ds-card: #ffffff;
-  --ds-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.04);
-  --ds-shadow-card-hover: 0 2px 6px rgba(0, 0, 0, 0.08), 0 8px 20px rgba(0, 0, 0, 0.06);
-  --ds-transition: 0.2s ease;
+  /* Inter only — display stack matches body for legacy var(--ds-font-display) */
+  --ds-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ds-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --ds-brand: #1e3a5f;
+  --ds-brand-hover: #162d4a;
+  /* Sidebar active row tint ≈ #1E3A5F at ~6% */
+  --ds-brand-tint: rgba(30, 58, 95, 0.063);
+
+  --ds-bg: #ffffff;
+  --ds-bg-subtle: #fafafa;
+  --ds-sidebar: #0f0f0f;
+  --ds-sidebar-text: #9ca3af;
+  --ds-sidebar-text-active: #ffffff;
+
+  --ds-text: #0f0f0f;
+  --ds-text-secondary: #6b7280;
+  --ds-text-body: #6b7280;
+
+  --ds-border: #e5e7eb;
+
+  /* Positive runway / inflows / “good” figures — navy */
+  --ds-positive: #1e3a5f;
+  --ds-error: #dc2626;
+  --ds-warning: #d97706;
+  /* Links, focus rings, info alert accent — navy */
+  --ds-info: #1e3a5f;
+  /* Opportunity / below benchmark / headline stress — red */
+  --ds-opportunity: #dc2626;
+  /* Legacy accent name → brand (CTAs, chrome) */
+  --ds-accent: #1e3a5f;
+
+  --ds-alert-urgent-bg: #fef2f2;
+  --ds-alert-warning-bg: #fffbeb;
+  --ds-alert-info-bg: #eff6ff;
+
+  --ds-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.06);
+  --ds-card-shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.05);
+  --ds-radius-card: 12px;
+  --ds-radius-btn: 6px;
+  --ds-card-padding: 28px;
+
+  /* Legacy aliases */
+  --ds-terracotta: var(--ds-opportunity);
+  --ds-cream: var(--ds-bg-subtle);
+  --ds-sidebar-legacy: var(--ds-sidebar);
+  --ds-ink: var(--ds-text);
+  --ds-card: var(--ds-bg-subtle);
+  --ds-shadow-card: var(--ds-card-shadow);
+  --ds-shadow-card-hover: var(--ds-card-shadow-hover);
+  --ds-transition: 0.15s ease;
 }
 
 @keyframes ds-shimmer {
@@ -26,9 +67,9 @@
   border-radius: 6px;
   background: linear-gradient(
     110deg,
-    rgba(26, 22, 20, 0.06) 8%,
-    rgba(26, 22, 20, 0.12) 18%,
-    rgba(26, 22, 20, 0.06) 33%
+    rgba(30, 58, 95, 0.04) 8%,
+    rgba(30, 58, 95, 0.08) 18%,
+    rgba(30, 58, 95, 0.04) 33%
   );
   background-size: 200% 100%;
   animation: ds-shimmer 1.35s ease-in-out infinite;

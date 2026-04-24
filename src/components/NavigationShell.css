@@ -1,0 +1,13 @@
+.app-route-fade {
+  min-height: 100%;
+  animation: app-route-fade-in 0.15s ease forwards;
+}
+
+@keyframes app-route-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

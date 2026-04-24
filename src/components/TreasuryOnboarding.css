@@ -1,14 +1,13 @@
-/* Onboarding — FT × Bloomberg, warm editorial */
 .tdash-onboard {
   min-height: min(70vh, 44rem);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 2rem 1.25rem 3rem;
-  background: linear-gradient(165deg, rgba(250, 247, 242, 0.98) 0%, rgba(255, 255, 255, 0.92) 48%, rgba(250, 247, 242, 0.88) 100%);
-  border: 1px solid var(--td-card-border);
-  border-radius: 14px;
-  box-shadow: var(--td-card-shadow);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--ds-shadow-card);
 }
 
 .tdash-onboard__inner {
@@ -18,28 +17,28 @@
 
 .tdash-onboard__eyebrow {
   margin: 0 0 0.75rem;
-  font-size: 0.625rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--td-salmon);
+  color: var(--ds-text-secondary);
 }
 
 .tdash-onboard__title {
   margin: 0 0 0.75rem;
-  font-family: var(--td-serif);
+  font-family: var(--ds-font-display);
   font-size: clamp(1.75rem, 4vw, 2.25rem);
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.15;
-  color: var(--td-ink);
+  color: var(--ds-text);
 }
 
 .tdash-onboard__sub {
   margin: 0 0 2rem;
   font-size: 1.0625rem;
   line-height: 1.55;
-  color: var(--td-muted);
+  color: var(--ds-text-body);
 }
 
 .tdash-onboard__steps {
@@ -55,10 +54,10 @@
   gap: 1rem;
   align-items: flex-start;
   padding: 1rem 1.125rem;
-  background: var(--td-card);
-  border: 1px solid var(--td-card-border);
-  border-radius: 10px;
-  box-shadow: 0 1px 0 rgba(26, 22, 20, 0.04);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--ds-shadow-card);
 }
 
 .tdash-onboard__step-num {
@@ -68,13 +67,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--td-serif);
+  font-family: var(--ds-font-display);
   font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
-  background: linear-gradient(145deg, rgba(196, 112, 79, 0.98), rgba(154, 88, 62, 0.98));
+  background: var(--ds-brand);
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .tdash-onboard__step-body {
@@ -86,7 +85,7 @@
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: var(--td-ink);
+  color: var(--ds-text);
 }
 
 .tdash-onboard__step-label {
@@ -94,7 +93,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--td-muted);
+  color: var(--ds-text-secondary);
   margin-right: 0.35rem;
 }
 
@@ -102,7 +101,7 @@
   margin: 0;
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: var(--td-muted);
+  color: var(--ds-text-secondary);
 }
 
 .tdash-onboard__actions {
@@ -116,29 +115,32 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.95rem 1.5rem;
+  padding: 10px 20px;
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   text-align: center;
   text-decoration: none;
-  color: #faf7f2;
-  background: linear-gradient(180deg, #c4704f 0%, #a85a3d 100%);
-  border: 1px solid rgba(90, 50, 38, 0.35);
-  border-radius: 10px;
-  box-shadow: 0 2px 10px rgba(90, 50, 38, 0.18);
+  color: #ffffff;
+  background: var(--ds-brand);
+  border: 1px solid var(--ds-brand);
+  border-radius: var(--ds-radius-btn);
+  box-shadow: var(--ds-shadow-card);
   transition:
     transform 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .tdash-onboard__btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(90, 50, 38, 0.22);
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+  box-shadow: var(--ds-shadow-card-hover);
 }
 
 .tdash-onboard__btn-primary:focus-visible {
-  outline: 2px solid var(--td-salmon);
+  outline: 2px solid var(--ds-brand);
   outline-offset: 3px;
 }
 
@@ -147,7 +149,7 @@
   padding: 0.35rem 0.5rem;
   font: inherit;
   font-size: 0.8125rem;
-  color: var(--td-muted);
+  color: var(--ds-text-secondary);
   background: none;
   border: none;
   cursor: pointer;
@@ -157,12 +159,12 @@
 }
 
 .tdash-onboard__skip:hover {
-  color: var(--td-ink);
-  text-decoration-color: rgba(26, 22, 20, 0.35);
+  color: var(--ds-text);
+  text-decoration-color: rgba(15, 15, 15, 0.35);
 }
 
 .tdash-onboard__skip:focus-visible {
-  outline: 2px solid var(--td-salmon);
+  outline: 2px solid var(--ds-brand);
   outline-offset: 2px;
   border-radius: 4px;
 }

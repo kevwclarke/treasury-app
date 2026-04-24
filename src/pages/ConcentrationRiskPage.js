@@ -91,7 +91,7 @@ export function ConcentrationRiskPage() {
               }`}
               style={
                 riskTone === 'amber'
-                  ? { background: '#c27803', color: '#fff' }
+                  ? { background: '#FFFBEB', color: '#0F0F0F', border: '1px solid rgba(217,119,6,0.35)' }
                   : undefined
               }
             >
@@ -154,7 +154,7 @@ export function ConcentrationRiskPage() {
               </div>
               <div className="detail-stat">
                 <p className="detail-stat__cap">Total unprotected</p>
-                <p className="detail-stat__val detail-stat__val--salmon">
+                <p className="detail-stat__val detail-stat__val--red">
                   {formatGBP(Math.round(unprotectedTotal))}
                 </p>
               </div>

@@ -4,10 +4,10 @@
   align-items: center;
   justify-content: center;
   font-family: var(--ds-font-body);
-  background: #faf7f2;
+  background: var(--ds-bg);
 }
 
 .app-loading__text {
   font-size: 0.9375rem;
-  color: #57534e;
+  color: var(--ds-text-secondary);
 }

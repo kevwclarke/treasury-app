@@ -54,8 +54,8 @@ export function TaxTrackerPage() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} style={{ textAlign: 'center', width: 52 }}>
-              <div style={{ fontSize: 10, color: '#57534e' }}>M{i + 1}</div>
-              <div style={{ margin: '6px auto 0', width: 10, height: 10, borderRadius: 999, background: i % 4 === 0 ? '#c4704f' : '#d6d3d1' }} />
+              <div style={{ fontSize: 10, color: '#6B7280' }}>M{i + 1}</div>
+              <div style={{ margin: '6px auto 0', width: 10, height: 10, borderRadius: 999, background: i % 4 === 0 ? '#1E3A5F' : '#E5E7EB' }} />
             </div>
           ))}
         </div>

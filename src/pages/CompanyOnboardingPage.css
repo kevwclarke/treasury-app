@@ -1,0 +1,121 @@
+.company-onboarding {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  font-family: var(--ds-font-body);
+  background-color: var(--ds-bg);
+}
+
+.company-onboarding__card {
+  width: 100%;
+  max-width: 24rem;
+  padding: var(--ds-card-padding);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--ds-shadow-card);
+}
+
+.company-onboarding__header {
+  margin-bottom: 1.75rem;
+}
+
+.company-onboarding__brand {
+  margin: 0 0 0.5rem;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ds-text-secondary);
+}
+
+.company-onboarding__title {
+  margin: 0 0 0.5rem;
+  font-family: var(--ds-font-display);
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ds-text);
+}
+
+.company-onboarding__subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ds-text-secondary);
+}
+
+.company-onboarding__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.company-onboarding__label {
+  margin-top: 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ds-text-body);
+}
+
+.company-onboarding__label:first-of-type {
+  margin-top: 0;
+}
+
+.company-onboarding__input,
+.company-onboarding__select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9375rem;
+  font-family: var(--ds-font-body);
+  color: var(--ds-text);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-btn);
+}
+
+.company-onboarding__input:focus,
+.company-onboarding__select:focus {
+  outline: none;
+  border-color: rgba(30, 58, 95, 0.45);
+  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.12);
+}
+
+.company-onboarding__error {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ds-error);
+}
+
+.company-onboarding__submit {
+  margin-top: 1.25rem;
+  padding: 10px 20px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: var(--ds-font-body);
+  color: #ffffff;
+  background: var(--ds-brand);
+  border: 1px solid var(--ds-brand);
+  border-radius: var(--ds-radius-btn);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.company-onboarding__submit:hover:not(:disabled) {
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+}
+
+.company-onboarding__submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.company-onboarding__loading {
+  margin: 0;
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--ds-text-secondary);
+}

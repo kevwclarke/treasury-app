@@ -15,24 +15,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  background: rgba(26, 22, 20, 0.03);
-  border: 1px dashed rgba(26, 22, 20, 0.08);
+  border-radius: var(--ds-radius-card);
+  background: var(--ds-bg-subtle);
+  border: 1px dashed var(--ds-border);
 }
 
 .tdash__kpi-chart__empty-inner {
   width: 70%;
   height: 4px;
   border-radius: 2px;
-  background: rgba(26, 22, 20, 0.08);
+  background: var(--ds-border);
 }
 
 .tdash__kpi-tooltip {
   padding: 0.5rem 0.65rem;
-  background: #fffefb;
-  border: 1px solid rgba(26, 22, 20, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 4px 14px rgba(26, 22, 20, 0.1);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--ds-shadow-card-hover);
   font-size: 0.75rem;
   line-height: 1.35;
 }
@@ -40,11 +40,11 @@
 .tdash__kpi-tooltip__month {
   margin: 0 0 0.25rem;
   font-weight: 600;
-  color: #1a1614;
+  color: var(--ds-text);
 }
 
 .tdash__kpi-tooltip__value {
   margin: 0;
   font-variant-numeric: tabular-nums;
-  color: #57534e;
+  color: var(--ds-text-secondary);
 }

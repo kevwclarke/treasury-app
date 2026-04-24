@@ -14,9 +14,9 @@
 .rbc__title {
   margin: 0;
   font-family: var(--ds-font-display);
-  font-size: 1.1875rem;
+  font-size: 16px;
   font-weight: 600;
-  color: #1a1614;
+  color: var(--ds-text);
 }
 
 .rbc__export {
@@ -55,10 +55,10 @@
   max-width: 14rem;
   font-size: 0.75rem;
   line-height: 1.4;
-  color: #faf7f2;
-  background: #1a1614;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  color: #ffffff;
+  background: var(--ds-brand);
+  border-radius: var(--ds-radius-btn);
+  box-shadow: var(--ds-shadow-card-hover);
 }
 
 .rbc__tooltip strong {
@@ -79,7 +79,7 @@
   gap: 0.65rem 1.25rem;
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(26, 22, 20, 0.08);
+  border-top: 1px solid var(--ds-border);
 }
 
 .rbc__legend-item {
@@ -87,7 +87,7 @@
   align-items: center;
   gap: 0.4rem;
   font-size: 0.75rem;
-  color: #57534e;
+  color: var(--ds-text-secondary);
 }
 
 .rbc__legend-swatch {
@@ -100,9 +100,9 @@
 .rbc__drill {
   margin-top: 1rem;
   padding: 0.75rem 1rem;
-  border-radius: 10px;
-  border: 1px solid rgba(26, 22, 20, 0.1);
-  background: rgba(250, 247, 242, 0.65);
+  border-radius: var(--ds-radius-card);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-bg-subtle);
 }
 
 .rbc__drill-head {
@@ -118,13 +118,13 @@
   margin: 0;
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #1a1614;
+  color: var(--ds-text);
 }
 
 .rbc__drill-close {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #c4704f;
+  color: var(--ds-brand);
   background: none;
   border: none;
   cursor: pointer;
@@ -133,7 +133,7 @@
 }
 
 .rbc__drill-close:hover {
-  color: #a85a3d;
+  color: var(--ds-text);
 }
 
 .rbc__drill-table {
@@ -146,15 +146,15 @@
 .rbc__drill-table td {
   padding: 0.4rem 0.5rem;
   text-align: left;
-  border-bottom: 1px solid rgba(26, 22, 20, 0.06);
+  border-bottom: 1px solid var(--ds-border);
 }
 
 .rbc__drill-table th {
-  font-size: 0.5625rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #57534e;
+  color: var(--ds-text-secondary);
 }
 
 .rbc__drill-table td:last-child {

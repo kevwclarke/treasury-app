@@ -2,12 +2,8 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  color: #14120f;
-  background-color: #faf7f2;
-  background-image:
-    linear-gradient(180deg, rgba(255, 241, 229, 0.85) 0%, rgba(250, 246, 240, 0) 42%),
-    radial-gradient(ellipse 90% 55% at 50% -15%, rgba(255, 236, 220, 0.9) 0%, transparent 55%),
-    linear-gradient(165deg, #f7efe6 0%, #faf7f2 38%, #f3ebe2 100%);
+  color: var(--ds-text);
+  background-color: var(--ds-bg);
 }
 
 .landing__header {
@@ -15,9 +11,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 1.25rem clamp(1.25rem, 4vw, 2.5rem);
-  border-bottom: 1px solid rgba(20, 18, 15, 0.08);
-  background: rgba(255, 253, 249, 0.55);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--ds-border);
+  background: var(--ds-bg);
 }
 
 .landing__wordmark {
@@ -26,7 +21,7 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #5c2f1b;
+  color: var(--ds-text);
 }
 
 .landing__header-actions {
@@ -41,33 +36,36 @@
   font-family: var(--ds-font-body);
   font-size: 0.875rem;
   font-weight: 600;
-  color: #faf7f2;
+  color: #ffffff;
   text-decoration: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  background: linear-gradient(180deg, #c4704f 0%, #a85a3d 100%);
-  border: 1px solid rgba(90, 50, 38, 0.35);
-  box-shadow: 0 1px 3px rgba(90, 50, 38, 0.12);
+  padding: 10px 20px;
+  border-radius: var(--ds-radius-btn);
+  background: var(--ds-brand);
+  border: 1px solid var(--ds-brand);
+  box-shadow: var(--ds-card-shadow);
   transition:
     transform 0.15s ease,
+    background 0.15s ease,
     box-shadow 0.15s ease;
 }
 
 .landing__signup:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(90, 50, 38, 0.18);
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+  box-shadow: var(--ds-card-shadow-hover);
 }
 
 .landing__signup:focus-visible {
-  outline: 2px solid #c4704f;
+  outline: 2px solid var(--ds-brand);
   outline-offset: 3px;
 }
 
 .landing__sign-in {
   font-family: var(--ds-font-body);
   font-size: 0.875rem;
-  font-weight: 500;
-  color: #14120f;
+  font-weight: 600;
+  color: var(--ds-brand);
   text-decoration: none;
   padding: 0.375rem 0.125rem;
   border-bottom: 1px solid transparent;
@@ -77,50 +75,98 @@
 }
 
 .landing__sign-in:hover {
-  color: #5c2f1b;
-  border-bottom-color: rgba(92, 47, 27, 0.35);
+  color: var(--ds-brand-hover);
+  border-bottom-color: rgba(30, 58, 95, 0.35);
 }
 
 .landing__main {
   flex: 1;
   display: flex;
+  flex-direction: column;
+}
+
+.landing__hero {
+  flex: 1;
+  display: flex;
   justify-content: center;
-  padding: clamp(2.5rem, 8vw, 5rem) clamp(1.25rem, 4vw, 2.5rem) 3rem;
+  width: 100%;
+  padding: clamp(3.25rem, 10vw, 6.5rem) clamp(1.25rem, 4vw, 2.5rem) clamp(3rem, 8vw, 5rem);
+  background:
+    radial-gradient(circle, rgba(30, 58, 95, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, #ffffff 0%, #f0f4ff 100%);
+  background-size:
+    24px 24px,
+    auto;
 }
 
 .landing__column {
   width: 100%;
-  max-width: 38rem;
+  max-width: 44rem;
+}
+
+.landing__hero-stat {
+  margin: 0 0 clamp(2rem, 5vw, 3.25rem);
+}
+
+.landing__hero-stat-value {
+  margin: 0;
+  font-family: var(--ds-font-body);
+  font-size: clamp(2.75rem, 9vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  color: var(--ds-brand);
+}
+
+@media (min-width: 640px) {
+  .landing__hero-stat-value {
+    font-size: 72px;
+  }
+}
+
+.landing__hero-stat-caption {
+  margin: 0.65rem 0 0;
+  max-width: 22rem;
+  font-family: var(--ds-font-body);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #6b7280;
 }
 
 .landing__kicker {
-  margin: 0 0 1rem;
+  margin: 0 0 1.25rem;
   font-family: var(--ds-font-body);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.16em;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b5344;
+  color: var(--ds-text-secondary);
 }
 
 .landing__headline {
-  margin: 0 0 1.25rem;
-  font-family: var(--ds-font-display);
-  font-size: clamp(2.125rem, 5.2vw, 3.25rem);
-  font-weight: 500;
-  line-height: 1.12;
-  letter-spacing: -0.025em;
-  color: #0f0e0c;
+  margin: 0 0 1.5rem;
+  font-family: var(--ds-font-body);
+  font-size: clamp(2.25rem, 5.8vw, 3.5rem);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: #0f0f0f;
+}
+
+.landing__headline-accent {
+  color: var(--ds-opportunity);
+  font-weight: 600;
 }
 
 .landing__subhead {
-  margin: 0 0 2rem;
+  margin: 0 0 2.25rem;
   font-family: var(--ds-font-body);
-  font-size: clamp(1rem, 2.1vw, 1.125rem);
+  font-size: clamp(1.0625rem, 2.2vw, 1.1875rem);
   font-weight: 400;
   line-height: 1.65;
-  color: #3d3833;
-  max-width: 36rem;
+  color: #6b7280;
+  max-width: 38rem;
 }
 
 .landing__benefits {
@@ -138,12 +184,12 @@
   font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: #2a2622;
+  color: var(--ds-text-body);
 }
 
 .landing__benefit-dash {
   flex-shrink: 0;
-  color: #8b5a3c;
+  color: var(--ds-brand);
   font-weight: 500;
 }
 
@@ -164,10 +210,10 @@
   padding: 0.75rem 1rem;
   font-family: var(--ds-font-body);
   font-size: 1rem;
-  color: #14120f;
-  background: rgba(255, 253, 249, 0.92);
-  border: 1px solid rgba(20, 18, 15, 0.14);
-  border-radius: 2px;
+  color: var(--ds-text);
+  background: var(--ds-bg);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-btn);
   outline: none;
   transition:
     border-color 0.15s ease,
@@ -175,29 +221,29 @@
 }
 
 .landing__input::placeholder {
-  color: #7a726a;
+  color: var(--ds-text-secondary);
 }
 
 .landing__input:focus {
-  border-color: rgba(20, 18, 15, 0.45);
-  box-shadow: 0 0 0 3px rgba(255, 241, 229, 0.9);
+  border-color: rgba(30, 58, 95, 0.45);
+  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.1);
 }
 
 .landing__input[aria-invalid='true'] {
-  border-color: #9a3412;
+  border-color: var(--ds-error);
 }
 
 .landing__cta {
   flex-shrink: 0;
-  padding: 0.75rem 1.35rem;
+  padding: 10px 20px;
   font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   font-weight: 600;
   letter-spacing: 0.01em;
-  color: #fffaf5;
-  background: #14120f;
-  border: 1px solid #14120f;
-  border-radius: 2px;
+  color: #ffffff;
+  background: var(--ds-brand);
+  border: 1px solid var(--ds-brand);
+  border-radius: var(--ds-radius-btn);
   cursor: pointer;
   transition:
     background 0.15s ease,
@@ -206,15 +252,15 @@
 }
 
 .landing__cta:hover {
-  background: #2a2622;
-  border-color: #2a2622;
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
 }
 
 .landing__hint {
   margin: 0.5rem 0 0;
   font-family: var(--ds-font-body);
   font-size: 0.8125rem;
-  color: #9a3412;
+  color: var(--ds-error);
 }
 
 .landing__confirm {
@@ -222,11 +268,11 @@
   font-family: var(--ds-font-body);
   font-size: 0.9375rem;
   line-height: 1.5;
-  color: #2f4a3c;
+  color: var(--ds-text-body);
   padding: 0.875rem 1rem;
-  background: rgba(232, 245, 236, 0.65);
-  border: 1px solid rgba(47, 74, 60, 0.15);
-  border-radius: 2px;
+  background: var(--ds-bg-subtle);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-card);
 }
 
 .landing__footnote {
@@ -234,7 +280,7 @@
   font-family: var(--ds-font-body);
   font-size: 0.8125rem;
   line-height: 1.5;
-  color: #6b635a;
+  color: var(--ds-text-secondary);
 }
 
 .landing__visually-hidden {
@@ -247,6 +293,38 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+.landing__site-footer {
+  flex-shrink: 0;
+  padding: 1rem clamp(1.25rem, 4vw, 2.5rem) 1.35rem;
+  border-top: 1px solid var(--ds-border);
+  background: var(--ds-bg);
+  text-align: center;
+  font-family: var(--ds-font-body);
+  font-size: 0.75rem;
+  color: var(--ds-text-secondary);
+  line-height: 1.5;
+}
+
+.landing__legal {
+  color: var(--ds-text-secondary);
+}
+
+.landing__legal-sep {
+  color: var(--ds-border);
+}
+
+.landing__legal-link {
+  color: var(--ds-text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(107, 114, 128, 0.45);
+  font-weight: 500;
+}
+
+.landing__legal-link:hover {
+  color: var(--ds-text);
+  border-bottom-color: rgba(15, 15, 15, 0.35);
 }
 
 @media (max-width: 520px) {

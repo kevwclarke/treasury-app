@@ -53,7 +53,7 @@ export function FxExposurePage() {
             </div>
             <div className="detail-stat">
               <p className="detail-stat__cap">Monthly currency risk</p>
-              <p className="detail-stat__val detail-stat__val--salmon">{formatGBP(11_275)}</p>
+              <p className="detail-stat__val">{formatGBP(11_275)}</p>
             </div>
           </div>
         )}
@@ -71,8 +71,8 @@ export function FxExposurePage() {
               <p className="detail-product__meta">
                 Monthly exposure {p.monthlyFc.toLocaleString('en-GB')} {p.code} · GBP {formatGBP(p.gbp)}
               </p>
-              <div style={{ height: 8, background: 'rgba(28,25,23,0.08)', borderRadius: 999, marginTop: 8, maxWidth: 360 }}>
-                <div style={{ width: '62%', height: '100%', background: '#c4704f', borderRadius: 999 }} />
+              <div style={{ height: 8, background: '#E5E7EB', borderRadius: 999, marginTop: 8, maxWidth: 360 }}>
+                <div style={{ width: '62%', height: '100%', background: '#1E3A5F', borderRadius: 999 }} />
               </div>
               <p className="detail-muted" style={{ marginTop: 8 }}>
                 1% GBP move → {formatGBP(Math.round(p.gbp * 0.01))} on monthly burn · 5% →{' '}

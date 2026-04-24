@@ -1,0 +1,126 @@
+.profile-page__section {
+  max-width: 28rem;
+}
+
+.profile-page__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.profile-page__label {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #292524;
+}
+
+.profile-page__label:first-of-type {
+  margin-top: 0;
+}
+
+.profile-page__input,
+.profile-page__select {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9375rem;
+  font-family: var(--ds-font-body);
+  border: 1px solid var(--ds-border);
+  border-radius: var(--ds-radius-btn);
+  background: var(--ds-bg);
+  color: var(--ds-text);
+}
+
+.profile-page__input:focus,
+.profile-page__select:focus {
+  outline: none;
+  border-color: rgba(30, 58, 95, 0.45);
+  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.12);
+}
+
+.profile-page__input--readonly {
+  background: var(--ds-bg-subtle);
+  color: var(--ds-text-secondary);
+}
+
+.profile-page__err {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ds-error);
+}
+
+.profile-page__ok {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--ds-brand);
+}
+
+.profile-page__btn {
+  margin-top: 1rem;
+  align-self: flex-start;
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: var(--ds-font-body);
+  border-radius: var(--ds-radius-btn);
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.profile-page__btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.profile-page__btn--primary {
+  background: var(--ds-brand);
+  border-color: var(--ds-brand);
+  color: #ffffff;
+}
+
+.profile-page__btn--primary:hover:not(:disabled) {
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+}
+
+.profile-page__btn--dark {
+  background: var(--ds-brand);
+  color: #ffffff;
+  border-color: var(--ds-brand);
+}
+
+.profile-page__btn--dark:hover:not(:disabled) {
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+}
+
+.profile-page__section--danger {
+  border-top: 1px solid var(--ds-border);
+  padding-top: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.profile-page__btn--danger {
+  background: var(--ds-error);
+  color: #ffffff;
+  border-color: var(--ds-error);
+}
+
+.profile-page__btn--danger:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.profile-page__back {
+  margin-top: 2rem;
+}
+
+.profile-page__back a {
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.profile-page__back a:hover {
+  text-decoration: underline;
+}

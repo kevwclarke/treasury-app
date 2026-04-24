@@ -3,9 +3,9 @@ import './LiquidityBufferGauge.css'
 const SCALE_MONTHS = 6
 
 const STROKE = {
-  red: '#b42318',
-  amber: '#b45309',
-  green: '#2d6a4f',
+  red: '#DC2626',
+  amber: '#D97706',
+  green: '#1E3A5F',
 }
 
 /**
@@ -66,7 +66,7 @@ export function LiquidityBufferGauge({
         cy={cy}
         r={r}
         fill="none"
-        stroke="rgba(26,22,20,0.08)"
+        stroke="rgba(15,15,15,0.08)"
         strokeWidth={(size / 80) * 8}
       />
       <circle
@@ -80,14 +80,14 @@ export function LiquidityBufferGauge({
         strokeLinecap="round"
         transform={`rotate(-90 ${cx} ${cy})`}
       />
-      <circle cx={tick3.x} cy={tick3.y} r={3.25 * (size / 80)} fill="#78716c" opacity={0.95} />
-      <circle cx={tick6.x} cy={tick6.y} r={3.25 * (size / 80)} fill="#1c1917" opacity={0.45} />
+      <circle cx={tick3.x} cy={tick3.y} r={3.25 * (size / 80)} fill="#6B7280" opacity={0.95} />
+      <circle cx={tick6.x} cy={tick6.y} r={3.25 * (size / 80)} fill="#0F0F0F" opacity={0.45} />
       {arcFrac > 0.02 ? (
         <circle
           cx={polar(Math.min(moForArc, scale)).x}
           cy={polar(Math.min(moForArc, scale)).y}
           r={3.5 * (size / 80)}
-          fill="#fafaf9"
+          fill="#FFFFFF"
           stroke={stroke}
           strokeWidth={1.25 * (size / 80)}
         />
@@ -99,8 +99,8 @@ export function LiquidityBufferGauge({
         className="liq-gauge__val"
         fontSize={20 * (size / 80)}
         fontWeight={600}
-        fill="#1a1614"
-        fontFamily="var(--td-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif)"
+        fill="#0F0F0F"
+        fontFamily="'Inter', system-ui, sans-serif"
       >
         {centreLabel}
       </text>
@@ -112,7 +112,7 @@ export function LiquidityBufferGauge({
         fontSize={8 * (size / 80)}
         fontWeight={600}
         letterSpacing="0.1em"
-        fill="#78716c"
+        fill="#6B7280"
       >
         months
       </text>

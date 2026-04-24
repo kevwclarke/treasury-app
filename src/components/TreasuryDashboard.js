@@ -28,9 +28,12 @@ import {
   LIQUIDITY_TARGET_MONTHS,
 } from '../utils/treasuryLiquidity'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
+import { useCountUp } from '../hooks/useCountUp'
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
 import { buildTreasuryReportPdfPayload } from '../utils/treasuryReportPayload'
+import { computeTreasuryHealthScore100 } from '../utils/treasuryHealthScore'
 import { AiTreasuryActions } from './AiTreasuryActions'
+import { TreasuryHealthScoreControl } from './TreasuryHealthScoreControl'
 import { KpiRechartsArea } from './KpiRechartsArea'
 import { LiquidityBufferGauge } from './LiquidityBufferGauge'
 import { TreasuryOnboarding } from './TreasuryOnboarding'
@@ -70,6 +73,33 @@ function IconInfo() {
       <path d="M12 10v6M12 8h.01" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
     </svg>
   )
+}
+
+function KpiAnimatedGbp({ amount, loading, className = 'tdash__kpi-value' }) {
+  const has = amount != null && Number.isFinite(amount)
+  const target = has ? Math.round(amount) : 0
+  const n = useCountUp(target, { enabled: !loading && has })
+  if (loading) return null
+  if (!has) return <p className={`${className} tdash__kpi-value--muted`}>—</p>
+  return <p className={className}>{formatGBP(Math.round(n))}</p>
+}
+
+function KpiAnimatedPct({ pct, loading, className = 'tdash__kpi-value tdash__kpi-value--salmon' }) {
+  const has = pct != null && Number.isFinite(pct)
+  const target = has ? pct : 0
+  const n = useCountUp(target, { enabled: !loading && has })
+  if (loading) return null
+  if (!has) return <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
+  return <p className={className}>{formatPct(n, 2)}</p>
+}
+
+function KpiAnimatedRunwayMo({ months, loading }) {
+  const has = months != null && Number.isFinite(months)
+  const target = has ? months : 0
+  const n = useCountUp(target, { enabled: !loading && has })
+  if (loading) return null
+  if (!has) return <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
+  return <p className="tdash__kpi-value tdash__kpi-value--brand">{n.toFixed(1)} mo</p>
 }
 
 const TIME_FILTERS = ['1M', '3M', '6M', '1Y']
@@ -301,6 +331,18 @@ export function TreasuryDashboard() {
 
   const kpiBurnKpi = useMemo(() => computeBurn30Vs90Pct(txnRows), [txnRows])
 
+  const treasuryHealthScore = useMemo(
+    () =>
+      computeTreasuryHealthScore100({
+        maxInstitutionConcentrationPct: concentration.maxPct,
+        totalCash: yieldSummary.totalCash,
+        baseRunwayMo: runwayMetrics.baseRunwayMo,
+        fscsUnprotectedGbp: concentration.unprotectedTotal,
+        burnMomGrowthPct: kpiBurnKpi?.deltaPct ?? null,
+      }),
+    [concentration, yieldSummary, runwayMetrics, kpiBurnKpi],
+  )
+
   const sparkTotalPoints = useMemo(
     () => kpiChartPoints(computeTotalCashSparkline(txnRows)),
     [txnRows],
@@ -329,6 +371,12 @@ export function TreasuryDashboard() {
   }, [txnLoading, burnSummary.total])
 
   const showEmptyOnboarding = !txnLoading && !txnError && txnRows.length === 0 && !onboardingSkipped
+
+  useEffect(() => {
+    const on = txnLoading || pdfLoading
+    document.body.classList.toggle('app-data-loading', on)
+    return () => document.body.classList.remove('app-data-loading')
+  }, [txnLoading, pdfLoading])
 
   if (showEmptyOnboarding) {
     return (
@@ -370,13 +418,7 @@ export function TreasuryDashboard() {
               </button>
             ))}
           </div>
-          <div className="tdash__health" title="Composite treasury health score">
-            <span className="tdash__health-score">72</span>
-            <span className="tdash__health-max">/ 100</span>
-          </div>
-          <button type="button" className="tdash__btn tdash__btn--ghost">
-            Export Board Report
-          </button>
+          <TreasuryHealthScoreControl score={treasuryHealthScore} loading={txnLoading} />
           <button type="button" className="tdash__btn tdash__btn--primary">
             Connect Bank
           </button>
@@ -387,6 +429,9 @@ export function TreasuryDashboard() {
         {showFundraiseAlert ? (
           <div className="tdash__alert tdash__alert--urgent">
             <div className="tdash__alert-main">
+              <span className="tdash__alert-pulse" aria-hidden>
+                <span className="tdash__alert-pulse-dot" />
+              </span>
               <IconClock />
               <div>
                 <p className="tdash__alert-title">Fundraise window tightening</p>
@@ -477,10 +522,8 @@ export function TreasuryDashboard() {
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading total cash">
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
-          ) : !kpiCash ? (
-            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value">{formatGBP(Math.round(kpiCash.totalCash))}</p>
+            <KpiAnimatedGbp amount={kpiCash?.totalCash} loading={txnLoading} />
           )}
           <p className="tdash__kpi-delta">
             {txnLoading ? (
@@ -515,7 +558,7 @@ export function TreasuryDashboard() {
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
           ) : (
-            <KpiRechartsArea variant="cash" data={sparkTotalPoints} stroke="#1a1614" />
+            <KpiRechartsArea variant="cash" data={sparkTotalPoints} stroke="#0F0F0F" />
           )}
         </article>
         <article className="tdash__kpi">
@@ -524,10 +567,8 @@ export function TreasuryDashboard() {
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading effective yield">
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
-          ) : !txnRows.length ? (
-            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value tdash__kpi-value--salmon">{formatPct(YIELD_CURRENT_PCT, 2)}</p>
+            <KpiAnimatedPct pct={txnRows.length ? YIELD_CURRENT_PCT : null} loading={txnLoading} />
           )}
           <p
             className={
@@ -560,7 +601,7 @@ export function TreasuryDashboard() {
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
           ) : (
-            <KpiRechartsArea variant="yield" data={sparkYieldPoints} stroke="#c4704f" />
+            <KpiRechartsArea variant="yield" data={sparkYieldPoints} stroke="#DC2626" />
           )}
         </article>
         <article className="tdash__kpi">
@@ -571,10 +612,15 @@ export function TreasuryDashboard() {
             </div>
           ) : !txnRows.length ? (
             <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
-          ) : runwayMetrics.baseRunwayMo == null || !Number.isFinite(runwayMetrics.baseRunwayMo) ? (
-            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value">{runwayMetrics.baseRunwayMo.toFixed(1)} mo</p>
+            <KpiAnimatedRunwayMo
+              months={
+                txnRows.length && runwayMetrics.baseRunwayMo != null && Number.isFinite(runwayMetrics.baseRunwayMo)
+                  ? runwayMetrics.baseRunwayMo
+                  : null
+              }
+              loading={txnLoading}
+            />
           )}
           <p className="tdash__kpi-delta">
             {txnLoading ? (
@@ -603,7 +649,7 @@ export function TreasuryDashboard() {
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
           ) : (
-            <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#2d6a4f" />
+            <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#1E3A5F" />
           )}
         </article>
         <article className="tdash__kpi">
@@ -612,10 +658,11 @@ export function TreasuryDashboard() {
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading burn">
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
-          ) : !txnRows.length || !kpiBurnKpi ? (
-            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value">{formatGBP(Math.round(kpiBurnKpi.monthlyBurn90))}</p>
+            <KpiAnimatedGbp
+              amount={txnRows.length && kpiBurnKpi ? kpiBurnKpi.monthlyBurn90 : null}
+              loading={txnLoading}
+            />
           )}
           <p className="tdash__kpi-delta">
             {txnLoading ? (
@@ -658,7 +705,7 @@ export function TreasuryDashboard() {
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
           ) : (
-            <KpiRechartsArea variant="burn" data={sparkBurnPoints} stroke="#c27803" />
+            <KpiRechartsArea variant="burn" data={sparkBurnPoints} stroke="#6B7280" />
           )}
         </article>
       </section>
@@ -694,16 +741,7 @@ export function TreasuryDashboard() {
               </div>
             </div>
           ) : txnError ? (
-            <div
-              className="tdash__burn-warn"
-              style={{
-                background: 'rgba(180, 35, 24, 0.07)',
-                borderColor: 'rgba(180, 35, 24, 0.22)',
-                color: '#b42318',
-              }}
-            >
-              {txnError}
-            </div>
+            <div className="tdash__msg--error">{txnError}</div>
           ) : txnRows.length === 0 ? (
             <div className="tdash__burn-warn">
               Upload a bank statement to see your yield gap.{' '}
@@ -764,7 +802,12 @@ export function TreasuryDashboard() {
                     <td>Shawbrook 12-mo Fixed</td>
                     <td className="tdash__rate-best">{formatPct(4.95, 2)}</td>
                     <td>
-                      <a className="tdash__apply" href="#apply-shawbrook">
+                      <a
+                        className="tdash__apply"
+                        href="https://www.shawbrook.co.uk/savings/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Apply
                       </a>
                     </td>
@@ -773,7 +816,12 @@ export function TreasuryDashboard() {
                     <td>UK T-Bills 91-day</td>
                     <td className="tdash__rate-best">{formatPct(5.25, 2)}</td>
                     <td>
-                      <a className="tdash__apply" href="#apply-tbills">
+                      <a
+                        className="tdash__apply"
+                        href="https://www.dmo.gov.uk/responsibilities/money-markets/treasury-bills/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Apply
                       </a>
                     </td>
@@ -785,7 +833,26 @@ export function TreasuryDashboard() {
                     </td>
                     <td className="tdash__rate-best">{formatPct(YIELD_BEST_PCT, 2)}</td>
                     <td>
-                      <a className="tdash__apply" href="#apply-blrk">
+                      <a
+                        className="tdash__apply"
+                        href="https://www.blackrock.com/uk/intermediaries/en/products/251882/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Apply
+                      </a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Flagstone (multi-bank cash)</td>
+                    <td className="tdash__rate-best">{formatPct(4.9, 2)}</td>
+                    <td>
+                      <a
+                        className="tdash__apply"
+                        href="https://flagstoneim.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
                         Apply
                       </a>
                     </td>
@@ -797,13 +864,7 @@ export function TreasuryDashboard() {
         </article>
 
         {/* Concentration */}
-        <article
-          className={
-            concentration.riskTone === 'red'
-              ? 'tdash__card tdash__card--critical'
-              : 'tdash__card'
-          }
-        >
+        <article className="tdash__card">
           <div className="tdash__card-head">
             <h2 className="tdash__card-title">Concentration Risk</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -1053,9 +1114,7 @@ export function TreasuryDashboard() {
               <span className="ds-skeleton ds-skeleton--line" />
             </div>
           ) : txnError ? (
-            <div className="tdash__burn-warn" style={{ background: 'rgba(180, 35, 24, 0.07)', borderColor: 'rgba(180, 35, 24, 0.22)', color: '#b42318' }}>
-              {txnError}
-            </div>
+            <div className="tdash__msg--error">{txnError}</div>
           ) : burnSummary.total === 0 ? (
             <div className="tdash__burn-warn">
               Upload a bank statement to see your burn breakdown.{' '}
@@ -1260,7 +1319,7 @@ export function TreasuryDashboard() {
                   <span>Buffer excess</span>
                   <strong
                     style={{
-                      color: liquidity.bufferExcess < 0 ? '#b42318' : '#2d6a4f',
+                      color: liquidity.bufferExcess < 0 ? '#DC2626' : '#1E3A5F',
                     }}
                   >
                     {formatGBP(Math.round(liquidity.bufferExcess))}

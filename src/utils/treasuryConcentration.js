@@ -4,7 +4,7 @@ export const CONCENTRATION_INSTITUTIONS = [...CSV_SOURCE_INSTITUTIONS]
 
 export const FSCS_LIMIT_GBP = 85_000
 
-const STACK_COLORS = ['#c4704f', '#e8a87c', '#78716c', '#a8a29e', '#57534e', '#44403c', '#292524']
+const STACK_COLORS = ['#1E3A5F', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB']
 
 const BANK_BADGE = {
   Barclays: 'BARC',

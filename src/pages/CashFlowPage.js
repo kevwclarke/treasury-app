@@ -51,7 +51,7 @@ export function CashFlowPage() {
             </div>
             <div className="detail-stat">
               <p className="detail-stat__cap">Average monthly outflow</p>
-              <p className="detail-stat__val detail-stat__val--salmon">{formatGBP(Math.round(headline.outAvg))}</p>
+              <p className="detail-stat__val detail-stat__val--red">{formatGBP(Math.round(headline.outAvg))}</p>
             </div>
             <div className="detail-stat">
               <p className="detail-stat__cap">Net monthly position</p>
@@ -64,15 +64,15 @@ export function CashFlowPage() {
       <section className="detail-section">
         <h2 className="detail-section__title">Forecast chart</h2>
         <p className="detail-section__lead">
-          Inflows above the axis (green), outflows below (salmon). Dotted line: today. Red line: low cash threshold
+          Inflows above the axis (navy), outflows below (red). Dotted line: today. Red line: low cash threshold
           (illustrative).
         </p>
         <svg viewBox="0 0 780 240" className="detail-chart" role="img" aria-label="90-day cash forecast">
-          <rect width="780" height="240" fill="rgba(28,25,23,0.02)" rx="8" />
-          <line x1="390" y1="20" x2="390" y2="220" stroke="#1c1917" strokeWidth="2" strokeDasharray="4 4" />
-          <line x1="40" y1="120" x2="740" y2="120" stroke="rgba(28,25,23,0.12)" />
-          <line x1="40" y1="190" x2="740" y2="190" stroke="#b42318" strokeDasharray="6 4" />
-          <text x="400" y="16" fontSize="11" fill="#57534e">
+          <rect width="780" height="240" fill="#FAFAFA" rx="8" />
+          <line x1="390" y1="20" x2="390" y2="220" stroke="#0F0F0F" strokeWidth="2" strokeDasharray="4 4" />
+          <line x1="40" y1="120" x2="740" y2="120" stroke="#E5E7EB" />
+          <line x1="40" y1="190" x2="740" y2="190" stroke="#DC2626" strokeDasharray="6 4" />
+          <text x="400" y="16" fontSize="11" fill="#6B7280">
             Today
           </text>
           {Array.from({ length: WEEKS }).map((_, i) => {
@@ -81,9 +81,9 @@ export function CashFlowPage() {
             const hOut = 30 + (i % 4) * 7
             return (
               <g key={i}>
-                <rect x={x} y={120 - hIn} width="20" height={hIn} fill="#2d6a4f" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#2d6a4f' : 'none'} />
-                <rect x={x} y={120} width="20" height={hOut} fill="#c4704f" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#c4704f' : 'none'} />
-                <text x={x + 10} y="232" fontSize="9" textAnchor="middle" fill="#57534e">
+                <rect x={x} y={120 - hIn} width="20" height={hIn} fill="#1E3A5F" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#1E3A5F' : 'none'} />
+                <rect x={x} y={120} width="20" height={hOut} fill="#DC2626" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#DC2626' : 'none'} />
+                <text x={x + 10} y="232" fontSize="9" textAnchor="middle" fill="#6B7280">
                   W{i + 1}
                 </text>
               </g>

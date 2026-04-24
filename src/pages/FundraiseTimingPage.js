@@ -19,7 +19,7 @@ export function FundraiseTimingPage() {
   const isPast = startBy.getTime() < Date.now()
 
   const traffic =
-    runwayMo >= 18 ? { color: '#2d6a4f', label: 'Green' } : runwayMo >= 12 ? { color: '#c27803', label: 'Amber' } : { color: '#b42318', label: 'Red' }
+    runwayMo >= 18 ? { color: '#1E3A5F', label: 'Green' } : runwayMo >= 12 ? { color: '#D97706', label: 'Amber' } : { color: '#DC2626', label: 'Red' }
 
   return (
     <div className="detail-page">
@@ -56,7 +56,7 @@ export function FundraiseTimingPage() {
         <p className="detail-section__lead" style={{ marginTop: 16 }}>
           Start conversations by (to stay above 12 months runway through close):
         </p>
-        <p className="detail-stat__val" style={{ fontSize: '1.75rem', color: isPast ? '#b42318' : '#2d6a4f' }}>
+        <p className="detail-stat__val" style={{ fontSize: '1.75rem', color: isPast ? '#DC2626' : '#1E3A5F' }}>
           {startBy.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
         </p>
       </section>

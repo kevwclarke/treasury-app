@@ -4,8 +4,17 @@ import { getReportCompanyName } from '../constants/treasuryReport'
 import { buildTreasuryReportPdfPayload } from '../utils/treasuryReportPayload'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
 import '../components/DetailPage.css'
+import './InvestorReportPage.css'
 
 const LAST_KEY = 'treasury_last_report_at'
+
+const PDF_INCLUDES = [
+  'Treasury health score',
+  'Cash position and yield gap',
+  'Runway scenarios',
+  'Concentration risk and FSCS exposure',
+  'AI-generated priority actions',
+]
 
 export function InvestorReportPage() {
   const { txnLoading, txnError, txnRows } = useTreasuryTransactions()
@@ -58,56 +67,84 @@ export function InvestorReportPage() {
       <section className="detail-section">
         <div
           style={{
-            border: '1px solid rgba(28,25,23,0.12)',
-            borderRadius: 12,
+            border: '1px solid #E5E7EB',
+            borderRadius: 8,
             padding: '1.25rem',
-            background: 'linear-gradient(180deg,#fffefb,#faf6f0)',
-            minHeight: 280,
-            fontFamily: "'Playfair Display', Georgia, serif",
+            background: '#FFFFFF',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06)',
+            fontFamily: "'Inter', system-ui, sans-serif",
           }}
         >
-          <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#57534e' }}>
+          <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#6B7280' }}>
             Confidential · {companyName}
           </p>
           <h2 style={{ margin: '0.5rem 0', fontSize: '1.5rem' }}>Treasury health snapshot</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginTop: 16 }}>
             <div>
-              <div style={{ fontSize: 10, color: '#57534e' }}>Health</div>
+              <div style={{ fontSize: 10, color: '#6B7280' }}>Health</div>
               <div style={{ fontSize: 22, fontWeight: 600 }}>
                 {txnLoading ? '…' : `${preview.healthScore} / 100`}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#57534e' }}>Total cash</div>
+              <div style={{ fontSize: 10, color: '#6B7280' }}>Total cash</div>
               <div style={{ fontSize: 22, fontWeight: 600 }}>
                 {txnLoading ? '…' : formatGBP(Math.round(preview.yieldSummary.totalCash))}
               </div>
             </div>
             <div>
-              <div style={{ fontSize: 10, color: '#57534e' }}>Runway</div>
+              <div style={{ fontSize: 10, color: '#6B7280' }}>Runway</div>
               <div style={{ fontSize: 22, fontWeight: 600 }}>{txnLoading ? '…' : baseRunway}</div>
             </div>
           </div>
-          <p style={{ marginTop: 20, fontSize: 14, color: '#44403c', lineHeight: 1.5 }}>
+          <p style={{ marginTop: 20, fontSize: 14, color: '#374151', lineHeight: 1.5 }}>
             Yield gap: <strong>{formatPct(preview.bestYieldPct - preview.effectiveYieldPct, 2)}</strong> vs best benchmark ·
             Concentration: <strong>{preview.concentration.riskLabel}</strong> (top{' '}
             {formatPct(preview.concentration.maxPct, 1)}) · Burn: payroll-weighted.
           </p>
         </div>
-        {txnError ? <p className="detail-muted" style={{ marginTop: 12, color: '#b45309' }}>{txnError}</p> : null}
-        <button
-          type="button"
-          className="detail-btn detail-btn--dark"
-          style={{ marginTop: '1rem', padding: '0.75rem 1.25rem', fontSize: '1rem' }}
-          onClick={generate}
-          disabled={pdfLoading}
-          aria-busy={pdfLoading}
-        >
-          {pdfLoading ? 'Generating…' : 'Generate PDF'}
-        </button>
-        {lastAt ? (
-          <p className="detail-muted" style={{ marginTop: 12 }}>
-            Last generated: {new Date(lastAt).toLocaleString('en-GB')}
+
+        <div className="investor-report__row">
+          <div className="investor-report__pdf-panel">
+            <p className="investor-report__pdf-title">Your report includes</p>
+            <ul className="investor-report__pdf-list">
+              {PDF_INCLUDES.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="investor-report__actions">
+            <button
+              type="button"
+              className="detail-btn detail-btn--dark"
+              style={{ padding: '0.75rem 1.25rem', fontSize: '1rem' }}
+              onClick={generate}
+              disabled={pdfLoading}
+              aria-busy={pdfLoading}
+            >
+              {pdfLoading ? 'Generating…' : 'Generate PDF'}
+            </button>
+            {lastAt ? (
+              <p className="detail-muted" style={{ margin: 0 }}>
+                Last generated: {new Date(lastAt).toLocaleString('en-GB')}
+              </p>
+            ) : null}
+          </div>
+        </div>
+
+        {txnError ? (
+          <p
+            className="detail-muted"
+            style={{
+              marginTop: 12,
+              padding: '12px 14px',
+              background: '#FFFBEB',
+              border: '1px solid #E5E7EB',
+              borderLeft: '3px solid #D97706',
+              color: '#374151',
+            }}
+          >
+            {txnError}
           </p>
         ) : null}
       </section>

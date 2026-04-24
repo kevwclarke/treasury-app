@@ -1,18 +1,18 @@
-/* AI Treasury Actions — FT / Bloomberg editorial */
+/* AI Treasury Actions */
 .ai-actions {
-  --ai-ink: #1a1614;
-  --ai-muted: #57534e;
-  --ai-cream: #faf7f2;
-  --ai-salmon: #c4704f;
-  --ai-green: #2d6a4f;
-  --ai-amber: #c27803;
-  --ai-red: #b42318;
+  --ai-ink: var(--ds-text);
+  --ai-muted: var(--ds-text-secondary);
+  --ai-cream: var(--ds-bg-subtle);
+  --ai-salmon: var(--ds-accent);
+  --ai-green: var(--ds-positive);
+  --ai-amber: var(--ds-warning);
+  --ai-red: var(--ds-error);
   margin: 0 0 1.75rem;
-  padding: 1.25rem 1.35rem 1.35rem;
-  border-radius: 12px;
-  border: 1px solid rgba(26, 22, 20, 0.08);
-  background: #ffffff;
-  box-shadow: var(--ds-shadow-card, 0 1px 3px rgba(0, 0, 0, 0.06));
+  padding: var(--ds-card-padding);
+  border-radius: var(--ds-radius-card);
+  border: 1px solid var(--ds-border);
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
+  box-shadow: var(--ds-shadow-card);
   font-family: var(--ds-font-body, inherit);
   color: var(--ai-ink);
 }
@@ -28,19 +28,19 @@
 
 .ai-actions__title {
   margin: 0;
-  font-family: var(--ds-font-display, inherit);
-  font-size: 1.25rem;
+  font-family: var(--ds-font-body, inherit);
+  font-size: 15px;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--ai-ink);
+  letter-spacing: -0.01em;
+  color: #0f0f0f;
 }
 
 .ai-actions__lead {
   margin: 0.35rem 0 0;
   max-width: 42rem;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--ai-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
 }
 
 .ai-actions__refresh {
@@ -64,18 +64,27 @@
   flex-direction: column;
   min-height: 11.5rem;
   padding: 1rem 1rem 0.9rem;
-  border-radius: 10px;
-  border: 1px solid rgba(26, 22, 20, 0.08);
-  background: rgba(250, 247, 242, 0.65);
+  border-radius: var(--ds-radius-card);
+  border: 1px solid var(--ds-border);
+  background: var(--ds-bg-subtle);
+  box-shadow: var(--ds-shadow-card);
+  transition:
+    transform var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.ai-actions__card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--ds-shadow-card-hover);
 }
 
 .ai-actions__card--loading {
   min-height: 12rem;
   background: linear-gradient(
     110deg,
-    rgba(250, 247, 242, 0.35) 0%,
-    rgba(238, 233, 226, 0.95) 45%,
-    rgba(250, 247, 242, 0.35) 90%
+    rgba(250, 250, 250, 0.35) 0%,
+    rgba(229, 231, 235, 0.95) 45%,
+    rgba(250, 250, 250, 0.35) 90%
   );
   background-size: 200% 100%;
   animation: ai-actions-shimmer 1.35s ease-in-out infinite;
@@ -101,18 +110,18 @@
 
 .ai-actions__card-title {
   margin: 0 0 0.5rem;
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: 600;
-  line-height: 1.25;
-  color: var(--ai-ink);
+  line-height: 1.3;
+  color: #0f0f0f;
 }
 
 .ai-actions__card-body {
   margin: 0;
   flex: 1;
-  font-size: 0.8125rem;
-  line-height: 1.45;
-  color: var(--ai-muted);
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
 }
 
 .ai-actions__impact {
@@ -131,7 +140,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #78716c;
+  color: var(--ds-text-secondary);
 }
 
 .ai-actions__foot {
@@ -153,17 +162,17 @@
 }
 
 .ai-actions__effort--low {
-  background: rgba(45, 106, 79, 0.12);
+  background: rgba(30, 58, 95, 0.12);
   color: var(--ai-green);
 }
 
 .ai-actions__effort--medium {
-  background: rgba(194, 120, 3, 0.12);
-  color: #92400e;
+  background: var(--ds-alert-warning-bg);
+  color: var(--ds-text);
 }
 
 .ai-actions__effort--high {
-  background: rgba(180, 35, 24, 0.08);
+  background: rgba(220, 38, 38, 0.08);
   color: var(--ai-red);
 }
 
@@ -183,6 +192,6 @@
 }
 
 .ai-actions__hint a {
-  color: var(--ai-salmon);
+  color: var(--ds-info);
   font-weight: 600;
 }

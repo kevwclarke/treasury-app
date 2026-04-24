@@ -4,13 +4,13 @@ import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFor
 import './RunwayBurnMonthlyChart.css'
 
 const CAT_COLORS = {
-  Payroll: '#c4704f',
-  Infrastructure: '#e8a87c',
-  Contractors: '#78716c',
-  Travel: '#a8a29e',
-  'Office & Ops': '#57534e',
-  Marketing: '#c27803',
-  Other: '#d6d3d1',
+  Payroll: '#1E3A5F',
+  Infrastructure: '#374151',
+  Contractors: '#4B5563',
+  Travel: '#6B7280',
+  'Office & Ops': '#9CA3AF',
+  Marketing: '#D1D5DB',
+  Other: '#E5E7EB',
 }
 
 /** Legend order requested (display only). */
@@ -155,7 +155,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
             return (
               <g key={v}>
                 <line x1={PLOT_X0} y1={y} x2={PLOT_X0 + PLOT_W} y2={y} stroke="rgba(26,22,20,0.06)" strokeWidth="1" />
-                <text x={PLOT_X0 - 8} y={y + 4} textAnchor="end" fontSize="10" fill="#78716c">
+                <text x={PLOT_X0 - 8} y={y + 4} textAnchor="end" fontSize="10" fill="#6B7280">
                   {formatCompactAxisGBP(v)}
                 </text>
               </g>
@@ -167,12 +167,12 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
             y1={avgY}
             x2={PLOT_X0 + PLOT_W}
             y2={avgY}
-            stroke="#c27803"
+            stroke="#9CA3AF"
             strokeWidth="1.25"
             strokeDasharray="5 4"
             opacity={0.85}
           />
-          <text x={PLOT_X0 + 4} y={avgY - 6} fontSize="9" fontWeight="600" fill="#c27803">
+          <text x={PLOT_X0 + 4} y={avgY - 6} fontSize="9" fontWeight="600" fill="#6B7280">
             Avg {formatGBP(Math.round(avgMonthlyBurn))}/mo
           </text>
 
@@ -219,7 +219,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
 
           <polyline
             fill="none"
-            stroke="#1a1614"
+            stroke="#1E3A5F"
             strokeWidth="1.5"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -229,7 +229,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
           {monthlyTableRows.map((r, i) => {
             const cx = PLOT_X0 + i * slotW + slotW / 2
             const y = yScale(r.total)
-            return <circle key={`dot-${r.key}`} cx={cx} cy={y} r="3.5" fill="#1a1614" stroke="#faf7f2" strokeWidth="1" />
+            return <circle key={`dot-${r.key}`} cx={cx} cy={y} r="3.5" fill="#1E3A5F" stroke="#FFFFFF" strokeWidth="1" />
           })}
 
           {monthlyTableRows.map((r, i) => {
@@ -242,7 +242,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
                 textAnchor="middle"
                 fontSize="11"
                 fontWeight="600"
-                fill="#57534e"
+                fill="#6B7280"
               >
                 {shortMonthFromKey(r.key)}
               </text>

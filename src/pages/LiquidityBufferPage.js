@@ -98,7 +98,7 @@ export function LiquidityBufferPage() {
               </div>
               <div className="detail-stat">
                 <p className="detail-stat__cap">Monthly burn (90-day basis)</p>
-                <p className="detail-stat__val detail-stat__val--salmon">{formatGBP(Math.round(liq.monthlyBurn))}</p>
+                <p className="detail-stat__val">{formatGBP(Math.round(liq.monthlyBurn))}</p>
               </div>
               <div className="detail-stat">
                 <p className="detail-stat__cap">Liquidity buffer</p>

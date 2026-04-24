@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { getPrivacyContactEmail } from '../constants/privacyContact'
 import { supabase } from '../supabase'
 import './LoginPage.css'
 
 function postLoginPath(fromLocation) {
   const p = fromLocation?.pathname
-  if (p && p.startsWith('/app')) return p
+  if (!p || typeof p !== 'string') return '/app'
+  if (p.includes('..') || p.includes('//')) return '/app'
+  if (p === '/upload' || p.startsWith('/upload/')) return '/upload'
+  if (p === '/app' || p.startsWith('/app/')) return p
   return '/app'
 }
 
@@ -48,12 +52,35 @@ export function LoginPage() {
     navigate(redirectTo, { replace: true })
   }
 
+  const privacyEmail = getPrivacyContactEmail()
+
+  const siteFooter = (
+    <footer className="login-page__site-footer">
+      <span className="login-page__legal">© 2026</span>
+      <span className="login-page__legal-sep" aria-hidden="true">
+        {' · '}
+      </span>
+      <Link className="login-page__legal-link" to="/privacy">
+        Privacy Policy
+      </Link>
+      <span className="login-page__legal-sep" aria-hidden="true">
+        {' · '}
+      </span>
+      <a className="login-page__legal-link" href={`mailto:${privacyEmail}`}>
+        Contact
+      </a>
+    </footer>
+  )
+
   if (session === undefined) {
     return (
       <div className="login-page">
-        <div className="login-page__card" aria-busy="true">
-          <p className="login-page__loading">Loading…</p>
+        <div className="login-page__center">
+          <div className="login-page__card" aria-busy="true">
+            <p className="login-page__loading">Loading…</p>
+          </div>
         </div>
+        {siteFooter}
       </div>
     )
   }
@@ -64,7 +91,8 @@ export function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-page__card">
+      <div className="login-page__center">
+        <div className="login-page__card">
         <header className="login-page__header">
           <p className="login-page__brand">Treasury</p>
           <h1 className="login-page__title">Sign in</h1>
@@ -119,7 +147,9 @@ export function LoginPage() {
             Sign up
           </Link>
         </p>
+        </div>
       </div>
+      {siteFooter}
     </div>
   )
 }
