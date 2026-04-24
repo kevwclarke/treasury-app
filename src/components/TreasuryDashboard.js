@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
@@ -29,6 +28,8 @@ import {
   LIQUIDITY_TARGET_MONTHS,
 } from '../utils/treasuryLiquidity'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
+import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
+import { buildTreasuryReportPdfPayload } from '../utils/treasuryReportPayload'
 import { AiTreasuryActions } from './AiTreasuryActions'
 import { KpiRechartsArea } from './KpiRechartsArea'
 import { LiquidityBufferGauge } from './LiquidityBufferGauge'
@@ -148,20 +149,39 @@ export function TreasuryDashboard() {
   const [tsCloseDate, setTsCloseDate] = useState('')
   const [tsResults, setTsResults] = useState(null)
 
-  const [txnLoading, setTxnLoading] = useState(true)
-  const [txnError, setTxnError] = useState('')
-  const [txnRows, setTxnRows] = useState([])
+  const { txnLoading, txnError, txnRows } = useTreasuryTransactions()
   const [cfChartReady, setCfChartReady] = useState(false)
   const [burnBarsReady, setBurnBarsReady] = useState(false)
   const [onboardingSkipped, setOnboardingSkipped] = useState(
     () => typeof window !== 'undefined' && sessionStorage.getItem(SESSION_SKIP_EMPTY_ONBOARD) === '1',
   )
   const [importToast, setImportToast] = useState('')
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const pdfLockRef = useRef(false)
 
   const skipEmptyOnboarding = useCallback(() => {
     sessionStorage.setItem(SESSION_SKIP_EMPTY_ONBOARD, '1')
     setOnboardingSkipped(true)
   }, [])
+
+  const handleGenerateInvestorPdf = useCallback(async () => {
+    if (pdfLockRef.current) return
+    pdfLockRef.current = true
+    setPdfLoading(true)
+    try {
+      await new Promise((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
+      const payload = buildTreasuryReportPdfPayload(txnRows)
+      const { downloadTreasuryInvestorPdf } = await import('../utils/treasuryInvestorPdf')
+      downloadTreasuryInvestorPdf(payload)
+    } catch (e) {
+      window.alert(e?.message ?? 'Could not generate PDF. Please try again.')
+    } finally {
+      setPdfLoading(false)
+      pdfLockRef.current = false
+    }
+  }, [txnRows])
 
   const { runwayMo, burnModel } = useMemo(() => {
     const baseRunway = 18.4
@@ -173,45 +193,6 @@ export function TreasuryDashboard() {
     const burn = baseBurn * (1 + burnSlider / 100) + hireSlider * 8_200 - arrSlider * 1_400
     return { runwayMo: runway, burnModel: Math.max(195_000, burn) }
   }, [burnSlider, hireSlider, arrSlider])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadTransactions() {
-      setTxnLoading(true)
-      setTxnError('')
-
-      try {
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-        if (userError) throw userError
-        if (!user) throw new Error('Not authenticated.')
-
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('amount,payee,date,institution')
-          .eq('user_id', user.id)
-          .order('date', { ascending: true })
-
-        if (error) throw error
-        if (cancelled) return
-        setTxnRows(data ?? [])
-      } catch (e) {
-        if (cancelled) return
-        setTxnError(e?.message ?? 'Failed to load transactions.')
-        setTxnRows([])
-      } finally {
-        if (!cancelled) setTxnLoading(false)
-      }
-    }
-
-    loadTransactions()
-    return () => {
-      cancelled = true
-    }
-  }, [])
 
   useEffect(() => {
     if (txnLoading || !txnRows.length) {
@@ -472,13 +453,19 @@ export function TreasuryDashboard() {
         <div className="tdash__promo-copy">
           <h2 className="tdash__promo-title">Investor-Ready Treasury Report</h2>
           <p className="tdash__promo-desc">
-            One-page board summary: runway, yield gap, concentration, and FX — refreshed from live balances.
+            Five-page investor pack: health score, cash, runway, concentration, and AI actions — from live data.
           </p>
         </div>
         <div className="tdash__promo-preview" aria-hidden />
         <div className="tdash__promo-side">
-          <button type="button" className="tdash__btn tdash__btn--primary">
-            Generate PDF
+          <button
+            type="button"
+            className="tdash__btn tdash__btn--primary"
+            onClick={handleGenerateInvestorPdf}
+            disabled={pdfLoading}
+            aria-busy={pdfLoading}
+          >
+            {pdfLoading ? 'Generating…' : 'Generate PDF'}
           </button>
         </div>
       </section>

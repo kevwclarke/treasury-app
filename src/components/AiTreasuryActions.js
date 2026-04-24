@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { fetchTreasuryAnthropicActions } from '../api/treasuryAnthropicActions'
+import { TREASURY_AI_ACTIONS_CACHE_KEY } from '../constants/treasuryReport'
 import { formatGBP } from '../utils/treasuryFormat'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT } from '../utils/treasuryYield'
 import './AiTreasuryActions.css'
@@ -82,6 +83,14 @@ export function AiTreasuryActions({
       try {
         const next = await fetchTreasuryAnthropicActions({ metrics, signal: ac.signal })
         setActions(next)
+        try {
+          window.localStorage.setItem(
+            TREASURY_AI_ACTIONS_CACHE_KEY,
+            JSON.stringify({ savedAt: Date.now(), actions: next }),
+          )
+        } catch {
+          /* ignore quota / private mode */
+        }
       } catch (e) {
         if (e?.name === 'AbortError') return
         setActions(null)
