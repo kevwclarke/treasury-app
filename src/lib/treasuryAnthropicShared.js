@@ -1,9 +1,9 @@
 /**
- * Shared Anthropic config + prompt + response parsing for AI Treasury Actions.
- * CommonJS for use from Vercel Node serverless (`api/`).
+ * Shared Anthropic prompts + tool schema + parsing for AI Treasury Actions.
+ * Used by CRA client (localhost direct API) and Vercel serverless (dynamic import).
  */
 
-const SYSTEM_PROMPT = [
+export const SYSTEM_PROMPT = [
   'You are a senior treasury advisor to startup CFOs. You give specific, actionable advice based on real financial data. Always quantify the impact in pounds. Never give generic advice. Be direct and specific.',
   'Never recommend cutting salaries, reducing headcount, or any action that could harm staff retention — startups live and die by their team.',
   'Never recommend actions requiring board approval unless you explicitly flag that board approval is needed.',
@@ -12,7 +12,7 @@ const SYSTEM_PROMPT = [
   'Always recommend actions the CFO can execute themselves within a week.',
 ].join(' ')
 
-const TREASURY_ACTIONS_TOOL = {
+export const TREASURY_ACTIONS_TOOL = {
   name: 'submit_treasury_actions',
   description: 'Exactly three prioritised treasury actions with annual GBP impact and effort.',
   input_schema: {
@@ -38,7 +38,7 @@ const TREASURY_ACTIONS_TOOL = {
   },
 }
 
-const METRIC_KEYS = [
+export const METRIC_KEYS = [
   'totalCash',
   'currentYield',
   'bestRate',
@@ -52,7 +52,7 @@ const METRIC_KEYS = [
   'topCategoryPct',
 ]
 
-function buildTreasuryActionsUserPrompt(m) {
+export function buildTreasuryActionsUserPrompt(m) {
   return `This company has £${m.totalCash} in cash earning ${m.currentYield}% when the best available same-liquidity rate is ${m.bestRate}%. Their annual opportunity cost is £${m.annualOppCost}. They have ${m.concentrationPct}% of cash in ${m.topInstitution} with £${m.unprotectedAmount} unprotected by FSCS. Their monthly burn is £${m.monthlyBurn} giving ${m.runway} months runway. Their largest spend category is ${m.topCategory} at ${m.topCategoryPct}% of burn. Give exactly 3 prioritised actions ranked by financial impact. For each action provide: a short title, the specific action to take, the exact pound value impact per year, and effort level as Low Medium or High.`
 }
 
@@ -63,7 +63,7 @@ function normaliseEffort(raw) {
   return 'Medium'
 }
 
-function parseToolUse(message) {
+export function parseToolUse(message) {
   const blocks = message?.content
   if (!Array.isArray(blocks)) return null
   for (const b of blocks) {
@@ -83,7 +83,7 @@ function parseToolUse(message) {
   return null
 }
 
-function validateMetricsBody(body) {
+export function validateMetricsBody(body) {
   if (!body || typeof body !== 'object') return null
   const m = {}
   for (const k of METRIC_KEYS) {
@@ -99,13 +99,4 @@ function validateMetricsBody(body) {
     }
   }
   return m
-}
-
-module.exports = {
-  SYSTEM_PROMPT,
-  TREASURY_ACTIONS_TOOL,
-  METRIC_KEYS,
-  buildTreasuryActionsUserPrompt,
-  parseToolUse,
-  validateMetricsBody,
 }

@@ -4,6 +4,14 @@ import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { computeBurn30Vs90Pct, computeTotalCashAndMoMNetDelta } from '../utils/treasuryKpi'
+import {
+  computeBurnSparkline,
+  computeRunwaySparkline,
+  computeTotalCashSparkline,
+  computeYieldSparklineFlat,
+  kpiChartPoints,
+} from '../utils/treasuryKpiSparklines'
 import {
   computeRunwayFromTransactions,
   FUNDRAISE_RUNWAY_ALERT_MONTHS,
@@ -22,6 +30,7 @@ import {
 } from '../utils/treasuryLiquidity'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
 import { AiTreasuryActions } from './AiTreasuryActions'
+import { KpiRechartsArea } from './KpiRechartsArea'
 import { LiquidityBufferGauge } from './LiquidityBufferGauge'
 import { TreasuryOnboarding } from './TreasuryOnboarding'
 import './TreasuryDashboard.css'
@@ -58,15 +67,6 @@ function IconInfo() {
     <svg className="tdash__alert-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
       <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
       <path d="M12 10v6M12 8h.01" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function Sparkline({ stroke = '#1a1614' }) {
-  const pts = '0,11 5,9 10,10 15,7 20,8 25,5 30,6 35,4 40,5 45,3 50,4 55,2 60,3'
-  return (
-    <svg className="tdash__sparkline" viewBox="0 0 60 14" preserveAspectRatio="none" aria-hidden>
-      <polyline fill="none" stroke={stroke} strokeWidth="1.25" points={pts} vectorEffect="non-scaling-stroke" />
     </svg>
   )
 }
@@ -316,6 +316,21 @@ export function TreasuryDashboard() {
 
   const liquidity = useMemo(() => computeLiquidityBuffer(txnRows), [txnRows])
 
+  const kpiCash = useMemo(() => computeTotalCashAndMoMNetDelta(txnRows), [txnRows])
+
+  const kpiBurnKpi = useMemo(() => computeBurn30Vs90Pct(txnRows), [txnRows])
+
+  const sparkTotalPoints = useMemo(
+    () => kpiChartPoints(computeTotalCashSparkline(txnRows)),
+    [txnRows],
+  )
+
+  const sparkRunwayPoints = useMemo(() => kpiChartPoints(computeRunwaySparkline(txnRows)), [txnRows])
+
+  const sparkBurnPoints = useMemo(() => kpiChartPoints(computeBurnSparkline(txnRows)), [txnRows])
+
+  const sparkYieldPoints = useMemo(() => kpiChartPoints(computeYieldSparklineFlat()), [])
+
   const showFundraiseAlert =
     !txnLoading &&
     (txnRows?.length ?? 0) > 0 &&
@@ -475,23 +490,91 @@ export function TreasuryDashboard() {
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading total cash">
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
+          ) : !kpiCash ? (
+            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value">{formatGBP(Math.round(yieldSummary.totalCash))}</p>
+            <p className="tdash__kpi-value">{formatGBP(Math.round(kpiCash.totalCash))}</p>
           )}
           <p className="tdash__kpi-delta">
-            {txnRows.length
-              ? 'Net from uploaded inflows and outflows'
-              : 'Upload a bank statement to populate'}
+            {txnLoading ? (
+              <span className="tdash__kpi-delta-skel ds-skeleton ds-skeleton--line" aria-hidden />
+            ) : !kpiCash ? (
+              <>
+                Upload your data —{' '}
+                <Link className="tdash__card-link" to="/upload">
+                  add a bank CSV
+                </Link>{' '}
+                to see totals and trends.
+              </>
+            ) : (
+              <span
+                className={
+                  kpiCash.deltaNet > 0
+                    ? 'tdash__kpi-delta--up'
+                    : kpiCash.deltaNet < 0
+                      ? 'tdash__kpi-delta--down'
+                      : ''
+                }
+              >
+                {kpiCash.deltaNet > 0 ? '+' : ''}
+                {formatGBP(Math.round(kpiCash.deltaNet))} vs last month&apos;s net position
+              </span>
+            )}
           </p>
-          <Sparkline />
+          {txnLoading ? (
+            <span
+              className="ds-skeleton tdash__kpi-chart-skel"
+              aria-hidden
+              style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
+            />
+          ) : (
+            <KpiRechartsArea variant="cash" data={sparkTotalPoints} stroke="#1a1614" />
+          )}
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Effective Yield</p>
-          <p className="tdash__kpi-value tdash__kpi-value--salmon">{formatPct(YIELD_CURRENT_PCT, 2)}</p>
-          <p className="tdash__kpi-delta tdash__kpi-delta--down">
-            {formatPct(YIELD_BEST_PCT - YIELD_CURRENT_PCT, 2)} pts vs best available
+          {txnLoading ? (
+            <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading effective yield">
+              <span className="ds-skeleton ds-skeleton--value-lg" />
+            </div>
+          ) : !txnRows.length ? (
+            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
+          ) : (
+            <p className="tdash__kpi-value tdash__kpi-value--salmon">{formatPct(YIELD_CURRENT_PCT, 2)}</p>
+          )}
+          <p
+            className={
+              !txnLoading && txnRows.length
+                ? 'tdash__kpi-delta tdash__kpi-delta--down'
+                : 'tdash__kpi-delta'
+            }
+          >
+            {txnLoading ? (
+              <span className="tdash__kpi-delta-skel ds-skeleton ds-skeleton--line" aria-hidden />
+            ) : !txnRows.length ? (
+              <>
+                Upload your data —{' '}
+                <Link className="tdash__card-link" to="/upload">
+                  add a bank CSV
+                </Link>{' '}
+                to model yield on your balances.
+              </>
+            ) : (
+              <>
+                {formatPct(YIELD_CURRENT_PCT - YIELD_BEST_PCT, 2)} below best available · best{' '}
+                {formatPct(YIELD_BEST_PCT, 2)}
+              </>
+            )}
           </p>
-          <Sparkline stroke="#c4704f" />
+          {txnLoading ? (
+            <span
+              className="ds-skeleton tdash__kpi-chart-skel"
+              aria-hidden
+              style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
+            />
+          ) : (
+            <KpiRechartsArea variant="yield" data={sparkYieldPoints} stroke="#c4704f" />
+          )}
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Runway</p>
@@ -500,22 +583,41 @@ export function TreasuryDashboard() {
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
           ) : !txnRows.length ? (
-            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem' }}>
-              <Link className="tdash__card-link" to="/upload">
-                Upload data
-              </Link>
-            </p>
+            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : runwayMetrics.baseRunwayMo == null || !Number.isFinite(runwayMetrics.baseRunwayMo) ? (
-            <p className="tdash__kpi-value">—</p>
+            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
             <p className="tdash__kpi-value">{runwayMetrics.baseRunwayMo.toFixed(1)} mo</p>
           )}
           <p className="tdash__kpi-delta">
-            {!txnLoading && txnRows.length && runwayMetrics.bullRunwayMo != null && runwayMetrics.baseRunwayMo != null
-              ? `+${(runwayMetrics.bullRunwayMo - runwayMetrics.baseRunwayMo).toFixed(1)} mo if yield optimised`
-              : 'Base case from uploaded cash ÷ avg monthly outflow'}
+            {txnLoading ? (
+              <span className="tdash__kpi-delta-skel ds-skeleton ds-skeleton--line" aria-hidden />
+            ) : !txnRows.length ? (
+              <>
+                Upload your data —{' '}
+                <Link className="tdash__card-link" to="/upload">
+                  add a bank CSV
+                </Link>{' '}
+                for runway from cash ÷ burn.
+              </>
+            ) : runwayMetrics.bullRunwayMo != null &&
+              runwayMetrics.baseRunwayMo != null &&
+              Number.isFinite(runwayMetrics.bullRunwayMo) &&
+              Number.isFinite(runwayMetrics.baseRunwayMo) ? (
+              `+${(runwayMetrics.bullRunwayMo - runwayMetrics.baseRunwayMo).toFixed(1)} mo from yield optimisation (bull case)`
+            ) : (
+              'Cash ÷ average monthly outflow (same as Runway & Burn)'
+            )}
           </p>
-          <Sparkline stroke="#2d6a4f" />
+          {txnLoading ? (
+            <span
+              className="ds-skeleton tdash__kpi-chart-skel"
+              aria-hidden
+              style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
+            />
+          ) : (
+            <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#2d6a4f" />
+          )}
         </article>
         <article className="tdash__kpi">
           <p className="tdash__kpi-label">Monthly Burn</p>
@@ -523,21 +625,54 @@ export function TreasuryDashboard() {
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading burn">
               <span className="ds-skeleton ds-skeleton--value-lg" />
             </div>
-          ) : !txnRows.length ? (
-            <p className="tdash__kpi-value" style={{ fontSize: '1.25rem' }}>
-              <Link className="tdash__card-link" to="/upload">
-                Upload data
-              </Link>
-            </p>
+          ) : !txnRows.length || !kpiBurnKpi ? (
+            <p className="tdash__kpi-value tdash__kpi-value--muted">—</p>
           ) : (
-            <p className="tdash__kpi-value">{formatGBP(Math.round(runwayMetrics.monthlyBurn))}</p>
+            <p className="tdash__kpi-value">{formatGBP(Math.round(kpiBurnKpi.monthlyBurn90))}</p>
           )}
           <p className="tdash__kpi-delta">
-            {!txnLoading && txnRows.length && runwayMetrics.months > 0
-              ? `Avg from ${runwayMetrics.months} mo of outflows in your CSV`
-              : 'From uploaded transactions'}
+            {txnLoading ? (
+              <span className="tdash__kpi-delta-skel ds-skeleton ds-skeleton--line" aria-hidden />
+            ) : !txnRows.length || !kpiBurnKpi ? (
+              <>
+                Upload your data —{' '}
+                <Link className="tdash__card-link" to="/upload">
+                  add a bank CSV
+                </Link>{' '}
+                for 90-day burn.
+              </>
+            ) : kpiBurnKpi.monthlyBurn90 <= 0 ? (
+              'No outflows in the last 90 days'
+            ) : kpiBurnKpi.deltaPct == null || !Number.isFinite(kpiBurnKpi.deltaPct) ? (
+              '90-day average monthly outflow'
+            ) : (
+              <>
+                <span
+                  className={
+                    kpiBurnKpi.deltaPct > 0
+                      ? 'tdash__kpi-delta--down'
+                      : kpiBurnKpi.deltaPct < 0
+                        ? 'tdash__kpi-delta--up'
+                        : ''
+                  }
+                >
+                  {kpiBurnKpi.deltaPct > 0 ? '+' : ''}
+                  {kpiBurnKpi.deltaPct.toFixed(1)}% vs 90-day average
+                </span>
+                {' '}
+                (last 30 days vs trailing 90)
+              </>
+            )}
           </p>
-          <Sparkline stroke="#c27803" />
+          {txnLoading ? (
+            <span
+              className="ds-skeleton tdash__kpi-chart-skel"
+              aria-hidden
+              style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
+            />
+          ) : (
+            <KpiRechartsArea variant="burn" data={sparkBurnPoints} stroke="#c27803" />
+          )}
         </article>
       </section>
 

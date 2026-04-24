@@ -3,16 +3,31 @@
  * Env: ANTHROPIC_API_KEY (server-side in Vercel → Settings → Environment Variables)
  *
  * Must live at repo root: api/treasury-actions.js → URL /api/treasury-actions
+ *
+ * Shared prompt/tool/parsing lives in src/lib/treasuryAnthropicShared.js (loaded via dynamic import).
  */
-const {
-  SYSTEM_PROMPT,
-  TREASURY_ACTIONS_TOOL,
-  buildTreasuryActionsUserPrompt,
-  parseToolUse,
-  validateMetricsBody,
-} = require('../lib/treasuryAnthropicServer.cjs')
+const { pathToFileURL } = require('url')
+const path = require('path')
 
-async function handler(req, res) {
+let sharedPromise
+
+async function loadShared() {
+  if (!sharedPromise) {
+    const abs = path.join(__dirname, '..', 'src', 'lib', 'treasuryAnthropicShared.js')
+    sharedPromise = import(pathToFileURL(abs).href)
+  }
+  return sharedPromise
+}
+
+module.exports = async function handler(req, res) {
+  const {
+    SYSTEM_PROMPT,
+    TREASURY_ACTIONS_TOOL,
+    buildTreasuryActionsUserPrompt,
+    parseToolUse,
+    validateMetricsBody,
+  } = await loadShared()
+
   if (req.method === 'GET') {
     return res.status(200).json({
       ok: true,
@@ -62,5 +77,4 @@ async function handler(req, res) {
   }
 }
 
-module.exports = handler
-module.exports.default = handler
+module.exports.default = module.exports

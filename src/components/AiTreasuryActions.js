@@ -9,7 +9,7 @@ function fmtComma(n) {
   return Math.round(Number(n) || 0).toLocaleString('en-GB')
 }
 
-/** Payload for POST /api/treasury-actions (must match lib/treasuryAnthropicServer.cjs). */
+/** Payload for POST /api/treasury-actions (must match src/lib/treasuryAnthropicShared.js). */
 function buildTreasuryActionMetrics({ yieldSummary, concentration, runwayMetrics, burnSummary }) {
   const topInstRow =
     concentration.institutionRows?.find((r) => r.balance > 0) ?? concentration.institutionRows?.[0]
