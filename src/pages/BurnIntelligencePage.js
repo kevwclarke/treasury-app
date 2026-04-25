@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
 import { useCountUp } from '../hooks/useCountUp'
+import { fetchBurnIntelligenceAi } from '../api/burnIntelligenceAnthropic'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
@@ -489,13 +490,7 @@ export function BurnIntelligencePage() {
           monthlySpend: Math.round((spend90[c] || 0) / 3),
         })),
       }
-      const res = await fetch('/api/burn-intelligence', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ mode: 'opportunities', payload }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Failed to fetch opportunities')
+      const data = await fetchBurnIntelligenceAi({ mode: 'opportunities', payload })
       if (!Array.isArray(data?.opportunities)) throw new Error('Unexpected AI response')
       setOpps(data.opportunities)
     } catch (e) {
@@ -515,13 +510,7 @@ export function BurnIntelligencePage() {
       metadata: { opportunity: opp },
     })
 
-    const res = await fetch('/api/burn-intelligence', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ mode: 'brief', payload: { opportunity: opp } }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data?.error || 'Brief generation failed')
+    const data = await fetchBurnIntelligenceAi({ mode: 'brief', payload: { opportunity: opp } })
     const html = String(data?.html || '')
     const today = new Date().toISOString().slice(0, 10)
     const safeCat = String(opp.category || 'category').toLowerCase().replace(/[^a-z0-9]+/g, '-')
