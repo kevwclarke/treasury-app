@@ -18,6 +18,7 @@ const NAV_SECTIONS = [
       { to: '/app/yield', label: 'Yield Optimisation', icon: 'yield' },
       { to: '/app/concentration', label: 'Concentration Risk', icon: 'concentration' },
       { to: '/app/runway', label: 'Runway & Burn', icon: 'runway' },
+      { to: '/app/burn-intelligence', label: 'Burn Intelligence', tag: 'Growth', icon: 'burn' },
       { to: '/app/liquidity', label: 'Liquidity Buffer', icon: 'liquidity' },
       { to: '/app/cashflow', label: 'Cash Flow', icon: 'cashflow' },
       { to: '/app/fx', label: 'FX Exposure', icon: 'fx' },

@@ -420,6 +420,127 @@
   color: #6b7280;
 }
 
+/* Treasury Autopilot card */
+.tdash__autopilot {
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  background: rgba(30, 58, 95, 0.04);
+  border: 1px solid rgba(30, 58, 95, 0.18);
+  border-left: 3px solid var(--ds-brand);
+  border-radius: var(--ds-radius-card);
+  box-shadow: var(--td-card-shadow);
+  transition:
+    transform var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.tdash__autopilot:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--td-card-shadow-hover);
+}
+
+.tdash__autopilot-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.tdash__autopilot-title {
+  margin: 0;
+  font-family: var(--td-sans);
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f0f0f;
+}
+
+.tdash__autopilot-sub {
+  margin: 0.35rem 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+  max-width: 44rem;
+}
+
+.tdash__autopilot-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: var(--ds-radius-btn);
+  border: 1px solid var(--ds-brand);
+  background: var(--ds-brand);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--ds-card-shadow);
+  transition:
+    transform var(--ds-transition),
+    background var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.tdash__autopilot-link:hover {
+  transform: translateY(-1px);
+  background: var(--ds-brand-hover);
+  box-shadow: var(--ds-card-shadow-hover);
+}
+
+.tdash__autopilot-empty {
+  margin: 0.75rem 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.tdash__autopilot-rows {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.tdash__autopilot-row {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(15, 15, 15, 0.06);
+}
+
+.tdash__autopilot-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(107, 114, 128, 0.5);
+}
+
+.tdash__autopilot-dot--good {
+  background: var(--ds-brand);
+}
+
+.tdash__autopilot-dot--risk {
+  background: var(--ds-error);
+}
+
+.tdash__autopilot-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #0f0f0f;
+}
+
+.tdash__autopilot-val {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
 .tdash__promo-preview {
   width: 7.5rem;
   height: 5.5rem;

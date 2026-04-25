@@ -17,6 +17,7 @@ import { OpportunitiesPage } from '../pages/OpportunitiesPage'
 import { PeerBenchmarksPage } from '../pages/PeerBenchmarksPage'
 import { LiquidityBufferPage } from '../pages/LiquidityBufferPage'
 import { RunwayBurnPage } from '../pages/RunwayBurnPage'
+import { BurnIntelligencePage } from '../pages/BurnIntelligencePage'
 import { ScenarioModellerFullPage } from '../pages/ScenarioModellerFullPage'
 import { TaxTrackerPage } from '../pages/TaxTrackerPage'
 import { TermSheetCashPage } from '../pages/TermSheetCashPage'
@@ -46,6 +47,7 @@ export function NavigationShell() {
               <Route path="yield" element={<YieldOptimisationPage />} />
               <Route path="concentration" element={<ConcentrationRiskPage />} />
               <Route path="runway" element={<RunwayBurnPage />} />
+              <Route path="burn-intelligence" element={<BurnIntelligencePage />} />
               <Route path="liquidity" element={<LiquidityBufferPage />} />
               <Route path="cashflow" element={<CashFlowPage />} />
               <Route path="fx" element={<FxExposurePage />} />

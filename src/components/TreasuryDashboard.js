@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
@@ -188,10 +189,43 @@ export function TreasuryDashboard() {
   const [importToast, setImportToast] = useState('')
   const [pdfLoading, setPdfLoading] = useState(false)
   const pdfLockRef = useRef(false)
+  const [autopilot, setAutopilot] = useState({ loading: true, configured: false, minRunwayMonths: 6 })
 
   const skipEmptyOnboarding = useCallback(() => {
     sessionStorage.setItem(SESSION_SKIP_EMPTY_ONBOARD, '1')
     setOnboardingSkipped(true)
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadAutopilot() {
+      try {
+        setAutopilot((s) => ({ ...s, loading: true }))
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser()
+        if (userError) throw userError
+        if (!user) throw new Error('Not authenticated.')
+        const { data } = await supabase.from('treasury_policies').select('*').eq('user_id', user.id).maybeSingle()
+        if (cancelled) return
+        if (data) {
+          setAutopilot({
+            loading: false,
+            configured: true,
+            minRunwayMonths: Number(data.min_runway_months) || 6,
+          })
+        } else {
+          setAutopilot({ loading: false, configured: false, minRunwayMonths: 6 })
+        }
+      } catch {
+        if (!cancelled) setAutopilot({ loading: false, configured: false, minRunwayMonths: 6 })
+      }
+    }
+    loadAutopilot()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleGenerateInvestorPdf = useCallback(async () => {
@@ -492,6 +526,69 @@ export function TreasuryDashboard() {
             View connections
           </button>
         </div>
+      </section>
+
+      <section className="tdash__autopilot" aria-label="Treasury Autopilot">
+        <div className="tdash__autopilot-head">
+          <div>
+            <h2 className="tdash__autopilot-title">Treasury Autopilot</h2>
+            <p className="tdash__autopilot-sub">Set your policies and we maintain them automatically</p>
+          </div>
+          <Link className="tdash__autopilot-link" to="/app/burn-intelligence">
+            Configure Autopilot
+          </Link>
+        </div>
+
+        {!autopilot.loading && !autopilot.configured ? (
+          <p className="tdash__autopilot-empty">
+            Autopilot not configured — set your treasury policies to activate.
+          </p>
+        ) : (
+          <div className="tdash__autopilot-rows">
+            <div className="tdash__autopilot-row">
+              <span
+                className={[
+                  'tdash__autopilot-dot',
+                  runwayMetrics.baseRunwayMo != null &&
+                  Number.isFinite(runwayMetrics.baseRunwayMo) &&
+                  runwayMetrics.baseRunwayMo >= autopilot.minRunwayMonths
+                    ? 'tdash__autopilot-dot--good'
+                    : 'tdash__autopilot-dot--risk',
+                ].join(' ')}
+                aria-hidden
+              />
+              <span className="tdash__autopilot-label">Minimum runway {autopilot.minRunwayMonths} months</span>
+              <span className="tdash__autopilot-val">
+                current{' '}
+                {runwayMetrics.baseRunwayMo != null && Number.isFinite(runwayMetrics.baseRunwayMo)
+                  ? `${runwayMetrics.baseRunwayMo.toFixed(1)} months`
+                  : '—'}
+              </span>
+            </div>
+            <div className="tdash__autopilot-row">
+              <span
+                className={[
+                  'tdash__autopilot-dot',
+                  concentration.maxPct <= 75 ? 'tdash__autopilot-dot--good' : 'tdash__autopilot-dot--risk',
+                ].join(' ')}
+                aria-hidden
+              />
+              <span className="tdash__autopilot-label">Maximum concentration 75%</span>
+              <span className="tdash__autopilot-val">current {formatPct(concentration.maxPct, 1)}</span>
+            </div>
+            <div className="tdash__autopilot-row">
+              <span
+                className={[
+                  'tdash__autopilot-dot',
+                  YIELD_CURRENT_PCT >= 4 ? 'tdash__autopilot-dot--good' : 'tdash__autopilot-dot--risk',
+                ].join(' ')}
+                aria-hidden
+              />
+              <span className="tdash__autopilot-label">Minimum yield 4%</span>
+              <span className="tdash__autopilot-val">current {formatPct(YIELD_CURRENT_PCT, 2)}</span>
+            </div>
+          </div>
+        )}
       </section>
 
       <section className="tdash__promo" aria-label="Investor-ready report">

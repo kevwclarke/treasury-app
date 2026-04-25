@@ -45,6 +45,24 @@ export function SidebarNavIcon({ name }) {
           <circle cx="18" cy="5" r="1.5" />
         </svg>
       )
+    case 'burn':
+      return (
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-flex',
+            width: 18,
+            height: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            lineHeight: 1,
+            transform: 'translateY(-0.5px)',
+          }}
+        >
+          🔥
+        </span>
+      )
     case 'liquidity':
       return (
         <svg {...p} {...stroke}>

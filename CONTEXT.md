@@ -24,6 +24,7 @@
 - Yield Optimisation at `/app/yield`
 - Concentration Risk at `/app/concentration`
 - Runway & Burn at `/app/runway`
+- Burn Intelligence at `/app/burn-intelligence`
 - Cash Flow Forecast at `/app/cashflow`
 - FX Exposure at `/app/fx`
 - Opportunities (marketplace) at `/app/opportunities`
@@ -46,6 +47,10 @@
 ## Design style
 
 Deep navy brand (`#1E3A5F`) on white: CTAs, links, positive runway/inflows, and sidebar active state; red for opportunity cost and material negatives; amber only for warning-severity alerts. Typography is Inter throughout (Google Fonts), with a premium SaaS scale for headings, KPI numerals, and muted body copy.
+
+## Product vision
+
+**Treasury Autopilot** — we maintain the CFO's runway automatically. Intelligence layer is live. Execution layer is the roadmap.
 
 ## Modules to build (in order)
 
