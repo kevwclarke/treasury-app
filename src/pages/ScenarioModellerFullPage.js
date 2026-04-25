@@ -55,7 +55,7 @@ export function ScenarioModellerFullPage() {
   }, [totalCash, adjustedMonthlyBurn])
 
   const runwayColor =
-    runwayMonths > 18 ? '#1E3A5F' : runwayMonths >= 12 ? '#D97706' : '#DC2626'
+    runwayMonths > 18 ? '#1B2B8C' : runwayMonths >= 12 ? '#D97706' : '#DC2626'
 
   const chartPolylinePoints = useMemo(() => {
     const w = 680
@@ -197,16 +197,16 @@ export function ScenarioModellerFullPage() {
           {totalCash > 0 ? `${runwayMonths.toFixed(1)} mo` : '—'}
         </p>
         {totalCash <= 0 ? (
-          <p className="detail-muted">Import transactions on the dashboard / upload page to establish net cash.</p>
+          <p className="detail-muted">Import transactions via Treasury Autopilot or the upload page to establish net cash.</p>
         ) : null}
-        <div style={{ marginTop: 16, height: 14, borderRadius: 999, background: 'linear-gradient(90deg,#DC2626,#D97706,#1E3A5F)', position: 'relative' }}>
+        <div style={{ marginTop: 16, height: 14, borderRadius: 999, background: 'linear-gradient(90deg,#DC2626,#D97706,#1B2B8C)', position: 'relative' }}>
           <div
             style={{
               position: 'absolute',
               top: -6,
               width: 4,
               height: 26,
-              background: '#1E3A5F',
+              background: '#1B2B8C',
               left: `${Math.min(100, Math.max(0, (runwayMonths / 48) * 100))}%`,
               transform: 'translateX(-2px)',
               borderRadius: 2,
@@ -224,7 +224,7 @@ export function ScenarioModellerFullPage() {
         <svg viewBox="0 0 720 200" className="detail-chart" role="img" aria-label="Projected cash over 24 months">
           <rect width="720" height="200" fill="#FAFAFA" rx="8" />
           <line x1="24" y1="180" x2="704" y2="180" stroke="#E5E7EB" />
-          <polyline fill="none" stroke="#1E3A5F" strokeWidth="2.5" points={chartPolylinePoints} />
+          <polyline fill="none" stroke="#1B2B8C" strokeWidth="2.5" points={chartPolylinePoints} />
         </svg>
       </section>
 

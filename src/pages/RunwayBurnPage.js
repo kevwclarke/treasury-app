@@ -179,7 +179,7 @@ export function RunwayBurnPage() {
                 className="detail-stat"
                 style={{ borderColor: 'rgba(22,163,74,0.28)', background: 'rgba(22,163,74,0.06)' }}
               >
-                <p className="detail-stat__cap" style={{ color: '#1E3A5F' }}>
+                <p className="detail-stat__cap" style={{ color: '#1B2B8C' }}>
                   Bull
                 </p>
                 <p className="detail-stat__val detail-stat__val--green">
@@ -210,7 +210,7 @@ export function RunwayBurnPage() {
                   maxWidth: '100%',
                   height: 4,
                   marginTop: -2,
-                  background: 'linear-gradient(90deg, #1E3A5F, #6B7280)',
+                  background: 'linear-gradient(90deg, #1B2B8C, #6B7280)',
                   borderRadius: 999,
                 }}
               />
@@ -249,7 +249,7 @@ export function RunwayBurnPage() {
         ) : !rows.length ? (
           <p className="detail-muted">
             Upload a CSV to see monthly burn by category.{' '}
-            <Link to="/upload" style={{ color: '#1E3A5F', fontWeight: 600 }}>
+            <Link to="/upload" style={{ color: '#1B2B8C', fontWeight: 600 }}>
               Upload statement
             </Link>
           </p>

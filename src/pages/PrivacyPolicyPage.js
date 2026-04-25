@@ -6,7 +6,7 @@ const SECTIONS = [
   {
     title: 'What we collect',
     body: [
-      '**Account:** your email address when you sign up or join the waitlist (if you choose to provide it).',
+      '**Account:** your email address when you sign up or request early access (if you choose to provide it).',
       '**Treasury data:** bank transaction data that you upload (for example CSV bank statements), including dates, amounts, payee or description text, running balances where present, and the institution you select at import.',
     ],
   },
@@ -20,7 +20,7 @@ const SECTIONS = [
   {
     title: 'Why we collect it',
     body: [
-      'We process this information **only to provide treasury intelligence** inside the product: yield gap, concentration, runway, burn, forecasts, and related insights and exports you request.',
+      'We process this information **only to operate Treasury Autopilot** inside the product: yield gap, concentration, runway, burn, forecasts, autopilot recommendations, and related insights and exports you request.',
     ],
   },
   {
@@ -28,7 +28,7 @@ const SECTIONS = [
     body: [
       '**We do not sell your data.** We do not share your email or transaction data with advertisers or data brokers.',
       'Infrastructure providers (Supabase, and our hosting provider) process data solely to run the service, under appropriate agreements.',
-      'If you use **AI-powered features**, relevant **non-secret** metrics derived from your data may be sent to **Anthropic** to generate suggestions; we do not send your Supabase credentials. Do not put API keys intended for server-only use in client-side environment variables.',
+      'If you use **autopilot recommendations** (AI-generated), relevant **non-secret** metrics derived from your data may be sent to **Anthropic** to generate suggestions; we do not send your Supabase credentials. Do not put API keys intended for server-only use in client-side environment variables.',
     ],
   },
   {

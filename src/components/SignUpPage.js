@@ -101,7 +101,7 @@ export function SignUpPage() {
           <p className="signup-page__brand">Treasury</p>
           <h1 className="signup-page__title">Create your account</h1>
           <p className="signup-page__subtitle">
-            UK startup CFO intelligence — one workspace for yield, runway, and liquidity.
+            Your treasury autopilot — yield, runway, and liquidity in one workspace.
           </p>
         </header>
 

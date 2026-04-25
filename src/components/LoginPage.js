@@ -96,9 +96,7 @@ export function LoginPage() {
         <header className="login-page__header">
           <p className="login-page__brand">Treasury</p>
           <h1 className="login-page__title">Sign in</h1>
-          <p className="login-page__subtitle">
-            UK startup CFO intelligence — secure access to your workspace.
-          </p>
+          <p className="login-page__subtitle">Your treasury autopilot</p>
         </header>
 
         <form className="login-page__form" onSubmit={handleSubmit} noValidate>

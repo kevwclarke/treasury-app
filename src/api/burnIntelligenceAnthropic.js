@@ -1,3 +1,21 @@
+import {
+  BURN_BRIEF_SYSTEM_PROMPT,
+  BURN_INTELLIGENCE_SYSTEM_PROMPT,
+  BURN_OPPORTUNITIES_TOOL,
+  parseBurnOpportunitiesToolUse,
+} from '../lib/burnIntelligenceShared.js'
+
+/**
+ * System prompts for localhost Anthropic must match production serverless routes.
+ * Opportunities + brief include the 30-day cost-of-inaction rule (verbatim):
+ *
+ * For each action you recommend, add one sentence at the end stating the cost of inaction — specifically:
+ * 'If this is not actioned in the next 30 days, the cost is £X' — where X is the pound value lost or foregone in that
+ * 30-day period based on the numbers provided. Make this specific and calculated, not generic.
+ *
+ * Source of truth: `../lib/burnIntelligenceShared.js` (imports `../lib/anthropicCostOfInaction.js`).
+ */
+
 function isLocalDevHostname() {
   if (typeof window === 'undefined') return false
   const h = window.location.hostname
@@ -18,62 +36,6 @@ function concatTextBlocks(message) {
   const blocks = message?.content
   if (!Array.isArray(blocks)) return ''
   return blocks.map((b) => (b?.type === 'text' ? b.text : '')).join('').trim()
-}
-
-const BURN_OPPORTUNITIES_TOOL = {
-  name: 'submit_burn_opportunities',
-  description: 'Exactly five burn reduction opportunities with savings ranges.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      opportunities: {
-        type: 'array',
-        minItems: 5,
-        maxItems: 5,
-        items: {
-          type: 'object',
-          properties: {
-            title: { type: 'string' },
-            category: { type: 'string' },
-            currentMonthlySpend: { type: 'number' },
-            recommendedAction: { type: 'string' },
-            estimatedMonthlySaving: {
-              type: 'object',
-              properties: {
-                low: { type: 'number' },
-                high: { type: 'number' },
-              },
-              required: ['low', 'high'],
-            },
-            effort: { type: 'string', enum: ['Low', 'Medium', 'High'] },
-            runwayExtensionDays: { type: 'number' },
-          },
-          required: [
-            'title',
-            'category',
-            'currentMonthlySpend',
-            'recommendedAction',
-            'estimatedMonthlySaving',
-            'effort',
-            'runwayExtensionDays',
-          ],
-        },
-      },
-    },
-    required: ['opportunities'],
-  },
-}
-
-function parseToolUseOpportunities(message) {
-  const blocks = message?.content
-  if (!Array.isArray(blocks)) return null
-  for (const b of blocks) {
-    if (b?.type === 'tool_use' && b.name === 'submit_burn_opportunities' && b.input?.opportunities) {
-      const opps = b.input.opportunities
-      if (Array.isArray(opps) && opps.length === 5) return opps
-    }
-  }
-  return null
 }
 
 function extractJsonObject(text) {
@@ -125,8 +87,6 @@ async function fetchBurnIntelligenceViaAnthropicBrowser({ mode, payload, signal 
       throw new Error('Missing spendByCategoryGbp')
     }
 
-    const system = `You are a management consultant specialising in startup cost efficiency advising a startup CFO. You have been given this company's spend by category for the last 90 days. Identify exactly 5 specific actionable opportunities to reduce monthly burn without cutting headcount, reducing salaries, or harming culture. For each opportunity provide: a short title max 8 words, the specific category, the current monthly spend in that category, a concrete recommended action with specific implementation steps, an estimated monthly saving in pounds as a range, effort level as Low Medium or High, and the runway extension in days if actioned. Be specific — reference actual spend figures, name specific tools or vendors where identifiable, give concrete steps a CFO can take this week. Frame every recommendation as an outcome statement — what specifically happens if the CFO takes this action this week in pounds and days of runway. Never recommend headcount cuts or salary reductions.`
-
     const user = [
       'Return ONLY valid JSON (no markdown, no backticks).',
       'Output shape:',
@@ -150,7 +110,7 @@ async function fetchBurnIntelligenceViaAnthropicBrowser({ mode, payload, signal 
       {
         model: 'claude-sonnet-4-5',
         max_tokens: 2400,
-        system,
+        system: BURN_INTELLIGENCE_SYSTEM_PROMPT,
         messages: [{ role: 'user', content: user }],
         tools: [BURN_OPPORTUNITIES_TOOL],
         tool_choice: { type: 'tool', name: 'submit_burn_opportunities' },
@@ -163,7 +123,7 @@ async function fetchBurnIntelligenceViaAnthropicBrowser({ mode, payload, signal 
     console.log('[burn-intelligence] raw Anthropic message', message)
 
     // Prefer tool_use, but fall back to JSON-in-text parsing if necessary.
-    const toolOpps = parseToolUseOpportunities(message)
+    const toolOpps = parseBurnOpportunitiesToolUse(message)
     if (toolOpps) return { opportunities: toolOpps }
 
     const text = concatTextBlocks(message)
@@ -183,8 +143,7 @@ async function fetchBurnIntelligenceViaAnthropicBrowser({ mode, payload, signal 
     const opp = payload?.opportunity
     if (!opp || typeof opp !== 'object') throw new Error('Missing opportunity')
 
-    const briefSystem =
-      'You are a startup CFO advisor and vendor negotiation specialist. Produce a one-page vendor negotiation brief as clean, print-ready HTML (no markdown). Use Inter font, white background, navy headings (#1E3A5F), and a professional layout with generous whitespace.'
+    const briefSystem = BURN_BRIEF_SYSTEM_PROMPT
     const briefUser = [
       'Return ONLY HTML. No markdown.',
       '',

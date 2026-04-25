@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { supabase } from '../supabase'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
@@ -28,9 +27,19 @@ import {
   LIQUIDITY_MIN_MONTHS,
   LIQUIDITY_TARGET_MONTHS,
 } from '../utils/treasuryLiquidity'
-import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
+import { YIELD_BEST_PCT, YIELD_CURRENT_DEC, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from '../utils/treasuryYield'
+import { getYieldGapDashboardApplyProducts } from '../data/yieldMarketplace'
+import { YieldApplyConfirmModal } from './YieldApplyConfirmModal'
 import { useCountUp } from '../hooks/useCountUp'
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
+import { useTreasuryAutopilotPolicy } from '../hooks/useTreasuryAutopilotPolicy'
+import {
+  readTreasuryDashboardView,
+  TREASURY_VIEW_CONTROL,
+  TREASURY_VIEW_FULL,
+  writeTreasuryDashboardView,
+} from '../constants/treasuryDashboardView'
+import { TreasuryControlPanel } from './TreasuryControlPanel'
 import { buildTreasuryReportPdfPayload } from '../utils/treasuryReportPayload'
 import { computeTreasuryHealthScore100 } from '../utils/treasuryHealthScore'
 import { AiTreasuryActions } from './AiTreasuryActions'
@@ -39,10 +48,39 @@ import { KpiRechartsArea } from './KpiRechartsArea'
 import { LiquidityBufferGauge } from './LiquidityBufferGauge'
 import { TreasuryOnboarding } from './TreasuryOnboarding'
 import './TreasuryDashboard.css'
+import './TreasuryControlPanel.css'
 
 const SESSION_SKIP_EMPTY_ONBOARD = 'treasury_skip_empty_onboarding'
+const YIELD_GAP_DASHBOARD_APPLY_ROWS = getYieldGapDashboardApplyProducts()
 
-const IMPORT_WELCOME_COPY = 'Your data is ready — here is your treasury health'
+function DashboardViewToggle({ value, onChange }) {
+  return (
+    <div className="tdash__view-toggle" role="radiogroup" aria-label="Treasury Autopilot layout">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === TREASURY_VIEW_FULL}
+        className={`tdash__view-toggle-btn${value === TREASURY_VIEW_FULL ? ' tdash__view-toggle-btn--active' : ''}`}
+        onClick={() => onChange(TREASURY_VIEW_FULL)}
+      >
+        Full view
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === TREASURY_VIEW_CONTROL}
+        className={`tdash__view-toggle-btn${
+          value === TREASURY_VIEW_CONTROL ? ' tdash__view-toggle-btn--active' : ''
+        }`}
+        onClick={() => onChange(TREASURY_VIEW_CONTROL)}
+      >
+        Control panel
+      </button>
+    </div>
+  )
+}
+
+const IMPORT_WELCOME_COPY = 'Your data is ready — Treasury Autopilot is live'
 
 function liquidityCurrentCaption(liq) {
   if (liq.monthlyBurn <= 0) return 'No outflows in last 90 days'
@@ -189,43 +227,20 @@ export function TreasuryDashboard() {
   const [importToast, setImportToast] = useState('')
   const [pdfLoading, setPdfLoading] = useState(false)
   const pdfLockRef = useRef(false)
-  const [autopilot, setAutopilot] = useState({ loading: true, configured: false, minRunwayMonths: 6 })
+  const autopilot = useTreasuryAutopilotPolicy()
+  const [dashboardView, setDashboardView] = useState(() =>
+    typeof window !== 'undefined' ? readTreasuryDashboardView() : TREASURY_VIEW_FULL,
+  )
+  const [yieldApplyProduct, setYieldApplyProduct] = useState(null)
+
+  const handleDashboardViewChange = useCallback((mode) => {
+    setDashboardView(mode)
+    writeTreasuryDashboardView(mode)
+  }, [])
 
   const skipEmptyOnboarding = useCallback(() => {
     sessionStorage.setItem(SESSION_SKIP_EMPTY_ONBOARD, '1')
     setOnboardingSkipped(true)
-  }, [])
-
-  useEffect(() => {
-    let cancelled = false
-    async function loadAutopilot() {
-      try {
-        setAutopilot((s) => ({ ...s, loading: true }))
-        const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser()
-        if (userError) throw userError
-        if (!user) throw new Error('Not authenticated.')
-        const { data } = await supabase.from('treasury_policies').select('*').eq('user_id', user.id).maybeSingle()
-        if (cancelled) return
-        if (data) {
-          setAutopilot({
-            loading: false,
-            configured: true,
-            minRunwayMonths: Number(data.min_runway_months) || 6,
-          })
-        } else {
-          setAutopilot({ loading: false, configured: false, minRunwayMonths: 6 })
-        }
-      } catch {
-        if (!cancelled) setAutopilot({ loading: false, configured: false, minRunwayMonths: 6 })
-      }
-    }
-    loadAutopilot()
-    return () => {
-      cancelled = true
-    }
   }, [])
 
   const handleGenerateInvestorPdf = useCallback(async () => {
@@ -437,21 +452,25 @@ export function TreasuryDashboard() {
       ) : null}
       <header className="tdash__topbar">
         <div className="tdash__title-block">
-          <h1 className="tdash__page-title">Treasury Dashboard</h1>
+          <h1 className="tdash__page-title">Treasury Autopilot</h1>
+          <p className="tdash__page-subtitle">Maintaining your runway. Automatically.</p>
+          <DashboardViewToggle value={dashboardView} onChange={handleDashboardViewChange} />
         </div>
         <div className="tdash__topbar-actions">
-          <div className="tdash__filters" role="group" aria-label="Time range">
-            {TIME_FILTERS.map((t) => (
-              <button
-                key={t}
-                type="button"
-                className={`tdash__filter-btn${timeFilter === t ? ' tdash__filter-btn--active' : ''}`}
-                onClick={() => setTimeFilter(t)}
-              >
-                {t}
-              </button>
-            ))}
-          </div>
+          {dashboardView === TREASURY_VIEW_FULL ? (
+            <div className="tdash__filters" role="group" aria-label="Time range">
+              {TIME_FILTERS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  className={`tdash__filter-btn${timeFilter === t ? ' tdash__filter-btn--active' : ''}`}
+                  onClick={() => setTimeFilter(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <TreasuryHealthScoreControl score={treasuryHealthScore} loading={txnLoading} />
           <button type="button" className="tdash__btn tdash__btn--primary">
             Connect Bank
@@ -459,6 +478,15 @@ export function TreasuryDashboard() {
         </div>
       </header>
 
+      {dashboardView === TREASURY_VIEW_CONTROL ? (
+        <TreasuryControlPanel
+          txnLoading={txnLoading}
+          txnError={txnError}
+          txnRows={txnRows}
+          autopilot={autopilot}
+        />
+      ) : (
+        <>
       <section className="tdash__alerts" aria-label="Priority alerts">
         {showFundraiseAlert ? (
           <div className="tdash__alert tdash__alert--urgent">
@@ -746,7 +774,7 @@ export function TreasuryDashboard() {
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
           ) : (
-            <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#1E3A5F" />
+            <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#1B2B8C" />
           )}
         </article>
         <article className="tdash__kpi">
@@ -895,65 +923,26 @@ export function TreasuryDashboard() {
                     <td className="tdash__rate-bench">{formatPct(4.75, 2)}</td>
                     <td />
                   </tr>
-                  <tr>
-                    <td>Shawbrook 12-mo Fixed</td>
-                    <td className="tdash__rate-best">{formatPct(4.95, 2)}</td>
-                    <td>
-                      <a
-                        className="tdash__apply"
-                        href="https://www.shawbrook.co.uk/savings/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Apply
-                      </a>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>UK T-Bills 91-day</td>
-                    <td className="tdash__rate-best">{formatPct(5.25, 2)}</td>
-                    <td>
-                      <a
-                        className="tdash__apply"
-                        href="https://www.dmo.gov.uk/responsibilities/money-markets/treasury-bills/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Apply
-                      </a>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>
-                      BlackRock Liquidity Fund
-                      <span className="tdash__tag-rec">Recommended</span>
-                    </td>
-                    <td className="tdash__rate-best">{formatPct(YIELD_BEST_PCT, 2)}</td>
-                    <td>
-                      <a
-                        className="tdash__apply"
-                        href="https://www.blackrock.com/uk/intermediaries/en/products/251882/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Apply
-                      </a>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Flagstone (multi-bank cash)</td>
-                    <td className="tdash__rate-best">{formatPct(4.9, 2)}</td>
-                    <td>
-                      <a
-                        className="tdash__apply"
-                        href="https://flagstoneim.com/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Apply
-                      </a>
-                    </td>
-                  </tr>
+                  {YIELD_GAP_DASHBOARD_APPLY_ROWS.map((p) => (
+                    <tr key={p.name}>
+                      <td>
+                        {p.name}
+                        {p.name === 'BlackRock Liquidity Fund' ? (
+                          <span className="tdash__tag-rec">Recommended</span>
+                        ) : null}
+                      </td>
+                      <td className="tdash__rate-best">{formatPct(p.ratePct, 2)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="tdash__apply"
+                          onClick={() => setYieldApplyProduct(p)}
+                        >
+                          Apply
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </>
@@ -1416,7 +1405,7 @@ export function TreasuryDashboard() {
                   <span>Buffer excess</span>
                   <strong
                     style={{
-                      color: liquidity.bufferExcess < 0 ? '#DC2626' : '#1E3A5F',
+                      color: liquidity.bufferExcess < 0 ? '#DC2626' : '#1B2B8C',
                     }}
                   >
                     {formatGBP(Math.round(liquidity.bufferExcess))}
@@ -1450,8 +1439,8 @@ export function TreasuryDashboard() {
           <p className="tdash__card-sub">Recurring USD/EUR receipts re-measured monthly at spot</p>
           <div>
             <div className="tdash__fx-row">
-              <span className="tdash__fx-flag" aria-hidden>
-                🇺🇸
+              <span className="tdash__fx-code" aria-hidden>
+                USD
               </span>
               <span className="tdash__fx-pair">USD → GBP</span>
               <span className="tdash__fx-amt">$182,000 / mo</span>
@@ -1459,8 +1448,8 @@ export function TreasuryDashboard() {
               <span className="tdash__fx-risk">{formatGBP(7130)}</span>
             </div>
             <div className="tdash__fx-row">
-              <span className="tdash__fx-flag" aria-hidden>
-                🇪🇺
+              <span className="tdash__fx-code" aria-hidden>
+                EUR
               </span>
               <span className="tdash__fx-pair">EUR → GBP</span>
               <span className="tdash__fx-amt">€96,400 / mo</span>
@@ -1602,6 +1591,18 @@ export function TreasuryDashboard() {
           </div>
         </article>
       </div>
+        </>
+      )}
+      {yieldApplyProduct ? (
+        <YieldApplyConfirmModal
+          open
+          product={yieldApplyProduct}
+          liquidity={liquidity}
+          currentYieldDec={YIELD_CURRENT_DEC}
+          source="dashboard_yield_gap"
+          onClose={() => setYieldApplyProduct(null)}
+        />
+      ) : null}
     </div>
   )
 }

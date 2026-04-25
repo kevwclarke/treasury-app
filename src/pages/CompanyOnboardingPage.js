@@ -81,7 +81,7 @@ export function CompanyOnboardingPage() {
           <p className="company-onboarding__brand">Treasury</p>
           <h1 className="company-onboarding__title">Welcome — set up your workspace</h1>
           <p className="company-onboarding__subtitle">
-            We use this to personalise your dashboard. You can change it later when profile settings are added.
+            We use this to personalise Treasury Autopilot. You can change it later when profile settings are added.
           </p>
         </header>
 
@@ -126,7 +126,7 @@ export function CompanyOnboardingPage() {
           ) : null}
 
           <button className="company-onboarding__submit" type="submit" disabled={saving}>
-            {saving ? 'Saving…' : 'Continue to dashboard'}
+            {saving ? 'Saving…' : 'Continue to Treasury Autopilot'}
           </button>
         </form>
       </div>

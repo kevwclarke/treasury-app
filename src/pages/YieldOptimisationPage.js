@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { useUserTransactions } from '../hooks/useUserTransactions'
 import { YIELD_MARKETPLACE_PRODUCTS } from '../data/yieldMarketplace'
 import { YIELD_BEST_PCT } from '../utils/treasuryYield'
+import { computeLiquidityBuffer } from '../utils/treasuryLiquidity'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { YieldApplyConfirmModal } from '../components/YieldApplyConfirmModal'
 import '../components/DetailPage.css'
 
 const DEFAULT_BLENDED_PCT = 0.1
@@ -30,11 +32,11 @@ function BoeRateChart() {
       <text x={pad} y={20} fontSize="11" fill="#6B7280" fontFamily="'Inter', 'DM Sans', sans-serif">
         Bank of England base rate — reference (illustrative)
       </text>
-      <polyline fill="none" stroke="#1E3A5F" strokeWidth="2.5" points={pts} />
+      <polyline fill="none" stroke="#1B2B8C" strokeWidth="2.5" points={pts} />
       {BOE_HISTORY.map((r, i) => {
         const x = pad + i * xStep
         const y = pad + (1 - (r - minR) / (maxR - minR || 1)) * (h - pad * 2)
-        return <circle key={i} cx={x} cy={y} r="3" fill="#1E3A5F" />
+        return <circle key={i} cx={x} cy={y} r="3" fill="#1B2B8C" />
       })}
     </svg>
   )
@@ -43,6 +45,7 @@ function BoeRateChart() {
 export function YieldOptimisationPage() {
   const { rows, loading, error } = useUserTransactions()
   const [overridePct, setOverridePct] = useState(String(DEFAULT_BLENDED_PCT))
+  const [applyProduct, setApplyProduct] = useState(null)
 
   const blendedPct = useMemo(() => {
     const n = Number.parseFloat(String(overridePct).replace(/%/g, ''))
@@ -54,6 +57,7 @@ export function YieldOptimisationPage() {
     () => rows.reduce((s, t) => s + (Number.isFinite(Number(t.amount)) ? Number(t.amount) : 0), 0),
     [rows],
   )
+  const liquidity = useMemo(() => computeLiquidityBuffer(rows), [rows])
   const cashBasis = Math.max(0, totalCash)
   const blendedDec = blendedPct / 100
   const bestDec = YIELD_BEST_PCT / 100
@@ -164,9 +168,13 @@ export function YieldOptimisationPage() {
                     {p.fscsLabel}
                   </span>
                   <div style={{ marginTop: '0.75rem' }}>
-                    <a className="detail-btn detail-btn--salmon" href={p.applyUrl} target="_blank" rel="noreferrer">
+                    <button
+                      type="button"
+                      className="detail-btn detail-btn--salmon"
+                      onClick={() => setApplyProduct(p)}
+                    >
                       Apply
-                    </a>
+                    </button>
                   </div>
                 </div>
               </article>
@@ -199,6 +207,17 @@ export function YieldOptimisationPage() {
           ))}
         </div>
       </section>
+
+      {applyProduct ? (
+        <YieldApplyConfirmModal
+          open
+          product={applyProduct}
+          liquidity={liquidity}
+          currentYieldDec={blendedDec}
+          source="yield_optimisation"
+          onClose={() => setApplyProduct(null)}
+        />
+      ) : null}
     </div>
   )
 }

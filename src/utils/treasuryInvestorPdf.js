@@ -1,11 +1,11 @@
 import { jsPDF } from 'jspdf'
 import { formatGBP, formatPct } from './treasuryFormat'
 
-/** Deep navy brand */
-const ACCENT = [30, 58, 95]
+/** Royal blue brand */
+const ACCENT = [27, 43, 140]
 /** Primary text */
 const INK = [15, 15, 15]
-const HEADER_BG = [30, 58, 95]
+const HEADER_BG = [27, 43, 140]
 const MUTED = [107, 114, 128]
 const PAGE_W = 210
 const PAGE_H = 297
@@ -225,7 +225,7 @@ export function downloadTreasuryInvestorPdf(payload) {
   doc.setFontSize(9)
   setMuted(doc)
   const intro = doc.splitTextToSize(
-    'The three most recent AI-generated treasury actions (from the dashboard). Refresh actions on the dashboard to update.',
+    'The three most recent autopilot recommendations (from Treasury Autopilot). Refresh actions there to update.',
     PAGE_W - 2 * M,
   )
   doc.text(intro, M, y)
@@ -235,7 +235,7 @@ export function downloadTreasuryInvestorPdf(payload) {
   if (!actions.length) {
     doc.setFont('helvetica', 'italic')
     setMuted(doc)
-    doc.text('No cached actions yet. Open the treasury dashboard and use “Refresh Actions”.', M, y)
+    doc.text('No cached actions yet. Open Treasury Autopilot and use “Refresh Actions”.', M, y)
   } else {
     actions.forEach((a, idx) => {
       if (y > PAGE_H - 50) return

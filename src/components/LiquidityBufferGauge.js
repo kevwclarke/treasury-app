@@ -5,7 +5,7 @@ const SCALE_MONTHS = 6
 const STROKE = {
   red: '#DC2626',
   amber: '#D97706',
-  green: '#1E3A5F',
+  green: '#1B2B8C',
 }
 
 /**

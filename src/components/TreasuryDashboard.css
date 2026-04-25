@@ -100,6 +100,54 @@
 .tdash__title-block {
   flex: 1 1 12rem;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.tdash__view-toggle {
+  display: inline-flex;
+  border: 1px solid var(--td-card-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--td-card);
+}
+
+.tdash__view-toggle-btn {
+  padding: 0.45rem 0.85rem;
+  font-family: var(--td-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--td-muted);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--td-card-border);
+  cursor: pointer;
+  transition: color var(--ds-transition), background var(--ds-transition);
+}
+
+.tdash__view-toggle-btn:last-child {
+  border-right: none;
+}
+
+.tdash__view-toggle-btn:hover {
+  color: #0f0f0f;
+  background: rgba(27, 43, 140, 0.06);
+}
+
+.tdash__view-toggle-btn--active {
+  color: #fff;
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
+  border-color: var(--ds-brand);
+}
+
+.tdash__view-toggle-btn--active:hover {
+  color: #fff;
+  background: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 .tdash__page-title {
@@ -110,6 +158,15 @@
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: #0f0f0f;
+}
+
+.tdash__page-subtitle {
+  margin: 0;
+  max-width: 28rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--td-muted);
 }
 
 .tdash__topbar-actions {
@@ -186,7 +243,7 @@
 
 .tdash__btn--primary {
   color: #ffffff;
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
   border-color: var(--ds-brand);
   padding: 10px 20px;
   border-radius: var(--ds-radius-btn);
@@ -195,11 +252,12 @@
 .tdash__btn--primary:hover {
   background: var(--ds-brand-hover);
   border-color: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 .tdash__btn--salmon {
   color: #ffffff;
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
   border-color: var(--ds-brand);
   padding: 10px 20px;
   border-radius: var(--ds-radius-btn);
@@ -208,6 +266,7 @@
 .tdash__btn--salmon:hover {
   background: var(--ds-brand-hover);
   border-color: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 /* Alerts */
@@ -354,29 +413,32 @@
 
 .tdash__alert-action--red {
   color: #ffffff;
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
 }
 
 .tdash__alert-action--red:hover {
   background: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 .tdash__alert-action--amber {
   color: #ffffff;
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
 }
 
 .tdash__alert-action--amber:hover {
   background: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 .tdash__alert-action--blue {
   color: #ffffff;
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
 }
 
 .tdash__alert-action--blue:hover {
   background: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4);
 }
 
 .tdash__promo {
@@ -424,8 +486,8 @@
 .tdash__autopilot {
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.25rem;
-  background: rgba(30, 58, 95, 0.04);
-  border: 1px solid rgba(30, 58, 95, 0.18);
+  background: rgba(27, 43, 140, 0.04);
+  border: 1px solid rgba(27, 43, 140, 0.18);
   border-left: 3px solid var(--ds-brand);
   border-radius: var(--ds-radius-card);
   box-shadow: var(--td-card-shadow);
@@ -471,7 +533,7 @@
   padding: 10px 18px;
   border-radius: var(--ds-radius-btn);
   border: 1px solid var(--ds-brand);
-  background: var(--ds-brand);
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
   color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
@@ -486,7 +548,7 @@
 .tdash__autopilot-link:hover {
   transform: translateY(-1px);
   background: var(--ds-brand-hover);
-  box-shadow: var(--ds-card-shadow-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.4), var(--ds-card-shadow-hover);
 }
 
 .tdash__autopilot-empty {
@@ -582,9 +644,9 @@
   min-width: 0;
   padding: 28px;
   overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+  background: linear-gradient(165deg, #ffffff 0%, #f5f6ff 42%, #f0f2ff 100%);
   border: 1px solid var(--td-card-border);
-  border-top: 1px solid var(--ds-brand);
+  border-top: 2px solid var(--ds-brand);
   border-radius: 12px;
   box-shadow: var(--td-card-shadow);
   transition:
@@ -679,6 +741,7 @@
 .tdash__card {
   background: var(--td-card);
   border: 1px solid var(--td-card-border);
+  border-top: 1px solid #1b2b8c25;
   border-radius: var(--ds-radius-card);
   padding: var(--ds-card-padding);
   box-shadow: var(--td-card-shadow);
@@ -906,6 +969,7 @@
   background: var(--ds-brand);
   border: 1px solid var(--ds-brand);
   border-radius: var(--ds-radius-btn);
+  cursor: pointer;
   transition:
     background var(--ds-transition),
     border-color var(--ds-transition),
@@ -1080,8 +1144,8 @@
 }
 
 .tdash__scenario--bull {
-  background: rgba(30, 58, 95, 0.08);
-  border-color: rgba(30, 58, 95, 0.22);
+  background: rgba(27, 43, 140, 0.08);
+  border-color: rgba(27, 43, 140, 0.22);
 }
 
 .tdash__scenario-label {
@@ -1638,8 +1702,20 @@
   background: rgba(15, 15, 15, 0.04);
 }
 
-.tdash__fx-flag {
-  font-size: 1.125rem;
+.tdash__fx-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 1.5px solid rgba(27, 43, 140, 0.35);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ds-brand);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
 }
 
 .tdash__fx-pair {
@@ -1734,8 +1810,8 @@
 
 .tdash__peer-position--green {
   color: var(--ds-brand);
-  background: rgba(30, 58, 95, 0.1);
-  border-color: rgba(30, 58, 95, 0.28);
+  background: rgba(27, 43, 140, 0.1);
+  border-color: rgba(27, 43, 140, 0.28);
 }
 
 .tdash__peer-position--amber {

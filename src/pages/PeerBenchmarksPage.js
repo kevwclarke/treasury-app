@@ -13,10 +13,10 @@ export function PeerBenchmarksPage() {
       <section className="detail-section">
         <p style={{ fontSize: '1rem', lineHeight: 1.6, margin: 0 }}>
           Peer benchmarking unlocks at <strong>50 customers</strong>. We currently have <strong>{CUSTOMERS}</strong>{' '}
-          companies on the platform. Join the waitlist to be notified when your cohort is ready.
+          companies on the platform. Get early access to be notified when your cohort is ready.
         </p>
         <button type="button" className="detail-btn detail-btn--dark" style={{ marginTop: '1rem' }}>
-          Join waitlist
+          Get early access
         </button>
       </section>
 

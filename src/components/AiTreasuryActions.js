@@ -116,15 +116,18 @@ export function AiTreasuryActions({
   const showPlaceholder = !hasTxn && !txnLoading
 
   return (
-    <section className="ai-actions" aria-labelledby="ai-treasury-actions-heading">
+    <section className="ai-actions" aria-labelledby="ai-autopilot-recommendations-heading">
       <div className="ai-actions__head">
-        <div>
-          <h2 id="ai-treasury-actions-heading" className="ai-actions__title">
-            AI Treasury Actions
-          </h2>
+        <div className="ai-actions__intro">
+          <div className="ai-actions__title-row">
+            <h2 id="ai-autopilot-recommendations-heading" className="ai-actions__title">
+              Autopilot Recommendations
+            </h2>
+            <span className="ai-actions__badge ai-actions__badge--treasury">Treasury</span>
+          </div>
+          <p className="ai-actions__subtitle">Treasury actions — yield, protection, and cash structure</p>
           <p className="ai-actions__lead">
-            Ranked moves from your live balances, yield gap, concentration, runway, and burn — with estimated annual
-            impact in GBP.
+            Ranked by pound impact — with the cost of inaction if ignored
           </p>
         </div>
         <button
@@ -142,7 +145,7 @@ export function AiTreasuryActions({
 
       {showPlaceholder ? (
         <p className="ai-actions__hint">
-          Upload transactions to generate AI treasury actions. <Link to="/upload">Upload statement</Link>
+          Upload transactions to generate autopilot recommendations. <Link to="/upload">Upload statement</Link>
         </p>
       ) : null}
 
@@ -196,6 +199,11 @@ export function AiTreasuryActions({
               </article>
             ))}
       </div>
+
+      <p className="ai-actions__crosslink">
+        For spend reduction opportunities see{' '}
+        <Link to="/app/burn-intelligence">Burn Intelligence</Link> in the sidebar.
+      </p>
     </section>
   )
 }

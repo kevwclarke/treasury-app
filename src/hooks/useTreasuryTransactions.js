@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
 
 /**
- * Loads the signed-in user’s transactions (same query as the treasury dashboard).
+ * Loads the signed-in user’s transactions (same query as Treasury Autopilot).
  * @returns {{ txnLoading: boolean, txnError: string, txnRows: Array<{ amount?: number|string, payee?: string, date?: string, institution?: string }> }}
  */
 export function useTreasuryTransactions() {

@@ -6,7 +6,7 @@ export function ModulePlaceholder({ title, description }) {
       <h1 className="module-placeholder__title">{title}</h1>
       <p className="module-placeholder__body">
         {description ??
-          'This module is coming soon. Treasury intelligence views will appear here.'}
+          'This module is coming soon. Treasury Autopilot views will appear here.'}
       </p>
     </div>
   )

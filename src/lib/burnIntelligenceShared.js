@@ -3,6 +3,8 @@
  * Used by localhost browser (direct Anthropic) and Vercel serverless.
  */
 
+import { COST_OF_INACTION_INSTRUCTION } from './anthropicCostOfInaction.js'
+
 export const BURN_INTELLIGENCE_SYSTEM_PROMPT =
   `You are a management consultant specialising in startup cost efficiency advising a startup CFO. ` +
   `You have been given this company's spend by category for the last 90 days. ` +
@@ -12,11 +14,19 @@ export const BURN_INTELLIGENCE_SYSTEM_PROMPT =
   `effort level as Low Medium or High, and the runway extension in days if actioned. ` +
   `Be specific — reference actual spend figures, name specific tools or vendors where identifiable, give concrete steps a CFO can take this week. ` +
   `Frame every recommendation as an outcome statement — what specifically happens if the CFO takes this action this week in pounds and days of runway. ` +
-  `Never recommend headcount cuts or salary reductions.`
+  `Never recommend headcount cuts or salary reductions. ` +
+  `Only recommend spend reduction actions — vendor costs, software subscriptions, contractor optimisation, and operational efficiency. ` +
+  `Never recommend moving cash between accounts or yield optimisation. ` +
+  COST_OF_INACTION_INSTRUCTION
+
+export const BURN_BRIEF_SYSTEM_PROMPT =
+  'You are a startup CFO advisor and vendor negotiation specialist. Produce a one-page vendor negotiation brief as clean, print-ready HTML (no markdown). Use Inter font, white background, navy headings (#1B2B8C), and a professional layout with generous whitespace. ' +
+  COST_OF_INACTION_INSTRUCTION
 
 export const BURN_OPPORTUNITIES_TOOL = {
   name: 'submit_burn_opportunities',
-  description: 'Exactly five burn reduction opportunities with savings ranges.',
+  description:
+    'Exactly five spend-reduction opportunities (vendors, subscriptions, contractors, ops efficiency) with savings ranges. Never treasury placement or yield optimisation.',
   input_schema: {
     type: 'object',
     properties: {
@@ -63,7 +73,7 @@ export function buildBurnOpportunitiesUserPrompt(spendByCategoryGbp) {
     'Spend by category (GBP per month):',
     JSON.stringify(spendByCategoryGbp),
     '',
-    'Return exactly 5 opportunities via the tool.',
+    'Return exactly 5 opportunities via the tool. Each must be spend reduction only (vendors, subscriptions, contractors, operational efficiency). Do not recommend yield, account moves, or other treasury placement.',
   ].join('\n')
 }
 

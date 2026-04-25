@@ -393,7 +393,7 @@ export function UploadPage() {
               </svg>
             </div>
             <p className="upload__celebrate-title">Import complete</p>
-            <p className="upload__celebrate-sub">Taking you to your treasury health…</p>
+            <p className="upload__celebrate-sub">Taking you to Treasury Autopilot…</p>
           </div>
         </div>
       ) : null}

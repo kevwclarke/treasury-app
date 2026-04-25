@@ -85,8 +85,8 @@
 }
 
 .login-page__input:focus {
-  border-color: rgba(30, 58, 95, 0.45);
-  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.12);
+  border-color: rgba(27, 43, 140, 0.45);
+  box-shadow: 0 0 0 2px rgba(27, 43, 140, 0.12);
 }
 
 .login-page__input:disabled {
@@ -150,12 +150,12 @@
   font-weight: 600;
   color: var(--ds-brand);
   text-decoration: none;
-  border-bottom: 1px solid rgba(30, 58, 95, 0.25);
+  border-bottom: 1px solid rgba(27, 43, 140, 0.25);
 }
 
 .login-page__footer-link:hover {
   color: var(--ds-brand-hover);
-  border-bottom-color: rgba(30, 58, 95, 0.45);
+  border-bottom-color: rgba(27, 43, 140, 0.45);
 }
 
 .login-page__site-footer {

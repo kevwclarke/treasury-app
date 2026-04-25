@@ -6,7 +6,7 @@
 
 .burn-intel__summary {
   border-left: 3px solid var(--bi-navy);
-  background: rgba(30, 58, 95, 0.06);
+  background: rgba(27, 43, 140, 0.06);
 }
 
 .burn-intel__summary p {
@@ -127,7 +127,7 @@
 }
 
 .burn-intel__bar-cell--target {
-  background: rgba(30, 58, 95, 0.06);
+  background: rgba(27, 43, 140, 0.06);
 }
 
 .burn-intel__cards {
@@ -186,8 +186,8 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  border: 1px solid rgba(30, 58, 95, 0.25);
-  background: rgba(30, 58, 95, 0.08);
+  border: 1px solid rgba(27, 43, 140, 0.25);
+  background: rgba(27, 43, 140, 0.08);
   color: var(--bi-navy);
   white-space: nowrap;
 }
@@ -286,7 +286,7 @@
 }
 
 .burn-intel__btn--primary {
-  border-color: rgba(30, 58, 95, 0.45);
+  border-color: rgba(27, 43, 140, 0.45);
   background: var(--ds-brand);
   color: #fff;
 }
@@ -296,9 +296,9 @@
 }
 
 .burn-intel__btn--outline {
-  border-color: rgba(30, 58, 95, 0.35);
+  border-color: rgba(27, 43, 140, 0.35);
   color: var(--bi-navy);
-  background: rgba(30, 58, 95, 0.03);
+  background: rgba(27, 43, 140, 0.03);
 }
 
 .burn-intel__status {
@@ -312,19 +312,20 @@
 }
 
 .burn-intel__status-check {
+  flex-shrink: 0;
   width: 18px;
   height: 18px;
   border-radius: 999px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
+  padding: 2px;
+  box-sizing: border-box;
   background: rgba(22, 163, 74, 0.12);
   color: #166534;
   border: 1px solid rgba(22, 163, 74, 0.22);
 }
 
 .burn-intel__policy-card {
-  background: rgba(30, 58, 95, 0.06);
+  background: rgba(27, 43, 140, 0.06);
   border-left: 3px solid var(--ds-brand);
 }
 
@@ -370,3 +371,74 @@
   font-size: 12px;
 }
 
+.burn-intel__crosslink-top {
+  margin: 0.65rem 0 0;
+  max-width: 40rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.burn-intel__crosslink-top a {
+  color: var(--ds-brand);
+  font-weight: 600;
+  font-style: normal;
+  text-decoration: none;
+}
+
+.burn-intel__crosslink-top a:hover {
+  text-decoration: underline;
+}
+
+.burn-intel__ai-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+}
+
+.burn-intel__ai-head-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.burn-intel__title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.65rem;
+}
+
+.burn-intel__ai-title {
+  margin: 0;
+}
+
+.burn-intel__badge-spend {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 4px;
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.45);
+}
+
+.burn-intel__subtitle-spend {
+  margin: 0.4rem 0 0;
+  max-width: 42rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #4b5563;
+}
+
+.burn-intel__ai-lead {
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}

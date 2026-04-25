@@ -13,6 +13,17 @@ import {
   validateMetricsBody,
 } from '../lib/treasuryAnthropicShared'
 
+/**
+ * System prompt for localhost Anthropic calls must match production `/api/treasury-actions`.
+ * It includes the 30-day cost-of-inaction rule (verbatim):
+ *
+ * For each action you recommend, add one sentence at the end stating the cost of inaction — specifically:
+ * 'If this is not actioned in the next 30 days, the cost is £X' — where X is the pound value lost or foregone in that
+ * 30-day period based on the numbers provided. Make this specific and calculated, not generic.
+ *
+ * Source of truth: `../lib/treasuryAnthropicShared.js` → `SYSTEM_PROMPT` (imports `../lib/anthropicCostOfInaction.js`).
+ */
+
 function isLocalDevHostname() {
   if (typeof window === 'undefined') return false
   const h = window.location.hostname
@@ -54,7 +65,7 @@ async function fetchTreasuryActionsViaAnthropicBrowser({ metrics, signal }) {
   const apiKey = process.env.REACT_APP_ANTHROPIC_API_KEY?.trim()
   if (!apiKey) {
     throw new Error(
-      'Missing REACT_APP_ANTHROPIC_API_KEY. Add it to .env.local for local AI Treasury Actions.',
+      'Missing REACT_APP_ANTHROPIC_API_KEY. Add it to .env.local for local Autopilot Recommendations.',
     )
   }
 

@@ -18,6 +18,7 @@ import { PeerBenchmarksPage } from '../pages/PeerBenchmarksPage'
 import { LiquidityBufferPage } from '../pages/LiquidityBufferPage'
 import { RunwayBurnPage } from '../pages/RunwayBurnPage'
 import { BurnIntelligencePage } from '../pages/BurnIntelligencePage'
+import { CashControlPage } from '../pages/CashControlPage'
 import { ScenarioModellerFullPage } from '../pages/ScenarioModellerFullPage'
 import { TaxTrackerPage } from '../pages/TaxTrackerPage'
 import { TermSheetCashPage } from '../pages/TermSheetCashPage'
@@ -44,6 +45,7 @@ export function NavigationShell() {
           <Route element={<RequireCompanyProfile />}>
             <Route element={<DashboardLayout />}>
               <Route index element={<TreasuryDashboard />} />
+              <Route path="control" element={<CashControlPage />} />
               <Route path="yield" element={<YieldOptimisationPage />} />
               <Route path="concentration" element={<ConcentrationRiskPage />} />
               <Route path="runway" element={<RunwayBurnPage />} />

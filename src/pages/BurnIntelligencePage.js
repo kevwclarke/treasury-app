@@ -93,10 +93,10 @@ function scoreBand(score) {
 function categoryColour(cat, effort) {
   const c = String(cat || '').toLowerCase()
   if (effort === 'High') return 'rgba(220, 38, 38, 0.9)'
-  if (c.includes('infra')) return 'rgba(30, 58, 95, 0.95)'
+  if (c.includes('infra')) return 'rgba(27, 43, 140, 0.95)'
   if (c.includes('contract')) return 'rgba(22, 163, 74, 0.95)'
   if (c.includes('marketing') || c.includes('saas')) return 'rgba(217, 119, 6, 0.95)'
-  return 'rgba(30, 58, 95, 0.6)'
+  return 'rgba(27, 43, 140, 0.6)'
 }
 
 function toMoneyRange(range) {
@@ -154,7 +154,7 @@ function BurnTooltip({ active, payload }) {
         Current: <strong style={{ color: '#DC2626' }}>{formatGBP(Math.round(p.current))}</strong>
       </p>
       <p style={{ margin: '0.25rem 0 0', fontSize: 12, color: '#6B7280' }}>
-        Optimised: <strong style={{ color: '#1E3A5F' }}>{formatGBP(Math.round(p.optimised))}</strong>
+        Optimised: <strong style={{ color: '#1B2B8C' }}>{formatGBP(Math.round(p.optimised))}</strong>
       </p>
     </div>
   )
@@ -622,7 +622,7 @@ export function BurnIntelligencePage() {
             elements: [
               {
                 type: 'button',
-                text: { type: 'plain_text', text: 'View in Dashboard' },
+                text: { type: 'plain_text', text: 'View in Treasury Autopilot' },
                 url: `${window.location.origin}/app/burn-intelligence`,
               },
               {
@@ -669,6 +669,10 @@ export function BurnIntelligencePage() {
       <header className="detail-hero">
         <h1 className="detail-title">Burn Intelligence</h1>
         <p className="detail-sub">Specific actions to reduce your monthly spend — ranked by impact</p>
+        <p className="burn-intel__crosslink-top">
+          For treasury and cash structure actions see{' '}
+          <Link to="/app">Autopilot Recommendations</Link> on the dashboard.
+        </p>
       </header>
 
       <section className="detail-section burn-intel__summary">
@@ -711,7 +715,7 @@ export function BurnIntelligencePage() {
             </p>
 
             <div className="burn-intel__target-grid">
-              <div className="detail-stat" style={{ borderColor: 'rgba(30, 58, 95, 0.25)', background: 'rgba(30, 58, 95, 0.04)' }}>
+              <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.25)', background: 'rgba(27, 43, 140, 0.04)' }}>
                 <p className="detail-stat__cap">Option A — % reduction</p>
                 <input
                   className="detail-input"
@@ -728,7 +732,7 @@ export function BurnIntelligencePage() {
                   Target: <strong>{targetPct}%</strong> (save {formatGBP(Math.round(targetSavingFromPct))}/mo)
                 </p>
               </div>
-              <div className="detail-stat" style={{ borderColor: 'rgba(30, 58, 95, 0.25)', background: 'rgba(30, 58, 95, 0.04)' }}>
+              <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.25)', background: 'rgba(27, 43, 140, 0.04)' }}>
                 <p className="detail-stat__cap">Option B — £ saving / month</p>
                 <input
                   className="detail-input"
@@ -755,7 +759,7 @@ export function BurnIntelligencePage() {
                 </div>
                 <div className="burn-intel__bar-cell burn-intel__bar-cell--target">
                   <span>Target burn</span>
-                  <strong style={{ color: '#1E3A5F' }}>{formatGBP(Math.round(targetBurn))}</strong>
+                  <strong style={{ color: '#1B2B8C' }}>{formatGBP(Math.round(targetBurn))}</strong>
                 </div>
               </div>
             </div>
@@ -776,17 +780,21 @@ export function BurnIntelligencePage() {
       </section>
 
       <section className="detail-section">
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-          <h2 className="detail-section__title" style={{ marginBottom: 0 }}>
-            AI opportunities
-          </h2>
+        <div className="burn-intel__ai-head">
+          <div className="burn-intel__ai-head-text">
+            <div className="burn-intel__title-row">
+              <h2 className="detail-section__title burn-intel__ai-title">AI opportunities</h2>
+              <span className="burn-intel__badge-spend">Spend</span>
+            </div>
+            <p className="burn-intel__subtitle-spend">Spend actions — reduce costs without cutting headcount</p>
+            <p className="detail-section__lead burn-intel__ai-lead">
+              Five concrete opportunities ranked by impact. We never recommend headcount or salary cuts.
+            </p>
+          </div>
           <button type="button" className="detail-btn detail-btn--dark" onClick={handleFetchOpportunities} disabled={aiLoading || txnLoading}>
             {aiLoading ? 'Generating…' : 'Generate 5 actions'}
           </button>
         </div>
-        <p className="detail-section__lead" style={{ marginTop: 10 }}>
-          Five concrete burn reduction opportunities ranked by impact. We never recommend headcount or salary cuts.
-        </p>
         {aiError ? <p className="detail-muted" style={{ color: '#DC2626' }}>{aiError}</p> : null}
         {!txnLoading && !txnRows.length ? (
           <p className="detail-muted">
@@ -884,15 +892,28 @@ export function BurnIntelligencePage() {
                       onClick={() => handleMarkActioned(o)}
                       disabled={isActioned}
                     >
-                      {isActioned ? 'Actioned ✓' : 'Mark actioned'}
+                      {isActioned ? 'Actioned' : 'Mark actioned'}
                     </button>
                   </div>
 
                   {isActioned ? (
                     <div className="burn-intel__status">
-                      <span className="burn-intel__status-check" aria-hidden>
-                        ✓
-                      </span>
+                      <svg
+                        className="burn-intel__status-check"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        aria-hidden
+                      >
+                        <path
+                          d="M5 12l4 4L19 6"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
                       Status: Actioned
                     </div>
                   ) : null}
@@ -910,9 +931,9 @@ export function BurnIntelligencePage() {
       <section className="detail-section">
         <h2 className="detail-section__title">Actioned savings tracker</h2>
         <div className="detail-grid3">
-          <div className="detail-stat" style={{ borderColor: 'rgba(30, 58, 95, 0.28)', background: 'rgba(30, 58, 95, 0.06)' }}>
+          <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.28)', background: 'rgba(27, 43, 140, 0.06)' }}>
             <p className="detail-stat__cap">Total savings identified</p>
-            <p className="detail-stat__val" style={{ color: '#1E3A5F' }}>
+            <p className="detail-stat__val" style={{ color: '#1B2B8C' }}>
               {formatGBP(Math.round(totalOppIdentified.low))}–{formatGBP(Math.round(totalOppIdentified.high))}
             </p>
           </div>
@@ -972,7 +993,7 @@ export function BurnIntelligencePage() {
               />
               <Tooltip content={<BurnTooltip />} />
               <Line type="monotone" dataKey="current" stroke="#DC2626" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="optimised" stroke="#1E3A5F" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="optimised" stroke="#1B2B8C" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -984,7 +1005,7 @@ export function BurnIntelligencePage() {
             </div>
             <div className="burn-intel__bar-cell burn-intel__bar-cell--target">
               <span>Optimised burn</span>
-              <strong style={{ color: '#1E3A5F' }}>
+              <strong style={{ color: '#1B2B8C' }}>
                 {formatGBP(Math.round(Math.max(0, currentMonthlyBurn - actionedTotals.actionedHigh)))}/mo
               </strong>
             </div>
@@ -1016,7 +1037,7 @@ export function BurnIntelligencePage() {
             />
             <p className="detail-muted" style={{ marginTop: 8 }}>
               Status:{' '}
-              <strong style={{ color: policyStatus.runwayOk ? '#1E3A5F' : '#DC2626' }}>
+              <strong style={{ color: policyStatus.runwayOk ? '#1B2B8C' : '#DC2626' }}>
                 {currentRunwayMo == null ? 'Unknown' : policyStatus.runwayOk ? 'Meeting policy' : 'Breaching policy'}
               </strong>
             </p>
@@ -1036,7 +1057,7 @@ export function BurnIntelligencePage() {
             />
             <p className="detail-muted" style={{ marginTop: 8 }}>
               Status:{' '}
-              <strong style={{ color: policyStatus.burnSpikeOk ? '#1E3A5F' : '#DC2626' }}>
+              <strong style={{ color: policyStatus.burnSpikeOk ? '#1B2B8C' : '#DC2626' }}>
                 {policyStatus.burnSpikeOk ? 'No spike detected' : 'Spike detected'}
               </strong>
             </p>
@@ -1054,7 +1075,7 @@ export function BurnIntelligencePage() {
               </span>
             </label>
             <p className="detail-muted" style={{ marginTop: 8 }}>
-              Status: <strong style={{ color: '#1E3A5F' }}>Configured</strong>
+              Status: <strong style={{ color: '#1B2B8C' }}>Configured</strong>
             </p>
           </div>
         </div>
@@ -1129,7 +1150,7 @@ export function BurnIntelligencePage() {
       </section>
 
       <p className="detail-muted" style={{ marginTop: 6 }}>
-        Back to <Link to="/app">Treasury Dashboard</Link>
+        Back to <Link to="/app">Treasury Autopilot</Link>
       </p>
     </div>
   )

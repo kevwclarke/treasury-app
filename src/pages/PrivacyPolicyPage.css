@@ -45,7 +45,7 @@
 
 .privacy-page__link:hover {
   color: var(--ds-brand-hover);
-  border-bottom-color: rgba(30, 58, 95, 0.35);
+  border-bottom-color: rgba(27, 43, 140, 0.35);
 }
 
 .privacy-page__main {

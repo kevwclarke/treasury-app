@@ -3,14 +3,18 @@ import { useEffect, useState } from 'react'
 /**
  * Animates a numeric value from 0 toward `endValue` when `enabled` becomes true.
  * @param {number} endValue
- * @param {{ duration?: number, enabled?: boolean }} opts
+ * @param {{ duration?: number, enabled?: boolean, resetWhenDisabled?: boolean }} opts
  */
-export function useCountUp(endValue, { duration = 850, enabled = true } = {}) {
-  const [v, setV] = useState(() => (enabled ? 0 : endValue))
+export function useCountUp(endValue, { duration = 850, enabled = true, resetWhenDisabled = false } = {}) {
+  const [v, setV] = useState(() => {
+    if (resetWhenDisabled && !enabled) return 0
+    return enabled ? 0 : endValue
+  })
 
   useEffect(() => {
     if (!enabled || endValue == null || !Number.isFinite(endValue)) {
-      setV(endValue ?? 0)
+      if (resetWhenDisabled) setV(0)
+      else setV(endValue ?? 0)
       return undefined
     }
 
@@ -30,7 +34,7 @@ export function useCountUp(endValue, { duration = 850, enabled = true } = {}) {
     setV(0)
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [endValue, duration, enabled])
+  }, [endValue, duration, enabled, resetWhenDisabled])
 
   return v
 }

@@ -1,18 +1,21 @@
-/* Deep navy brand — B2B treasury UI tokens */
+/* Royal blue brand — premium B2B treasury UI tokens */
 :root {
   /* Inter only — display stack matches body for legacy var(--ds-font-display) */
   --ds-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --ds-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  --ds-brand: #1e3a5f;
-  --ds-brand-hover: #162d4a;
-  /* Sidebar active row tint ≈ #1E3A5F at ~6% */
-  --ds-brand-tint: rgba(30, 58, 95, 0.063);
+  --ds-brand: #1b2b8c;
+  --ds-brand-mid: #2235a8;
+  --ds-brand-hover: #0f1f7a;
+  /* Sidebar active row tint — brand @ ~8% alpha */
+  --ds-brand-tint: #1b2b8c15;
 
   --ds-bg: #ffffff;
   --ds-bg-subtle: #fafafa;
-  --ds-sidebar: #0f0f0f;
-  --ds-sidebar-text: #9ca3af;
+  --ds-sidebar: #0a0a1a;
+  --ds-sidebar-gradient-top: #0d0d24;
+  --ds-sidebar-muted: #4a5280;
+  --ds-sidebar-text: #8890b5;
   --ds-sidebar-text-active: #ffffff;
 
   --ds-text: #0f0f0f;
@@ -21,16 +24,16 @@
 
   --ds-border: #e5e7eb;
 
-  /* Positive runway / inflows / “good” figures — navy */
-  --ds-positive: #1e3a5f;
+  /* Positive runway / inflows / “good” figures — royal blue */
+  --ds-positive: #1b2b8c;
   --ds-error: #dc2626;
   --ds-warning: #d97706;
-  /* Links, focus rings, info alert accent — navy */
-  --ds-info: #1e3a5f;
+  /* Links, focus rings, info alert accent */
+  --ds-info: #1b2b8c;
   /* Opportunity / below benchmark / headline stress — red */
   --ds-opportunity: #dc2626;
   /* Legacy accent name → brand (CTAs, chrome) */
-  --ds-accent: #1e3a5f;
+  --ds-accent: #1b2b8c;
 
   --ds-alert-urgent-bg: #fef2f2;
   --ds-alert-warning-bg: #fffbeb;
@@ -67,9 +70,9 @@
   border-radius: 6px;
   background: linear-gradient(
     110deg,
-    rgba(30, 58, 95, 0.04) 8%,
-    rgba(30, 58, 95, 0.08) 18%,
-    rgba(30, 58, 95, 0.04) 33%
+    rgba(27, 43, 140, 0.04) 8%,
+    rgba(27, 43, 140, 0.08) 18%,
+    rgba(27, 43, 140, 0.04) 33%
   );
   background-size: 200% 100%;
   animation: ds-shimmer 1.35s ease-in-out infinite;

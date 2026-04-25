@@ -4,7 +4,7 @@ import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFor
 import './RunwayBurnMonthlyChart.css'
 
 const CAT_COLORS = {
-  Payroll: '#1E3A5F',
+  Payroll: '#1B2B8C',
   Infrastructure: '#374151',
   Contractors: '#4B5563',
   Travel: '#6B7280',
@@ -219,7 +219,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
 
           <polyline
             fill="none"
-            stroke="#1E3A5F"
+            stroke="#1B2B8C"
             strokeWidth="1.5"
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -229,7 +229,7 @@ export function RunwayBurnMonthlyChart({ monthlyTableRows, rows, onExportCsv }) 
           {monthlyTableRows.map((r, i) => {
             const cx = PLOT_X0 + i * slotW + slotW / 2
             const y = yScale(r.total)
-            return <circle key={`dot-${r.key}`} cx={cx} cy={y} r="3.5" fill="#1E3A5F" stroke="#FFFFFF" strokeWidth="1" />
+            return <circle key={`dot-${r.key}`} cx={cx} cy={y} r="3.5" fill="#1B2B8C" stroke="#FFFFFF" strokeWidth="1" />
           })}
 
           {monthlyTableRows.map((r, i) => {

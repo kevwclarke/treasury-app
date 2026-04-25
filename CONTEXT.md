@@ -1,6 +1,6 @@
 # Project context
 
-**Product:** Treasury intelligence SaaS for CFOs and Finance Directors at funded startups
+**Product:** Treasury Autopilot — a workspace for CFOs and Finance Directors at funded startups that maintains runway automatically and surfaces pound-ranked actions (yield, liquidity, concentration, burn).
 
 **Stack:** React, Supabase, Vercel
 
@@ -10,16 +10,17 @@
 
 **Public**
 
-- Landing / waitlist at `/`
+- Landing / early access at `/`
 - Login at `/login`
 - Sign up at `/signup`
 
-**Authenticated (shell: near-black sidebar + white main — same layout for all below)**
+**Authenticated (shell: deep blue-black sidebar `#0A0A1A` + white main — same layout for all below)**
 
-- Treasury dashboard (overview cards) at `/app`
+- Treasury Autopilot (main overview) at `/app`
+- Cash Control (simplified runway / yield / FX stack) at `/app/control`
 - CSV upload at `/upload`
 
-**Intelligence (full detail pages)**
+**Detail modules (full pages)**
 
 - Yield Optimisation at `/app/yield`
 - Concentration Risk at `/app/concentration`
@@ -46,11 +47,13 @@
 
 ## Design style
 
-Deep navy brand (`#1E3A5F`) on white: CTAs, links, positive runway/inflows, and sidebar active state; red for opportunity cost and material negatives; amber only for warning-severity alerts. Typography is Inter throughout (Google Fonts), with a premium SaaS scale for headings, KPI numerals, and muted body copy.
+Royal blue brand (`#1B2B8C`) on white: CTAs, links, positive runway/inflows, and sidebar active state; red for opportunity cost and material negatives; amber only for warning-severity alerts. Typography is Inter throughout (Google Fonts), with a premium SaaS scale for headings, KPI numerals, and muted body copy.
 
 ## Product vision
 
-**Treasury Autopilot** — we maintain the CFO's runway automatically. Intelligence layer is live. Execution layer is the roadmap.
+**Treasury Autopilot** maintains the CFO’s runway automatically, quantifies idle-cash and other leaks in pounds, and recommends specific next moves with impact and cost of inaction. This is the product positioning (not a generic “treasury intelligence” dashboard).
+
+**Autopilot Recommendations (dashboard)** are treasury-only: yield, FSCS protection, FX, and cash structure. **Burn Intelligence** is spend-only: vendors, subscriptions, contractors, and operational efficiency — no yield or cash-placement advice. The two AI prompts are scoped so they do not overlap.
 
 ## Modules to build (in order)
 
@@ -60,7 +63,7 @@ Deep navy brand (`#1E3A5F`) on white: CTAs, links, positive runway/inflows, and 
 4. Runway modelling
 5. Burn rate breakdown
 6. Cash flow forecast
-7. AI actions layer
+7. Autopilot recommendations layer (AI-ranked actions)
 
 ---
 

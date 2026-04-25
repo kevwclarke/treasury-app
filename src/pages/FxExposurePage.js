@@ -1,23 +1,12 @@
 import { useMemo } from 'react'
 import { useUserTransactions } from '../hooks/useUserTransactions'
 import { formatGBP } from '../utils/treasuryFormat'
+import { detectFxExposureFromPayees } from '../utils/treasuryFxExposure'
 import '../components/DetailPage.css'
-
-function detectFx(rows) {
-  const pairs = []
-  rows.forEach((t) => {
-    const p = String(t.payee ?? '').toLowerCase()
-    if (/\busd\b|\$|dollar/.test(p) && !pairs.find((x) => x.code === 'USD'))
-      pairs.push({ code: 'USD', flag: '🇺🇸', pair: 'USD → GBP', monthlyFc: 182_000, gbp: 142_600 })
-    if (/\beur\b|€|euro/.test(p) && !pairs.find((x) => x.code === 'EUR'))
-      pairs.push({ code: 'EUR', flag: '🇪🇺', pair: 'EUR → GBP', monthlyFc: 96_400, gbp: 82_900 })
-  })
-  return pairs
-}
 
 export function FxExposurePage() {
   const { rows, loading } = useUserTransactions()
-  const pairs = useMemo(() => detectFx(rows), [rows])
+  const pairs = useMemo(() => detectFxExposureFromPayees(rows), [rows])
 
   if (!loading && pairs.length === 0) {
     return (
@@ -63,8 +52,8 @@ export function FxExposurePage() {
         <h2 className="detail-section__title">Currency breakdown</h2>
         {pairs.map((p) => (
           <div key={p.code} className="detail-product" style={{ marginBottom: 12 }}>
-            <div className="detail-product__rank" style={{ fontSize: '2rem' }}>
-              {p.flag}
+            <div className="detail-currency-code" aria-hidden>
+              {p.code}
             </div>
             <div>
               <h3 className="detail-product__name">{p.pair}</h3>
@@ -72,7 +61,7 @@ export function FxExposurePage() {
                 Monthly exposure {p.monthlyFc.toLocaleString('en-GB')} {p.code} · GBP {formatGBP(p.gbp)}
               </p>
               <div style={{ height: 8, background: '#E5E7EB', borderRadius: 999, marginTop: 8, maxWidth: 360 }}>
-                <div style={{ width: '62%', height: '100%', background: '#1E3A5F', borderRadius: 999 }} />
+                <div style={{ width: '62%', height: '100%', background: '#1b2b8c', borderRadius: 999 }} />
               </div>
               <p className="detail-muted" style={{ marginTop: 8 }}>
                 1% GBP move → {formatGBP(Math.round(p.gbp * 0.01))} on monthly burn · 5% →{' '}

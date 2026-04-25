@@ -81,3 +81,17 @@ export const YIELD_MARKETPLACE_PRODUCTS = [
     minDeposit: '£1',
   },
 ]
+
+/** Rows with Apply on the main Treasury Autopilot yield gap table (order preserved). */
+const YIELD_GAP_DASHBOARD_APPLY_NAMES = [
+  'Shawbrook 12-mo Fixed',
+  'UK T-Bills 91-day',
+  'BlackRock Liquidity Fund',
+  'Flagstone Platform',
+]
+
+export function getYieldGapDashboardApplyProducts() {
+  return YIELD_GAP_DASHBOARD_APPLY_NAMES.map((name) => YIELD_MARKETPLACE_PRODUCTS.find((p) => p.name === name)).filter(
+    Boolean,
+  )
+}

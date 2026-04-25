@@ -1,7 +1,9 @@
 /**
- * Shared Anthropic prompts + tool schema + parsing for AI Treasury Actions.
+ * Shared Anthropic prompts + tool schema + parsing for Autopilot Recommendations.
  * Used by CRA client (localhost direct API) and Vercel serverless (dynamic import).
  */
+
+import { COST_OF_INACTION_INSTRUCTION } from './anthropicCostOfInaction.js'
 
 export const SYSTEM_PROMPT = [
   'You are the head of treasury at a top-tier investment bank advising a startup CFO. Your tone is specific, authoritative, and grounded only in the numeric facts supplied — no speculation beyond what the figures support.',
@@ -9,13 +11,16 @@ export const SYSTEM_PROMPT = [
   'Frame every action as an outcome statement. Do not say "consider" or "you might want to". Say what specifically happens if actioned, in pounds and in days of runway.',
   'Do not hedge with soft phrasing such as "consider", "you might want to", "it may be worth", or "we suggest". Use direct instructions: for example "Move £X to [named product] this week" or "Open an account with [named institution] immediately".',
   'Never recommend anything that could harm the team or culture. Never recommend cutting salaries, headcount, or benefits.',
-  'Stay strictly within: yield optimisation, FSCS protection, FX hedging, cash timing, and banking relationships. If burn is relevant, frame it only as cash runway and timing — never as headcount reduction.',
+  'Only recommend treasury actions — yield optimisation, FSCS protection, FX hedging, and cash structure. Never recommend spend reduction or cost cutting.',
+  'Stay strictly within: yield optimisation, FSCS protection, FX hedging, cash structure, cash timing, and banking relationships. If burn is relevant, frame it only as cash runway and liquidity timing — never as headcount reduction or vendor spend cuts.',
   'Output exactly three actions via the tool schema. Each action must read like a desk note from a senior banker, not generic chatbot text.',
+  COST_OF_INACTION_INSTRUCTION,
 ].join(' ')
 
 export const TREASURY_ACTIONS_TOOL = {
   name: 'submit_treasury_actions',
-  description: 'Exactly three prioritised treasury actions with annual GBP impact and effort.',
+  description:
+    'Exactly three prioritised treasury-only actions (yield, FSCS protection, FX, cash structure) with annual GBP impact and effort. Never spend-reduction or vendor cost-cutting.',
   input_schema: {
     type: 'object',
     properties: {
@@ -54,7 +59,11 @@ export const METRIC_KEYS = [
 ]
 
 export function buildTreasuryActionsUserPrompt(m) {
-  return `This company has £${m.totalCash} in cash earning ${m.currentYield}% when the best available same-liquidity rate is ${m.bestRate}%. Their annual opportunity cost is £${m.annualOppCost}. They have ${m.concentrationPct}% of cash in ${m.topInstitution} with £${m.unprotectedAmount} unprotected by FSCS. Their monthly burn is £${m.monthlyBurn} giving ${m.runway} months runway. Their largest spend category is ${m.topCategory} at ${m.topCategoryPct}% of burn. Give exactly 3 prioritised actions ranked by financial impact. For each action provide: a short title, the specific action to take, the exact pound value impact per year, and effort level as Low Medium or High.`
+  return `This company has £${m.totalCash} in cash earning ${m.currentYield}% when the best available same-liquidity rate is ${m.bestRate}%. Their annual opportunity cost is £${m.annualOppCost}. They have ${m.concentrationPct}% of cash in ${m.topInstitution} with £${m.unprotectedAmount} unprotected by FSCS. Their monthly burn is £${m.monthlyBurn} giving ${m.runway} months runway. Their largest spend category is ${m.topCategory} at ${m.topCategoryPct}% of burn — use category context only for treasury framing (runway, liquidity timing), not for vendor spend-cut recommendations.
+
+Give exactly 3 prioritised treasury-only actions (yield optimisation, FSCS protection, FX hedging, cash structure) ranked by financial impact. Do not recommend spend reduction, vendor renegotiation, or subscription cuts.
+
+For each action provide: a short title, the specific action to take, the exact pound value impact per year, and effort level as Low Medium or High.`
 }
 
 function normaliseEffort(raw) {

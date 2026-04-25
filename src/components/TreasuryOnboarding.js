@@ -9,12 +9,12 @@ const STEPS = [
   },
   {
     n: 2,
-    title: 'See your treasury health score',
+    title: 'See exactly how much you are losing and how to fix it',
     body: 'We combine runway, liquidity, yield, and concentration into one view.',
   },
   {
     n: 3,
-    title: 'Get your first AI-powered actions',
+    title: 'Get your autopilot recommendations — specific actions with pound value impact',
     body: 'Prioritised moves you can take this week, with impact in pounds.',
   },
 ]
@@ -24,7 +24,7 @@ export function TreasuryOnboarding({ onSkip }) {
     <div className="tdash-onboard">
       <div className="tdash-onboard__inner">
         <p className="tdash-onboard__eyebrow">Getting started</p>
-        <h1 className="tdash-onboard__title">Welcome to your Treasury Dashboard</h1>
+        <h1 className="tdash-onboard__title">Welcome to Treasury Autopilot</h1>
         <p className="tdash-onboard__sub">{"Let's get your cash working harder. It takes 2 minutes."}</p>
 
         <ol className="tdash-onboard__steps" aria-label="Setup steps">
@@ -48,7 +48,7 @@ export function TreasuryOnboarding({ onSkip }) {
             Upload your first bank statement
           </Link>
           <button type="button" className="tdash-onboard__skip" onClick={onSkip}>
-            Skip for now — show me the dashboard
+            Skip for now — open Treasury Autopilot
           </button>
         </div>
       </div>

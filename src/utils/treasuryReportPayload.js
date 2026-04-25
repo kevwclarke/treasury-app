@@ -70,7 +70,7 @@ export function readCachedAiActionsTop3() {
 }
 
 /**
- * Snapshot for the investor PDF (same inputs as dashboard KPIs).
+ * Snapshot for the investor PDF (same inputs as Treasury Autopilot KPIs).
  * @param {Array<{ amount?: number|string, payee?: string, date?: string, institution?: string }>} txnRows
  */
 export function buildTreasuryReportPdfPayload(txnRows) {

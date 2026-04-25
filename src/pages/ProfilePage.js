@@ -288,7 +288,7 @@ export function ProfilePage() {
 
       <p className="profile-page__back">
         <Link className="detail-muted" to="/app">
-          ← Back to dashboard
+          ← Back to Treasury Autopilot
         </Link>
       </p>
     </div>

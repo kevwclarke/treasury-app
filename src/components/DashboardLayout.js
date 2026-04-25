@@ -8,7 +8,8 @@ const NAV_SECTIONS = [
   {
     label: 'Overview',
     items: [
-      { to: '/app', label: 'Dashboard', end: true, icon: 'dashboard' },
+      { to: '/app', label: 'Treasury Autopilot', end: true, icon: 'dashboard' },
+      { to: '/app/control', label: 'Cash Control', icon: 'control' },
       { to: '/upload', label: 'Upload Statement', icon: 'upload' },
     ],
   },

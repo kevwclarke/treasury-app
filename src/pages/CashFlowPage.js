@@ -81,7 +81,7 @@ export function CashFlowPage() {
             const hOut = 30 + (i % 4) * 7
             return (
               <g key={i}>
-                <rect x={x} y={120 - hIn} width="20" height={hIn} fill="#1E3A5F" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#1E3A5F' : 'none'} />
+                <rect x={x} y={120 - hIn} width="20" height={hIn} fill="#1B2B8C" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#1B2B8C' : 'none'} />
                 <rect x={x} y={120} width="20" height={hOut} fill="#DC2626" opacity={i > 6 ? 0.35 : 1} stroke={i > 6 ? '#DC2626' : 'none'} />
                 <text x={x + 10} y="232" fontSize="9" textAnchor="middle" fill="#6B7280">
                   W{i + 1}

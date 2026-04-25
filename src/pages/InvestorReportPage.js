@@ -156,7 +156,7 @@ export function InvestorReportPage() {
           <li>Cash position, yield, and opportunity cost</li>
           <li>Runway scenarios and top burn categories</li>
           <li>Concentration and FSCS exposure</li>
-          <li>Latest AI treasury actions (cached from the dashboard)</li>
+          <li>Latest autopilot recommendations (cached from Treasury Autopilot)</li>
         </ul>
       </section>
     </div>

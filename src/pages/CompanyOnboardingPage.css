@@ -79,8 +79,8 @@
 .company-onboarding__input:focus,
 .company-onboarding__select:focus {
   outline: none;
-  border-color: rgba(30, 58, 95, 0.45);
-  box-shadow: 0 0 0 2px rgba(30, 58, 95, 0.12);
+  border-color: rgba(27, 43, 140, 0.45);
+  box-shadow: 0 0 0 2px rgba(27, 43, 140, 0.12);
 }
 
 .company-onboarding__error {
