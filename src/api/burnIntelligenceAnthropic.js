@@ -6,6 +6,11 @@ function isLocalDevHostname() {
 
 function burnIntelligenceUrl() {
   const base = process.env.REACT_APP_TREASURY_ACTIONS_API_BASE?.replace(/\/$/, '') ?? ''
+  return `${base}/api/burn-intelligence-actions`
+}
+
+function burnIntelligenceBriefUrl() {
+  const base = process.env.REACT_APP_TREASURY_ACTIONS_API_BASE?.replace(/\/$/, '') ?? ''
   return `${base}/api/burn-intelligence`
 }
 
@@ -81,7 +86,8 @@ function extractJsonObject(text) {
 }
 
 async function fetchBurnIntelligenceViaServer({ mode, payload, signal }) {
-  const res = await fetch(burnIntelligenceUrl(), {
+  const url = mode === 'brief' ? burnIntelligenceBriefUrl() : burnIntelligenceUrl()
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ mode, payload }),
