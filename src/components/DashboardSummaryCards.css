@@ -1,0 +1,142 @@
+.dsum-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 1024px) {
+  .dsum-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .dsum-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dsum-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 200px;
+  padding: 28px;
+  border-radius: var(--ds-radius-card);
+  border: 1px solid var(--ds-border);
+  background: #fff;
+  box-shadow: var(--ds-shadow-card);
+}
+
+.dsum-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.dsum-card__title {
+  margin: 0;
+  font-family: var(--ds-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ds-text);
+}
+
+.dsum-card__metric {
+  margin: 0.25rem 0 0.5rem;
+  font-family: var(--ds-font-display);
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: #0f0f0f;
+}
+
+.dsum-card__status {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--ds-font-body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dsum-card__status--green {
+  color: #166534;
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.28);
+}
+
+.dsum-card__status--amber {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.dsum-card__status--red {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid rgba(220, 38, 38, 0.28);
+}
+
+.dsum-card__ctx {
+  flex: 1;
+  margin: 0.65rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dsum-card__ctx li {
+  margin: 0 0 0.35rem;
+  font-family: var(--ds-font-body);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #6b7280;
+}
+
+.dsum-card__cta {
+  margin-top: auto;
+  padding-top: 0.75rem;
+}
+
+.dsum-card__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: var(--ds-font-display);
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
+  border: 1px solid var(--ds-brand);
+  border-radius: var(--ds-radius-btn);
+  transition:
+    background var(--ds-transition),
+    box-shadow var(--ds-transition);
+}
+
+.dsum-card__link:hover {
+  background: var(--ds-brand-hover);
+  border-color: var(--ds-brand-hover);
+  box-shadow: 0 0 12px rgba(27, 43, 140, 0.35);
+}
+
+.dsum-card__skeleton {
+  min-height: 10rem;
+  border-radius: var(--ds-radius-card);
+  border: 1px solid var(--ds-border);
+  padding: 1rem;
+  background: #fafafa;
+}

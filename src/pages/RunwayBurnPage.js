@@ -4,7 +4,12 @@ import { useUserTransactions } from '../hooks/useUserTransactions'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { formatGBP } from '../utils/treasuryFormat'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
+import { computeBurn30Vs90Pct } from '../utils/treasuryKpi'
+import { buildRunwayBurnCapitalMoves } from '../utils/capitalMovesFromData'
+import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
+import { TermTooltip } from '../components/TermTooltip'
 import { RunwayBurnMonthlyChart } from '../components/RunwayBurnMonthlyChart'
+import { TransactionList, TransactionRow } from '../components/TransactionRow'
 import '../components/DetailPage.css'
 
 function monthKey(iso) {
@@ -38,6 +43,11 @@ export function RunwayBurnPage() {
   )
 
   const runwayCore = useMemo(() => computeRunwayFromTransactions(rows), [rows])
+  const burnMom = useMemo(() => computeBurn30Vs90Pct(rows), [rows])
+  const capitalMoves = useMemo(
+    () => buildRunwayBurnCapitalMoves({ runwayCore, burnMomDeltaPct: burnMom?.deltaPct ?? null }),
+    [burnMom?.deltaPct, runwayCore],
+  )
   const monthlyBurnBase = runwayCore.monthlyBurn > 0 ? runwayCore.monthlyBurn : 1
 
   const monthKeys = useMemo(() => last12MonthKeys(), [])
@@ -121,9 +131,14 @@ export function RunwayBurnPage() {
 
   return (
     <div className="detail-page">
+      <ModuleCapitalMoves actions={capitalMoves} />
+
       <header className="detail-hero">
         <h1 className="detail-title">Runway & Burn</h1>
-        <p className="detail-sub">Survival timeline and spend intelligence</p>
+        <p className="detail-sub">
+          <TermTooltip term="runway" label="Runway" /> in months and <TermTooltip term="burn-rate" label="burn rate" />{' '}
+          from your import — with scenarios you can stress-test.
+        </p>
       </header>
 
       <section className="detail-section">
@@ -137,7 +152,7 @@ export function RunwayBurnPage() {
               base / bull runway.
             </p>
             <Link className="detail-btn detail-btn--dark" to="/upload" style={{ marginTop: '0.75rem', display: 'inline-flex' }}>
-              Upload statement
+              Upload Bank Statement
             </Link>
           </>
         ) : runwayCore.baseRunwayMo == null || !Number.isFinite(runwayCore.baseRunwayMo) ? (
@@ -250,7 +265,7 @@ export function RunwayBurnPage() {
           <p className="detail-muted">
             Upload a CSV to see monthly burn by category.{' '}
             <Link to="/upload" style={{ color: '#1B2B8C', fontWeight: 600 }}>
-              Upload statement
+              Upload Bank Statement
             </Link>
           </p>
         ) : (
@@ -289,17 +304,25 @@ export function RunwayBurnPage() {
                 </tr>
               )
               if (expanded !== c.name) return [head]
-              const txRows = rows
-                .filter((t) => Number(t.amount) < 0 && categorisePayee(t.payee) === c.name)
-                .slice(0, 40)
-                .map((t) => (
-                  <tr key={`${c.name}-${t.id}`} style={{ background: 'rgba(28,25,23,0.03)' }}>
-                    <td colSpan={5} style={{ fontSize: 12, paddingLeft: 24 }}>
-                      {String(t.date).slice(0, 10)} · {t.payee} · {formatGBP(Math.abs(Number(t.amount)))}
-                    </td>
-                  </tr>
-                ))
-              return [head, ...txRows]
+              const txRows = rows.filter((t) => Number(t.amount) < 0 && categorisePayee(t.payee) === c.name).slice(0, 40)
+              const drill = (
+                <tr key={`${c.name}-drill`}>
+                  <td colSpan={5} style={{ padding: 0, borderBottom: '1px solid #e5e7eb', verticalAlign: 'top' }}>
+                    <TransactionList>
+                      {txRows.map((t) => (
+                        <TransactionRow
+                          key={`${c.name}-${t.id}`}
+                          direction="out"
+                          payee={String(t.payee || '—')}
+                          meta={`${String(t.date).slice(0, 10)} · ${c.name}`}
+                          amountText={formatGBP(Math.abs(Number(t.amount)))}
+                        />
+                      ))}
+                    </TransactionList>
+                  </td>
+                </tr>
+              )
+              return [head, drill]
             })}
           </tbody>
         </table>

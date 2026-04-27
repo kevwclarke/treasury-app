@@ -1,5 +1,5 @@
 .dashboard {
-  --dash-sidebar-w: 17.5rem;
+  --dash-sidebar-w: 220px;
   --dash-sidebar-bg: var(--ds-sidebar);
   --dash-sidebar-border: rgba(255, 255, 255, 0.08);
   min-height: 100vh;
@@ -69,21 +69,46 @@
 .dashboard__brand-name {
   display: block;
   font-family: var(--ds-font-display);
-  font-size: 1.125rem;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.2;
-  color: var(--ds-sidebar-text-active);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: #ffffff;
 }
 
 .dashboard__brand-stage {
   display: block;
   margin-top: 0.2rem;
-  font-size: 0.6875rem;
+  font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ds-sidebar-muted);
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: #8890b5;
+}
+
+.dashboard__upload-link {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--ds-sidebar-text);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  border-radius: 6px;
+  padding: 0.35rem 0.35rem;
+  margin-left: -0.35rem;
+  border: 1px solid transparent;
+}
+
+.dashboard__upload-link:hover {
+  color: var(--ds-sidebar-text-active);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dashboard__upload-link--active {
+  color: var(--ds-sidebar-text-active);
+  background: var(--ds-brand-tint);
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .dashboard__profile-link {
@@ -139,18 +164,18 @@
 }
 
 .dashboard__nav-section + .dashboard__nav-section {
-  margin-top: 1.125rem;
-  padding-top: 1.125rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dashboard__nav-heading {
   margin: 0 0 0.45rem 0.5rem;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ds-sidebar-muted);
+  color: #4a5280;
 }
 
 .dashboard__nav-list {
@@ -167,10 +192,10 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.55rem 0.625rem;
+  padding: 0.5rem 0.625rem;
   font-size: 0.8125rem;
   line-height: 1.35;
-  color: var(--ds-sidebar-text);
+  color: #8890b5;
   text-decoration: none;
   border-radius: var(--ds-radius-card);
   border-left: 3px solid transparent;
@@ -182,13 +207,13 @@
 }
 
 .dashboard__nav-link:hover {
-  background: rgba(27, 43, 140, 0.1);
-  color: var(--ds-sidebar-text-active);
+  background: rgba(27, 43, 140, 0.12);
+  color: #ffffff;
 }
 
 .dashboard__nav-link--active {
-  background: var(--ds-brand-tint);
-  color: var(--ds-sidebar-text-active);
+  background: #1b2b8c10;
+  color: #ffffff;
   font-weight: 600;
   border-left-color: var(--ds-brand);
 }
@@ -206,8 +231,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   color: inherit;
   opacity: 0.92;
   transition:
@@ -216,8 +241,8 @@
 }
 
 .dashboard__nav-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: block;
 }
 
@@ -227,7 +252,7 @@
 }
 
 .dashboard__nav-link--active .dashboard__nav-icon {
-  filter: drop-shadow(0 0 6px rgba(27, 43, 140, 0.6));
+  filter: none;
 }
 
 .dashboard__nav-link-text {
@@ -266,6 +291,51 @@
   z-index: 1;
   padding: 0.85rem 1rem 1.1rem;
   border-top: 1px solid var(--dash-sidebar-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.dashboard__health-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dashboard__health-pill--good {
+  border-color: rgba(34, 197, 94, 0.35);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.dashboard__health-pill--warn {
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.dashboard__health-pill--risk {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+.dashboard__health-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.dashboard__health-num {
+  font-family: var(--ds-font-display);
+  font-size: 14px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #ffffff;
 }
 
 .dashboard__logout {

@@ -3,9 +3,12 @@ import { useEffect, useState } from 'react'
 /**
  * Animates a numeric value from 0 toward `endValue` when `enabled` becomes true.
  * @param {number} endValue
- * @param {{ duration?: number, enabled?: boolean, resetWhenDisabled?: boolean }} opts
+ * @param {{ duration?: number, enabled?: boolean, resetWhenDisabled?: boolean, ease?: 'default' | 'out' }} opts
  */
-export function useCountUp(endValue, { duration = 850, enabled = true, resetWhenDisabled = false } = {}) {
+export function useCountUp(
+  endValue,
+  { duration = 850, enabled = true, resetWhenDisabled = false, ease = 'default' } = {},
+) {
   const [v, setV] = useState(() => {
     if (resetWhenDisabled && !enabled) return 0
     return enabled ? 0 : endValue
@@ -22,10 +25,11 @@ export function useCountUp(endValue, { duration = 850, enabled = true, resetWhen
     const start = performance.now()
     const from = 0
     const delta = endValue - from
+    const easeFn = ease === 'out' ? (p) => 1 - (1 - p) ** 3 : (p) => 1 - (1 - p) ** 2.4
 
     const tick = (now) => {
       const t = Math.min(1, (now - start) / duration)
-      const eased = 1 - (1 - t) ** 2.4
+      const eased = easeFn(t)
       setV(from + delta * eased)
       if (t < 1) raf = requestAnimationFrame(tick)
       else setV(endValue)
@@ -34,7 +38,7 @@ export function useCountUp(endValue, { duration = 850, enabled = true, resetWhen
     setV(0)
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [endValue, duration, enabled, resetWhenDisabled])
+  }, [endValue, duration, enabled, resetWhenDisabled, ease])
 
   return v
 }

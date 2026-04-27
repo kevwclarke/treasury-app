@@ -3,7 +3,11 @@ import { useCountUp } from '../hooks/useCountUp'
 import { getTreasuryHealthScoreBand } from '../utils/treasuryHealthScore'
 import './TreasuryHealthScoreControl.css'
 
-export function TreasuryHealthScoreControl({ score, loading }) {
+function summaryTooltipText(peerAverage) {
+  return `Your Treasury Health Score is calculated from yield gap, concentration risk, runway, liquidity buffer, and burn trajectory. 100 is optimal. Industry average for Series A startups is ${peerAverage}.`
+}
+
+export function TreasuryHealthScoreControl({ score, loading, peerAverage = 68 }) {
   const band = loading ? 'warn' : getTreasuryHealthScoreBand(score)
   const animatedScore = useCountUp(Number.isFinite(score) ? score : 0, {
     enabled: !loading && Number.isFinite(score),
@@ -47,14 +51,16 @@ export function TreasuryHealthScoreControl({ score, loading }) {
         aria-haspopup="true"
         aria-controls="treasury-health-score-popover"
         id="treasury-health-score-trigger"
+        title={summaryTooltipText(peerAverage)}
       >
-        <span className="tdash-health-score__value">
-          {loading || !Number.isFinite(score) ? '—' : Math.round(animatedScore)}
+        <span className="tdash-health-score__eyebrow">Treasury Health</span>
+        <span className="tdash-health-score__score-row">
+          <span className="tdash-health-score__value">
+            {loading || !Number.isFinite(score) ? '—' : Math.round(animatedScore)}
+          </span>
+          <span className="tdash-health-score__max">/ 100</span>
         </span>
-        <span className="tdash-health-score__max">/ 100</span>
-        <span className="tdash-health-score__hint" aria-hidden="true">
-          i
-        </span>
+        <span className="tdash-health-score__peer">vs {peerAverage} avg</span>
       </button>
       {open ? (
         <div

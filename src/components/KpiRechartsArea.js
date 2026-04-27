@@ -11,7 +11,7 @@ import {
 import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFormat'
 import './KpiRechartsArea.css'
 
-const CHART_HEIGHT = 88
+const CHART_HEIGHT = 60
 
 function linearTicks(min, max, count = 4) {
   const lo = Number(min)

@@ -4,10 +4,14 @@ import { useUserTransactions } from '../hooks/useUserTransactions'
 import '../components/DetailPage.css'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { buildConcentrationCapitalMoves } from '../utils/capitalMovesFromData'
+import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
+import { TermTooltip } from '../components/TermTooltip'
 
 export function ConcentrationRiskPage() {
   const { rows, loading, error } = useUserTransactions()
   const concentration = useMemo(() => computeConcentrationFromTransactions(rows), [rows])
+  const capitalMoves = useMemo(() => buildConcentrationCapitalMoves({ concentration }), [concentration])
 
   const {
     totalCash,
@@ -24,9 +28,14 @@ export function ConcentrationRiskPage() {
 
   return (
     <div className="detail-page">
+      <ModuleCapitalMoves actions={capitalMoves} />
+
       <header className="detail-hero">
         <h1 className="detail-title">Concentration Risk</h1>
-        <p className="detail-sub">FSCS protection and counterparty exposure from your uploaded transactions</p>
+        <p className="detail-sub">
+          How much cash sits with each bank, what is covered by <TermTooltip term="fscs" label="FSCS" />, and where to
+          diversify.
+        </p>
       </header>
 
       {loading ? (
@@ -44,13 +53,15 @@ export function ConcentrationRiskPage() {
             Import a bank CSV to attribute balances by institution and calculate FSCS exposure.
           </p>
           <Link className="detail-btn detail-btn--dark" to="/upload" style={{ marginTop: '0.75rem' }}>
-            Upload statement
+            Upload Bank Statement
           </Link>
         </section>
       ) : (
         <>
           <section className="detail-section">
-            <h2 className="detail-section__title">Exposure overview</h2>
+            <h2 className="detail-section__title">
+              Exposure overview (<TermTooltip term="concentration-risk" label="Concentration risk" />)
+            </h2>
             <p className="detail-section__lead" style={{ marginBottom: '0.75rem' }}>
               Total cash (net of all transactions):{' '}
               <strong>{formatGBP(Math.round(totalCash))}</strong>
@@ -140,7 +151,9 @@ export function ConcentrationRiskPage() {
           </section>
 
           <section className="detail-section">
-            <h2 className="detail-section__title">FSCS calculator</h2>
+            <h2 className="detail-section__title">
+              <TermTooltip term="fscs" label="FSCS" /> calculator
+            </h2>
             <p className="detail-section__lead">
               The Financial Services Compensation Scheme protects up to £85,000 per person per authorised institution for
               eligible deposits. Unprotected = max(0, balance − £85,000) per institution (positive balances only).

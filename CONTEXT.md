@@ -17,10 +17,11 @@
 
 **Authenticated (shell: deep blue-black sidebar `#0A0A1A` + white main — same layout for all below)**
 
-- Treasury Autopilot (main overview) at `/app`
-- Cash Control (simplified runway / yield / FX stack) at `/app/control`
+- Dashboard (main overview) at `/app` (legacy path `/app/control` redirects here)
 - CSV upload at `/upload`
 - Profile at `/app/profile`
+- Preferences (policies, notifications, audit) at `/app/preferences`
+- Integrations (Xero, TrueLayer, Slack overview) at `/app/integrations`
 
 **Detail modules (full pages)**
 
@@ -52,7 +53,7 @@
 
 - **Primary brand colour:** `#1B2B8C` (royal blue)
 - **Sidebar background:** `#0A0A1A` (deep blue-black)
-- **Font:** Inter throughout
+- **Fonts:** Plus Jakarta Sans for headings, card titles, KPI figures, and sidebar company name; Inter for body and labels
 - **No emojis anywhere in the UI**
 
 ## Product vision
@@ -81,7 +82,7 @@ These two surfaces **never overlap**.
 ## Modules status
 
 - **All 16 modules are built as wireframes.**
-- **Wired to real data:** Yield Gap, Concentration Risk, Runway, Burn Rate, Cash Flow, Liquidity Buffer, KPI Cards, Capital Moves, Burn Intelligence Priority Actions.
+- **Wired to real data:** Yield Gap, Concentration Risk, Runway, Burn Rate, Cash Flow, Liquidity Buffer, KPI Cards, module-level Capital Moves, Burn Intelligence Priority Actions.
 
 ## Positioning
 

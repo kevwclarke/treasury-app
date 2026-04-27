@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../supabase'
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
@@ -8,20 +8,10 @@ import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
+import { TermTooltip } from '../components/TermTooltip'
 import '../components/DetailPage.css'
 import './BurnIntelligencePage.css'
-
-function daysAgoLabel(ts) {
-  const t = new Date(ts).getTime()
-  if (!Number.isFinite(t)) return ''
-  const diff = Math.max(0, Date.now() - t)
-  const mins = Math.round(diff / 60000)
-  if (mins < 60) return `${mins} min ago`
-  const hrs = Math.round(mins / 60)
-  if (hrs < 48) return `${hrs}h ago`
-  const days = Math.round(hrs / 24)
-  return `${days}d ago`
-}
 
 function lastNDaysRows(rows, days) {
   const since = Date.now() - days * 24 * 60 * 60 * 1000
@@ -90,15 +80,6 @@ function scoreBand(score) {
   return 'risk'
 }
 
-function categoryColour(cat, effort) {
-  const c = String(cat || '').toLowerCase()
-  if (effort === 'High') return 'rgba(220, 38, 38, 0.9)'
-  if (c.includes('infra')) return 'rgba(27, 43, 140, 0.95)'
-  if (c.includes('contract')) return 'rgba(22, 163, 74, 0.95)'
-  if (c.includes('marketing') || c.includes('saas')) return 'rgba(217, 119, 6, 0.95)'
-  return 'rgba(27, 43, 140, 0.6)'
-}
-
 function toMoneyRange(range) {
   const low = Number(range?.low)
   const high = Number(range?.high)
@@ -106,33 +87,49 @@ function toMoneyRange(range) {
   return { low, high }
 }
 
-function makeMailto({ category, amount, savingLow, savingHigh, days, title, recommendation }) {
-  const subject = `Action required: ${category} cost review`
-  const body = [
-    'Hi,',
-    '',
-    `our treasury autopilot has flagged that our ${category} spend has increased to ${formatGBP(
-      Math.round(amount),
-    )} per month.`,
-    `I would like to schedule a review to identify savings of ${formatGBP(Math.round(savingLow))}-${formatGBP(
-      Math.round(savingHigh),
-    )} per month and extend our runway by ${Math.round(days)} days.`,
-    'Could we find 30 minutes this week?',
-    '',
-    recommendation,
-    '',
-    `Action title: ${title}`,
-  ].join('\n')
-  return `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
-function makeCalendarUrl({ category, title, recommendation }) {
-  // Widely supported web fallback (Google Calendar template).
-  const text = `Review ${category} spend — ${title}`
-  const details = recommendation
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
-    text,
-  )}&details=${encodeURIComponent(details)}`
+function makeBurnScheduleUrl(opp, runwayMo, monthlyBurn) {
+  const who = `CFO, Finance lead, and owner of the ${opp.category || 'category'} budget`
+  const details = [
+    `Who should attend: ${who}`,
+    '',
+    'What to discuss:',
+    '- Validate current spend vs benchmarks',
+    '- Agree negotiation targets and timeline',
+    '- Assign owners for vendor outreach',
+    '',
+    `Context: ${String(opp.recommendedAction || '')}`,
+    '',
+    `Figures: ~${formatGBP(Math.round(monthlyBurn))}/mo burn`,
+    runwayMo != null && Number.isFinite(runwayMo) ? `Runway ~${runwayMo.toFixed(1)} months.` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+  const text = `Review: ${opp.title}`
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&details=${encodeURIComponent(details)}`
+}
+
+function buildOpportunitySummaryHtml(opp, ctx) {
+  const s = toMoneyRange(opp.estimatedMonthlySaving) || { low: 0, high: 0 }
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>${escapeHtml(
+    opp.title,
+  )}</title><style>body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#111;line-height:1.5}</style></head><body>
+<h1>${escapeHtml(opp.title)}</h1>
+<p><strong>Category:</strong> ${escapeHtml(String(opp.category || ''))}</p>
+<p>${escapeHtml(String(opp.recommendedAction || ''))}</p>
+<p><strong>Current spend:</strong> ${formatGBP(Math.round(Number(opp.currentMonthlySpend) || 0))}/month</p>
+<p><strong>Estimated saving:</strong> ${formatGBP(Math.round(s.low))}–${formatGBP(Math.round(s.high))}/month</p>
+<p><strong>Runway extension:</strong> ~${Math.round(Number(opp.runwayExtensionDays) || 0)} days if savings confirmed</p>
+<hr/>
+<p style="color:#666;font-size:14px">Burn Intelligence summary — ${escapeHtml(ctx.generatedAt)}</p>
+</body></html>`
 }
 
 function BurnTooltip({ active, payload }) {
@@ -174,21 +171,7 @@ export function BurnIntelligencePage() {
   const { txnLoading, txnError, txnRows } = useTreasuryTransactions()
   const [userId, setUserId] = useState(null)
 
-  const [policy, setPolicy] = useState({
-    min_runway_months: 6,
-    burn_spike_pct: 15,
-    weekly_slack_summary: false,
-  })
-  const [policyLoaded, setPolicyLoaded] = useState(false)
-
-  const [prefs, setPrefs] = useState({
-    burn_intelligence_email: false,
-    slack_webhook_url: '',
-  })
-  const [prefsLoaded, setPrefsLoaded] = useState(false)
-
   const [actioned, setActioned] = useState([])
-  const [audit, setAudit] = useState([])
 
   const [targetPct, setTargetPct] = useState(12)
   const [targetPounds, setTargetPounds] = useState('')
@@ -197,8 +180,6 @@ export function BurnIntelligencePage() {
   const [aiLoading, setAiLoading] = useState(false)
   const [aiError, setAiError] = useState('')
   const [opps, setOpps] = useState([])
-
-  const slackAutoSentRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -220,34 +201,13 @@ export function BurnIntelligencePage() {
     let cancelled = false
 
     async function loadTables() {
-      const [{ data: pol }, { data: pr }, { data: ba }, { data: al }] = await Promise.all([
-        supabase.from('treasury_policies').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('email_preferences').select('*').eq('user_id', userId).maybeSingle(),
-        supabase.from('burn_actions').select('*').eq('user_id', userId).order('actioned_at', { ascending: false }),
-        supabase.from('audit_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(10),
-      ])
-
+      const { data: ba } = await supabase
+        .from('burn_actions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('actioned_at', { ascending: false })
       if (cancelled) return
-
-      if (pol) {
-        setPolicy({
-          min_runway_months: Number(pol.min_runway_months) || 6,
-          burn_spike_pct: Number(pol.burn_spike_pct) || 15,
-          weekly_slack_summary: Boolean(pol.weekly_slack_summary),
-        })
-      }
-      setPolicyLoaded(true)
-
-      if (pr) {
-        setPrefs({
-          burn_intelligence_email: Boolean(pr.burn_intelligence_email),
-          slack_webhook_url: String(pr.slack_webhook_url || ''),
-        })
-      }
-      setPrefsLoaded(true)
-
       setActioned(Array.isArray(ba) ? ba : [])
-      setAudit(Array.isArray(al) ? al : [])
     }
 
     loadTables()
@@ -442,34 +402,18 @@ export function BurnIntelligencePage() {
     return { points, runwayExtMo }
   }, [actionedTotals.actionedHigh, currentMonthlyBurn, runwayCore.totalCash])
 
-  const policyStatus = useMemo(() => {
-    const runwayOk = currentRunwayMo != null ? currentRunwayMo >= policy.min_runway_months : false
-    const burnSpikeOk = burnChangePct90 <= policy.burn_spike_pct
-    return { runwayOk, burnSpikeOk }
-  }, [burnChangePct90, currentRunwayMo, policy.burn_spike_pct, policy.min_runway_months])
+  const insertAudit = useCallback(async ({ action_type, category, description, metadata }) => {
+    if (!userId) return
+    await supabase.from('audit_log').insert({
+      user_id: userId,
+      action_type,
+      category: category || null,
+      description,
+      metadata: metadata || null,
+    })
+  }, [userId])
 
-  const insertAudit = useCallback(
-    async ({ action_type, category, description, metadata }) => {
-      if (!userId) return
-      await supabase.from('audit_log').insert({
-        user_id: userId,
-        action_type,
-        category: category || null,
-        description,
-        metadata: metadata || null,
-      })
-      const { data } = await supabase
-        .from('audit_log')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(10)
-      setAudit(Array.isArray(data) ? data : [])
-    },
-    [userId],
-  )
-
-  async function refreshActioned() {
+  const refreshActioned = useCallback(async () => {
     if (!userId) return
     const { data } = await supabase
       .from('burn_actions')
@@ -477,7 +421,7 @@ export function BurnIntelligencePage() {
       .eq('user_id', userId)
       .order('actioned_at', { ascending: false })
     setActioned(Array.isArray(data) ? data : [])
-  }
+  }, [userId])
 
   async function handleFetchOpportunities() {
     setAiLoading(true)
@@ -501,161 +445,46 @@ export function BurnIntelligencePage() {
     }
   }
 
-  async function handleGenerateBrief(opp) {
-    if (!opp) return
-    await insertAudit({
-      action_type: 'generate_brief',
-      category: opp.category,
-      description: `Generated negotiation brief: ${opp.title}`,
-      metadata: { opportunity: opp },
-    })
+  const handleDownloadSummary = useCallback(
+    async (opp) => {
+      if (!opp) return
+      await insertAudit({
+        action_type: 'download_summary',
+        category: opp.category,
+        description: `Downloaded summary: ${opp.title}`,
+        metadata: { opportunity: opp },
+      })
+      const today = new Date().toISOString().slice(0, 10)
+      const safeCat = String(opp.category || 'category').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      const html = buildOpportunitySummaryHtml(opp, { generatedAt: new Date().toLocaleString('en-GB') })
+      await downloadHtml(`${safeCat}-summary-${today}.html`, html)
+    },
+    [insertAudit],
+  )
 
-    const data = await fetchBurnIntelligenceAi({ mode: 'brief', payload: { opportunity: opp } })
-    const html = String(data?.html || '')
-    const today = new Date().toISOString().slice(0, 10)
-    const safeCat = String(opp.category || 'category').toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    await downloadHtml(`${safeCat}-brief-${today}.html`, html)
-  }
-
-  async function handleMarkActioned(opp) {
-    if (!userId || !opp) return
-    const r = toMoneyRange(opp.estimatedMonthlySaving) || { low: 0, high: 0 }
-    await supabase.from('burn_actions').insert({
-      user_id: userId,
-      category: opp.category,
-      title: opp.title,
-      estimated_saving_low: r.low,
-      estimated_saving_high: r.high,
-      actioned_at: new Date().toISOString(),
-      confirmed: false,
-    })
-    await insertAudit({
-      action_type: 'mark_actioned',
-      category: opp.category,
-      description: `Marked actioned: ${opp.title}`,
-      metadata: { opportunity: opp },
-    })
-    await refreshActioned()
-  }
-
-  async function handleSlackTest() {
-    if (!prefs.slack_webhook_url?.trim()) return
-    await insertAudit({
-      action_type: 'slack_test',
-      category: null,
-      description: 'Sent Slack webhook test message',
-      metadata: { webhook: 'configured' },
-    })
-    await fetch(prefs.slack_webhook_url.trim(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: 'Treasury Autopilot Test: Slack webhook is connected.',
-        blocks: [
-          { type: 'header', text: { type: 'plain_text', text: 'Treasury Autopilot Test' } },
-          {
-            type: 'section',
-            text: { type: 'mrkdwn', text: '*Slack integration is connected.* You will receive burn spike alerts here.' },
-          },
-        ],
-      }),
-    })
-  }
-
-  async function savePrefsAndPolicy() {
-    if (!userId) return
-    await supabase.from('treasury_policies').upsert({ user_id: userId, ...policy }, { onConflict: 'user_id' })
-    await supabase
-      .from('email_preferences')
-      .upsert({ user_id: userId, ...prefs }, { onConflict: 'user_id' })
-    await insertAudit({
-      action_type: 'update_policies',
-      category: null,
-      description: 'Updated treasury autopilot policies and preferences',
-      metadata: { policy, prefs: { burn_intelligence_email: prefs.burn_intelligence_email, slack_webhook_url: !!prefs.slack_webhook_url } },
-    })
-  }
-
-  useEffect(() => {
-    if (slackAutoSentRef.current) return
-    if (!prefsLoaded || !policyLoaded) return
-    if (!prefs.slack_webhook_url?.trim()) return
-    if (txnLoading || !txnRows.length) return
-
-    const perCatLast = burnLast30.byCat
-    const perCatPrior = burnPrior30.byCat
-    const spikes = BURN_CATEGORY_ORDER.map((c) => {
-      const a = perCatLast[c] || 0
-      const b = perCatPrior[c] || 0
-      const pct = b > 0 ? ((a - b) / b) * 100 : a > 0 ? 999 : 0
-      return { category: c, pct, a, b }
-    })
-      .filter((x) => x.pct > policy.burn_spike_pct)
-      .sort((a, b) => b.pct - a.pct)
-
-    if (!spikes.length) return
-    const top = spikes[0]
-    const topOpp = opps.find((o) => String(o.category) === String(top.category)) || opps[0]
-    const actionTitle = topOpp?.title || 'Review category spend'
-    const savingRange = toMoneyRange(topOpp?.estimatedMonthlySaving)
-    const savingText = savingRange ? `${formatGBP(Math.round(savingRange.low))}-${formatGBP(Math.round(savingRange.high))}` : '—'
-
-    slackAutoSentRef.current = true
-    fetch(prefs.slack_webhook_url.trim(), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        text: 'Treasury Autopilot Alert',
-        blocks: [
-          { type: 'header', text: { type: 'plain_text', text: 'Treasury Autopilot Alert' } },
-          {
-            type: 'section',
-            text: {
-              type: 'mrkdwn',
-              text: `*${top.category}* spend up *${formatPct(top.pct, 1)}* this month — *${formatGBP(
-                Math.round(top.a / 30 * 30),
-              )}* vs *${formatGBP(Math.round(top.b / 30 * 30))}* last month.\n*Recommended action:* ${actionTitle}\n*Potential saving:* ${savingText} per month.`,
-            },
-          },
-          {
-            type: 'actions',
-            elements: [
-              {
-                type: 'button',
-                text: { type: 'plain_text', text: 'View in Treasury Autopilot' },
-                url: `${window.location.origin}/app/burn-intelligence`,
-              },
-              {
-                type: 'button',
-                text: { type: 'plain_text', text: 'Mark as Seen' },
-                url: `${window.location.origin}/app/burn-intelligence?seen=1`,
-              },
-            ],
-          },
-        ],
-      }),
-    })
-      .then(() =>
-        insertAudit({
-          action_type: 'slack_auto_alert',
-          category: top.category,
-          description: `Sent Slack burn spike alert for ${top.category}`,
-          metadata: { pct: top.pct, current: top.a, prior: top.b },
-        }),
-      )
-      .catch(() => {})
-  }, [
-    burnLast30.byCat,
-    burnPrior30.byCat,
-    insertAudit,
-    opps,
-    policy.burn_spike_pct,
-    policyLoaded,
-    prefs.slack_webhook_url,
-    prefsLoaded,
-    txnLoading,
-    txnRows.length,
-  ])
+  const handleMarkActioned = useCallback(
+    async (opp) => {
+      if (!userId || !opp) return
+      const r = toMoneyRange(opp.estimatedMonthlySaving) || { low: 0, high: 0 }
+      await supabase.from('burn_actions').insert({
+        user_id: userId,
+        category: opp.category,
+        title: opp.title,
+        estimated_saving_low: r.low,
+        estimated_saving_high: r.high,
+        actioned_at: new Date().toISOString(),
+        confirmed: false,
+      })
+      await insertAudit({
+        action_type: 'mark_actioned',
+        category: opp.category,
+        description: `Marked actioned: ${opp.title}`,
+        metadata: { opportunity: opp },
+      })
+      await refreshActioned()
+    },
+    [insertAudit, refreshActioned, userId],
+  )
 
   const sortedOpps = useMemo(() => {
     const actionedTitles = new Set(actioned.map((a) => String(a.title)))
@@ -664,14 +493,74 @@ export function BurnIntelligencePage() {
     return [...open, ...done]
   }, [actioned, opps])
 
+  const toCapsSixWords = useCallback((title) => {
+    return String(title || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 6)
+      .map((w) => w.toUpperCase())
+      .join(' ')
+  }, [])
+
+  const burnCapitalMoves = useMemo(() => {
+    const actionedTitles = new Set(actioned.map((a) => String(a.title)))
+    const runwayMo = currentRunwayMo
+    return sortedOpps
+      .filter((o) => !actionedTitles.has(String(o.title)))
+      .map((o) => {
+        const saving = toMoneyRange(o.estimatedMonthlySaving) || { low: 0, high: 0 }
+        const effort = String(o.effort || '').trim()
+        const impactYear = saving.high * 12
+        const wait30 = saving.high
+        return {
+          id: `opp-${String(o.title).slice(0, 80)}`,
+          titleCaps: toCapsSixWords(o.title),
+          description: String(
+            o.recommendedAction ||
+              `Negotiate ${o.category} spend using your latest 90-day transaction pattern.`,
+          ),
+          who: effort === 'High' ? 'CFO' : 'Finance Team',
+          time: effort === 'Low' ? 'This week' : 'Within 30 days',
+          impactGbpYear: impactYear,
+          costWaiting30: wait30,
+          primaryLabel: 'Download Summary',
+          onPrimary: () => handleDownloadSummary(o),
+          secondaryLabel: 'Schedule',
+          secondaryHref: makeBurnScheduleUrl(o, runwayMo, currentMonthlyBurn),
+          onSecondaryClick: () => {
+            void insertAudit({
+              action_type: 'schedule_review',
+              category: o.category,
+              description: `Opened schedule: ${o.title}`,
+              metadata: { opportunity: o },
+            })
+          },
+          onMark: () => handleMarkActioned(o),
+          markLabel: 'Mark actioned',
+        }
+      })
+  }, [
+    actioned,
+    currentMonthlyBurn,
+    currentRunwayMo,
+    handleDownloadSummary,
+    handleMarkActioned,
+    insertAudit,
+    sortedOpps,
+    toCapsSixWords,
+  ])
+
   return (
     <div className="detail-page burn-intel">
+      <ModuleCapitalMoves actions={burnCapitalMoves} />
+
       <header className="detail-hero">
         <h1 className="detail-title">Burn Intelligence</h1>
         <p className="detail-sub">Specific actions to reduce your monthly spend — ranked by impact</p>
         <p className="burn-intel__crosslink-top">
-          For treasury and cash structure actions see{' '}
-          <Link to="/app">Capital Moves</Link> on the dashboard.
+          For yield, runway, and liquidity decisions, open the relevant module — each opens with a{' '}
+          <TermTooltip term="capital-moves" label="Capital Moves" /> block ranked from your data.
         </p>
       </header>
 
@@ -783,7 +672,9 @@ export function BurnIntelligencePage() {
         <div className="burn-intel__ai-head">
           <div className="burn-intel__ai-head-text">
             <div className="burn-intel__title-row">
-              <h2 className="detail-section__title burn-intel__ai-title">Priority Actions</h2>
+              <h2 className="detail-section__title burn-intel__ai-title">
+                <TermTooltip term="priority-actions" label="Priority Actions" />
+              </h2>
               <span className="burn-intel__badge-spend">Spend</span>
             </div>
             <p className="burn-intel__subtitle-spend">
@@ -800,132 +691,18 @@ export function BurnIntelligencePage() {
         {aiError ? <p className="detail-muted" style={{ color: '#DC2626' }}>{aiError}</p> : null}
         {!txnLoading && !txnRows.length ? (
           <p className="detail-muted">
-            Upload a bank CSV first. <Link to="/upload">Upload statement</Link>
+            Upload a bank CSV first. <Link to="/upload">Upload Bank Statement</Link>
           </p>
         ) : null}
         {opps.length ? (
-          <div className="burn-intel__cards" style={{ marginTop: 14 }}>
-            {sortedOpps.map((o) => {
-              const saving = toMoneyRange(o.estimatedMonthlySaving) || { low: 0, high: 0 }
-              const actionedTitles = new Set(actioned.map((a) => String(a.title)))
-              const isActioned = actionedTitles.has(String(o.title))
-              const effort = String(o.effort || '').trim()
-              return (
-                <article
-                  key={`${o.title}-${o.category}`}
-                  className="burn-intel__opp"
-                  style={{ '--bi-opp-border': categoryColour(o.category, effort) }}
-                >
-                  <div className="burn-intel__opp-head">
-                    <span className="burn-intel__badge">{o.category}</span>
-                    <span className="burn-intel__pill">{formatGBP(Math.round(Number(o.currentMonthlySpend) || 0))}/mo</span>
-                  </div>
-                  <h3 className="burn-intel__title">{o.title}</h3>
-                  <p className="burn-intel__body">{o.recommendedAction}</p>
-                  <div className="burn-intel__meta">
-                    <span className="burn-intel__pill burn-intel__pill--save">
-                      Save {formatGBP(Math.round(saving.low))}-{formatGBP(Math.round(saving.high))}/month
-                    </span>
-                    <span className="burn-intel__pill">{Math.round(Number(o.runwayExtensionDays) || 0)} days runway</span>
-                    <span
-                      className={[
-                        'burn-intel__pill',
-                        effort === 'Low'
-                          ? 'burn-intel__pill--effort-low'
-                          : effort === 'High'
-                            ? 'burn-intel__pill--effort-high'
-                            : 'burn-intel__pill--effort-medium',
-                      ].join(' ')}
-                    >
-                      Effort: {effort || 'Medium'}
-                    </span>
-                    <span className="burn-intel__pill">{isActioned ? 'Actioned' : 'Open'}</span>
-                  </div>
-
-                  <div className="burn-intel__actions">
-                    <a
-                      className="burn-intel__btn burn-intel__btn--primary"
-                      href={makeCalendarUrl({ category: o.category, title: o.title, recommendation: o.recommendedAction })}
-                      onClick={() =>
-                        insertAudit({
-                          action_type: 'schedule_review',
-                          category: o.category,
-                          description: `Scheduled review: ${o.title}`,
-                          metadata: { opportunity: o },
-                        })
-                      }
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Schedule review
-                    </a>
-                    <a
-                      className="burn-intel__btn"
-                      href={makeMailto({
-                        category: o.category,
-                        amount: Number(o.currentMonthlySpend) || 0,
-                        savingLow: saving.low,
-                        savingHigh: saving.high,
-                        days: Number(o.runwayExtensionDays) || 0,
-                        title: o.title,
-                        recommendation: o.recommendedAction,
-                      })}
-                      onClick={() =>
-                        insertAudit({
-                          action_type: 'draft_email',
-                          category: o.category,
-                          description: `Drafted email: ${o.title}`,
-                          metadata: { opportunity: o },
-                        })
-                      }
-                    >
-                      Draft email
-                    </a>
-                    <button
-                      type="button"
-                      className="burn-intel__btn burn-intel__btn--outline"
-                      onClick={() => handleGenerateBrief(o)}
-                    >
-                      Generate brief
-                    </button>
-                    <button
-                      type="button"
-                      className="burn-intel__btn"
-                      onClick={() => handleMarkActioned(o)}
-                      disabled={isActioned}
-                    >
-                      {isActioned ? 'Actioned' : 'Mark actioned'}
-                    </button>
-                  </div>
-
-                  {isActioned ? (
-                    <div className="burn-intel__status">
-                      <svg
-                        className="burn-intel__status-check"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        aria-hidden
-                      >
-                        <path
-                          d="M5 12l4 4L19 6"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                      Status: Actioned
-                    </div>
-                  ) : null}
-                </article>
-              )
-            })}
-          </div>
+          <p className="detail-muted" style={{ marginTop: 14 }}>
+            Each opportunity is shown in <strong>Capital Moves</strong> at the top of this page with download and
+            calendar actions.
+          </p>
         ) : (
           <p className="detail-muted" style={{ marginTop: 10 }}>
-            Click “Generate 5 actions” to create ranked burn reduction opportunities from your last 90 days of spend.
+            Click “Generate Priority Actions” to create ranked burn reduction opportunities from your last 90 days of
+            spend.
           </p>
         )}
       </section>
@@ -1018,141 +795,9 @@ export function BurnIntelligencePage() {
         </p>
       </section>
 
-      <section className="detail-section burn-intel__policy-card">
-        <h2 className="detail-section__title">My Treasury Policies</h2>
-        <p className="detail-section__lead">
-          Treasury Autopilot — we maintain the CFO&apos;s runway automatically. Configure policies and we enforce them via alerts and action tracking.
-        </p>
-
-        <div className="detail-grid3" style={{ marginTop: 12 }}>
-          <div className="detail-stat">
-            <label className="detail-stat__cap" htmlFor="min-runway">
-              Minimum runway target (months)
-            </label>
-            <input
-              id="min-runway"
-              className="detail-input"
-              type="number"
-              min={1}
-              value={policy.min_runway_months}
-              onChange={(e) => setPolicy((p) => ({ ...p, min_runway_months: Number(e.target.value) || 6 }))}
-            />
-            <p className="detail-muted" style={{ marginTop: 8 }}>
-              Status:{' '}
-              <strong style={{ color: policyStatus.runwayOk ? '#1B2B8C' : '#DC2626' }}>
-                {currentRunwayMo == null ? 'Unknown' : policyStatus.runwayOk ? 'Meeting policy' : 'Breaching policy'}
-              </strong>
-            </p>
-          </div>
-          <div className="detail-stat">
-            <label className="detail-stat__cap" htmlFor="burn-spike">
-              Burn spike alert threshold (%)
-            </label>
-            <input
-              id="burn-spike"
-              className="detail-input"
-              type="number"
-              min={5}
-              max={60}
-              value={policy.burn_spike_pct}
-              onChange={(e) => setPolicy((p) => ({ ...p, burn_spike_pct: Number(e.target.value) || 15 }))}
-            />
-            <p className="detail-muted" style={{ marginTop: 8 }}>
-              Status:{' '}
-              <strong style={{ color: policyStatus.burnSpikeOk ? '#1B2B8C' : '#DC2626' }}>
-                {policyStatus.burnSpikeOk ? 'No spike detected' : 'Spike detected'}
-              </strong>
-            </p>
-          </div>
-          <div className="detail-stat">
-            <p className="detail-stat__cap">Weekly Slack summary</p>
-            <label className="detail-toggle" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input
-                type="checkbox"
-                checked={policy.weekly_slack_summary}
-                onChange={(e) => setPolicy((p) => ({ ...p, weekly_slack_summary: e.target.checked }))}
-              />
-              <span className="detail-muted" style={{ margin: 0 }}>
-                {policy.weekly_slack_summary ? 'Enabled' : 'Disabled'}
-              </span>
-            </label>
-            <p className="detail-muted" style={{ marginTop: 8 }}>
-              Status: <strong style={{ color: '#1B2B8C' }}>Configured</strong>
-            </p>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
-          <button type="button" className="detail-btn detail-btn--dark" onClick={savePrefsAndPolicy} disabled={!userId || txnLoading}>
-            Save policies
-          </button>
-          {!policyLoaded || !prefsLoaded ? <span className="detail-muted">Loading current policies…</span> : null}
-        </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Slack integration</h2>
-        <p className="detail-section__lead">Add an incoming webhook URL. We will send automatic burn spike alerts on page load.</p>
-        <input
-          className="detail-input"
-          type="url"
-          placeholder="https://hooks.slack.com/services/…"
-          value={prefs.slack_webhook_url}
-          onChange={(e) => setPrefs((p) => ({ ...p, slack_webhook_url: e.target.value }))}
-        />
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
-          <button type="button" className="detail-btn detail-btn--dark" onClick={handleSlackTest} disabled={!prefs.slack_webhook_url?.trim()}>
-            Test
-          </button>
-          <button type="button" className="detail-btn detail-btn--dark" onClick={savePrefsAndPolicy} disabled={!userId}>
-            Save
-          </button>
-        </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Monthly email preference</h2>
-        <p className="detail-section__lead">Monthly Burn Intelligence Report (sending via Resend is a future session).</p>
-        <label className="detail-toggle" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input
-            type="checkbox"
-            checked={prefs.burn_intelligence_email}
-            onChange={(e) => setPrefs((p) => ({ ...p, burn_intelligence_email: e.target.checked }))}
-          />
-          <span className="detail-muted" style={{ margin: 0 }}>
-            {prefs.burn_intelligence_email ? 'Enabled' : 'Disabled'}
-          </span>
-        </label>
-        <div style={{ marginTop: 12 }}>
-          <button type="button" className="detail-btn detail-btn--dark" onClick={savePrefsAndPolicy} disabled={!userId}>
-            Save preference
-          </button>
-        </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Audit log</h2>
-        {audit.length ? (
-          <div className="burn-intel__timeline" style={{ marginTop: 10 }}>
-            {audit.map((a) => (
-              <div key={a.id} className="burn-intel__timeline-item">
-                <span className="burn-intel__timeline-icon" aria-hidden>
-                  ↗
-                </span>
-                <div className="burn-intel__timeline-body">
-                  <p className="burn-intel__timeline-desc">{a.description}</p>
-                  <p className="burn-intel__timeline-time">{daysAgoLabel(a.created_at)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="detail-muted">No audit entries yet.</p>
-        )}
-      </section>
-
       <p className="detail-muted" style={{ marginTop: 6 }}>
-        Back to <Link to="/app">Treasury Autopilot</Link>
+        Policies, Slack, email, and audit log are in{' '}
+        <Link to="/app/preferences">Preferences</Link>. Back to <Link to="/app">Dashboard</Link>.
       </p>
     </div>
   )

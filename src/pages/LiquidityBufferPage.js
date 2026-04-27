@@ -8,6 +8,9 @@ import {
   LIQUIDITY_TARGET_MONTHS,
 } from '../utils/treasuryLiquidity'
 import { useUserTransactions } from '../hooks/useUserTransactions'
+import { buildLiquidityCapitalMoves } from '../utils/capitalMovesFromData'
+import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
+import { TermTooltip } from '../components/TermTooltip'
 import '../components/DetailPage.css'
 
 function statusLabel(liq) {
@@ -27,6 +30,7 @@ function threshClass(band) {
 export function LiquidityBufferPage() {
   const { rows, loading, error } = useUserTransactions()
   const liq = useMemo(() => computeLiquidityBuffer(rows), [rows])
+  const capitalMoves = useMemo(() => buildLiquidityCapitalMoves({ liq }), [liq])
 
   const bufferMoLabel =
     liq.bufferMonths != null && Number.isFinite(liq.bufferMonths)
@@ -37,12 +41,14 @@ export function LiquidityBufferPage() {
 
   return (
     <div className="detail-page">
+      <ModuleCapitalMoves actions={capitalMoves} />
+
       <header className="detail-hero">
         <h1 className="detail-title">Liquidity Buffer</h1>
         <p className="detail-sub">
-          Instantly accessible cash from your statement import, compared to average monthly outflow from the last{' '}
-          {90} days. Ring scale runs to {LIQUIDITY_TARGET_MONTHS} months; grey dots mark {LIQUIDITY_MIN_MONTHS}-month
-          minimum and {LIQUIDITY_TARGET_MONTHS}-month target.
+          <TermTooltip term="liquidity-buffer" label="Liquidity buffer" /> — how many months of operating cash you can
+          access immediately vs your last {90}-day burn rate, against {LIQUIDITY_MIN_MONTHS}-month minimum and{' '}
+          {LIQUIDITY_TARGET_MONTHS}-month target cover.
         </p>
       </header>
 
@@ -61,7 +67,7 @@ export function LiquidityBufferPage() {
         ) : !rows.length ? (
           <p className="detail-muted" style={{ margin: 0 }}>
             Upload a bank statement to model your liquidity buffer.{' '}
-            <Link to="/upload">Upload statement</Link>
+            <Link to="/upload">Upload Bank Statement</Link>
           </p>
         ) : (
           <>

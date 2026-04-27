@@ -326,9 +326,10 @@ export function UploadPage() {
 
   return (
     <div className={`upload${importCelebration ? ' upload--celebrating' : ''}`}>
-      <h1 className="upload__title">Upload bank statement</h1>
+      <h1 className="upload__title">Upload Bank Statement</h1>
       <p className="upload__sub">
-        Import a bank CSV to power yield gap, concentration, runway, burn, and forecast modules.
+        Import a CSV export from your bank to power all modules. Supported banks: Barclays, HSBC, Starling, Monzo,
+        NatWest and more.
       </p>
 
       <input

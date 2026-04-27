@@ -1,14 +1,13 @@
 /* Royal blue brand — premium B2B treasury UI tokens */
 :root {
-  /* Inter only — display stack matches body for legacy var(--ds-font-display) */
-  --ds-font-display: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --ds-font-display: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --ds-font-body: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   --ds-brand: #1b2b8c;
   --ds-brand-mid: #2235a8;
   --ds-brand-hover: #0f1f7a;
   /* Sidebar active row tint — brand @ ~8% alpha */
-  --ds-brand-tint: #1b2b8c15;
+  --ds-brand-tint: #1b2b8c10;
 
   --ds-bg: #ffffff;
   --ds-bg-subtle: #fafafa;
@@ -20,7 +19,7 @@
 
   --ds-text: #0f0f0f;
   --ds-text-secondary: #6b7280;
-  --ds-text-body: #6b7280;
+  --ds-text-body: #374151;
 
   --ds-border: #e5e7eb;
 

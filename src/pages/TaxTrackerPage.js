@@ -1,4 +1,5 @@
 import { formatGBP } from '../utils/treasuryFormat'
+import { TransactionList, TransactionRow } from '../components/TransactionRow'
 import '../components/DetailPage.css'
 
 const OBLIGATIONS = [
@@ -21,24 +22,17 @@ export function TaxTrackerPage() {
 
       <section className="detail-section">
         <h2 className="detail-section__title">Upcoming obligations</h2>
-        <div className="detail-grid3">
+        <TransactionList>
           {OBLIGATIONS.map((o) => (
-            <div
+            <TransactionRow
               key={o.type}
-              className="detail-stat"
-              style={{
-                borderColor: o.urgent ? 'rgba(180,35,24,0.25)' : undefined,
-                background: o.urgent ? 'rgba(180,35,24,0.06)' : undefined,
-              }}
-            >
-              <p className="detail-stat__cap">{o.type}</p>
-              <p className="detail-stat__val">{formatGBP(o.amount)}</p>
-              <p className="detail-muted">
-                Due {o.due} · {o.days} days · {o.urgent ? 'Urgent' : 'Scheduled'}
-              </p>
-            </div>
+              direction="out"
+              payee={o.type}
+              meta={`Due ${o.due} · ${o.days} days · ${o.urgent ? 'Urgent' : 'Scheduled'}`}
+              amountText={formatGBP(o.amount)}
+            />
           ))}
-        </div>
+        </TransactionList>
       </section>
 
       <section className="detail-section">

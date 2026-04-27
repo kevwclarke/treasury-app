@@ -1,0 +1,66 @@
+.cf-page-chart {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 7.5rem;
+  min-height: 7.5rem;
+  padding: 0 0.35rem 0 0.5rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  overflow-x: auto;
+  background: #fafafa;
+  background-image: repeating-linear-gradient(
+    to top,
+    transparent,
+    transparent calc(25% - 1px),
+    rgba(26, 22, 20, 0.06) calc(25% - 1px),
+    rgba(26, 22, 20, 0.06) 25%
+  );
+  background-size: 100% 100%;
+  background-position: bottom;
+}
+
+.cf-page-chart::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  border-left: 2px dotted rgba(28, 25, 23, 0.35);
+  pointer-events: none;
+}
+
+.cf-page-col {
+  flex: 0 0 auto;
+  width: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 1.5rem;
+}
+
+.cf-page-bar {
+  width: 100%;
+  max-width: 1.5rem;
+  border-radius: 3px 3px 0 0;
+  background: var(--ds-brand);
+  opacity: 0.9;
+}
+
+.cf-page-bar--neg {
+  background: var(--ds-error);
+}
+
+.cf-page-bar--proj {
+  opacity: 0.38;
+}
+
+.cf-page-lab {
+  margin-top: 0.375rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca3af;
+}

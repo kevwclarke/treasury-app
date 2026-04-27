@@ -147,7 +147,7 @@ export function AiTreasuryActions({
 
       {showPlaceholder ? (
         <p className="ai-actions__hint">
-          Upload transactions to generate capital moves. <Link to="/upload">Upload statement</Link>
+          Upload transactions to generate capital moves. <Link to="/upload">Upload Bank Statement</Link>
         </p>
       ) : null}
 

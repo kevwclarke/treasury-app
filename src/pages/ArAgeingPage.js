@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { formatGBP } from '../utils/treasuryFormat'
+import { TransactionList } from '../components/TransactionRow'
 import '../components/DetailPage.css'
 
 const XERO_CONNECTED = false
@@ -61,34 +62,35 @@ export function ArAgeingPage() {
 
       <section className="detail-section">
         <h2 className="detail-section__title">Invoices</h2>
-        <table className="detail-table">
-          <thead>
-            <tr>
-              <th>Invoice</th>
-              <th>Client</th>
-              <th>Amount</th>
-              <th>Due</th>
-              <th>Days overdue</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.no}>
-                <td>{r.no}</td>
-                <td>{r.client}</td>
-                <td>{formatGBP(r.amount)}</td>
-                <td>{r.due}</td>
-                <td>{r.days}</td>
-                <td>
-                  <button type="button" className="detail-btn detail-btn--salmon">
-                    Chase
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <TransactionList>
+          {rows.map((r) => (
+            <div key={r.no} className="txn-row txn-row--in">
+              <div className="txn-row__icon txn-row__icon--in" aria-hidden>
+                <svg className="txn-row__arrow" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M7 17L17 7M17 7H9M17 7V15"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
+              <div className="txn-row__body">
+                <p className="txn-row__payee">{r.client}</p>
+                <p className="txn-row__meta">
+                  {r.no} · Due {r.due} · {r.days} days overdue
+                </p>
+              </div>
+              <div className="txn-row__right">
+                <p className="txn-row__amt txn-row__amt--in">{formatGBP(r.amount)}</p>
+                <button type="button" className="detail-btn detail-btn--salmon txn-row__chase">
+                  Chase
+                </button>
+              </div>
+            </div>
+          ))}
+        </TransactionList>
       </section>
 
       <section className="detail-section">

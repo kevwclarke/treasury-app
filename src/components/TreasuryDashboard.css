@@ -77,11 +77,11 @@
   --td-card: var(--ds-bg-subtle);
   --td-card-border: var(--ds-border);
   --td-serif: var(--ds-font-body);
-  --td-sans: var(--ds-font-body);
+  --td-sans: var(--ds-font-display);
   --td-card-shadow: var(--ds-shadow-card);
   --td-card-shadow-hover: var(--ds-shadow-card-hover);
-  color: #6b7280;
-  font-family: var(--td-sans);
+  color: #374151;
+  font-family: var(--ds-font-body);
   font-size: 14px;
   line-height: 1.6;
   max-width: 92rem;
@@ -152,9 +152,9 @@
 
 .tdash__page-title {
   margin: 0;
-  font-family: var(--td-sans);
-  font-size: 24px;
-  font-weight: 600;
+  font-family: var(--ds-font-display);
+  font-size: 28px;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.2;
   color: #0f0f0f;
@@ -163,10 +163,11 @@
 .tdash__page-subtitle {
   margin: 0;
   max-width: 28rem;
-  font-size: 0.9375rem;
-  font-weight: 500;
+  font-family: var(--ds-font-body);
+  font-size: 14px;
+  font-weight: 400;
   line-height: 1.45;
-  color: var(--td-muted);
+  color: #374151;
 }
 
 .tdash__topbar-actions {
@@ -642,11 +643,11 @@
 
 .tdash__kpi {
   min-width: 0;
+  min-height: 160px;
   padding: 28px;
   overflow: hidden;
-  background: linear-gradient(165deg, #ffffff 0%, #f5f6ff 42%, #f0f2ff 100%);
+  background: linear-gradient(165deg, #ffffff 0%, #f8faff 100%);
   border: 1px solid var(--td-card-border);
-  border-top: 2px solid var(--ds-brand);
   border-radius: 12px;
   box-shadow: var(--td-card-shadow);
   transition:
@@ -661,18 +662,19 @@
 
 .tdash__kpi-label {
   margin: 0 0 0.5rem;
+  font-family: var(--ds-font-body);
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: #9ca3af;
 }
 
 .tdash__kpi-value {
   margin: 0 0 0.25rem;
-  font-family: var(--td-sans);
-  font-size: 36px;
-  font-weight: 700;
+  font-family: var(--ds-font-display);
+  font-size: 40px;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1.08;
@@ -700,10 +702,11 @@
 
 .tdash__kpi-delta {
   margin: 0 0 0.5rem;
-  font-size: 14px;
+  font-family: var(--ds-font-body);
+  font-size: 13px;
   font-weight: 400;
   line-height: 1.45;
-  color: #6b7280;
+  color: #374151;
 }
 
 .tdash__kpi-delta--up {
@@ -712,6 +715,14 @@
 
 .tdash__kpi-delta--down {
   color: var(--ds-error);
+}
+
+.tdash__kpi-yield-note {
+  margin: 0.35rem 0 0;
+  min-height: 5.5rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #6b7280;
 }
 
 .tdash__sparkline {
@@ -1946,4 +1957,53 @@
 
 .tdash__burn-bars {
   display: block;
+}
+
+/* Open Banking waitlist — subtle footer card */
+.tdash__open-banking {
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.35rem;
+  background: #f4f4f5;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
+}
+
+.tdash__open-banking-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.25rem;
+}
+
+.tdash__open-banking-copy {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #52525b;
+}
+
+.tdash__open-banking-btn {
+  flex-shrink: 0;
+  padding: 0.55rem 1rem;
+  font-family: var(--td-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #3f3f46;
+  background: #ffffff;
+  border: 1px solid #d4d4d8;
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.tdash__open-banking-btn:hover {
+  background: #fafafa;
+  border-color: #a1a1aa;
+  color: #18181b;
 }

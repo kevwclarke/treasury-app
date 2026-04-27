@@ -1,0 +1,81 @@
+.pref-page .pref-section {
+  max-width: 40rem;
+}
+
+.pref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.pref-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pref-field--full {
+  grid-column: 1 / -1;
+}
+
+.pref-field--toggle {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--ds-border);
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.pref-field__label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.pref-actions {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.pref-audit {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  border-left: 2px solid #e5e7eb;
+}
+
+.pref-audit__item {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 1rem;
+}
+
+.pref-audit__dot {
+  position: absolute;
+  left: -5px;
+  top: 0.65rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ds-brand);
+  border: 2px solid #fff;
+}
+
+.pref-audit__desc {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #0f0f0f;
+}
+
+.pref-audit__time {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}

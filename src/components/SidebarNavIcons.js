@@ -1,5 +1,5 @@
 /**
- * Sidebar nav icons — 20px viewBox, 1.5px stroke, round caps (no emoji).
+ * Sidebar nav icons — 18px, 1.5px stroke, round caps (no emoji).
  * Stroke colour inherits from parent (inactive / active nav text).
  */
 const stroke = {
@@ -10,7 +10,7 @@ const stroke = {
   strokeLinejoin: 'round',
 }
 
-const p = { width: 20, height: 20, viewBox: '0 0 24 24', 'aria-hidden': true }
+const p = { width: 18, height: 18, viewBox: '0 0 24 24', 'aria-hidden': true }
 
 export function SidebarNavIcon({ name }) {
   switch (name) {
@@ -146,6 +146,20 @@ export function SidebarNavIcon({ name }) {
         <svg {...p} {...stroke}>
           <path d="M12 3c2 2 3.5 5 3.5 8.5a3.5 3.5 0 11-7 0C8.5 8 10 5 12 3z" />
           <path d="M10 12h4M12 12v6M9 19h6" />
+        </svg>
+      )
+    case 'preferences':
+      return (
+        <svg {...p} {...stroke}>
+          <circle cx="12" cy="8" r="3" />
+          <path d="M5 20a7 7 0 0114 0" />
+        </svg>
+      )
+    case 'integrations':
+      return (
+        <svg {...p} {...stroke}>
+          <rect x="4" y="6" width="16" height="12" rx="2" />
+          <path d="M8 10h8M8 14h5" />
         </svg>
       )
     default:

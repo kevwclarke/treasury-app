@@ -18,14 +18,16 @@ import { PeerBenchmarksPage } from '../pages/PeerBenchmarksPage'
 import { LiquidityBufferPage } from '../pages/LiquidityBufferPage'
 import { RunwayBurnPage } from '../pages/RunwayBurnPage'
 import { BurnIntelligencePage } from '../pages/BurnIntelligencePage'
-import { CashControlPage } from '../pages/CashControlPage'
 import { ScenarioModellerFullPage } from '../pages/ScenarioModellerFullPage'
 import { TaxTrackerPage } from '../pages/TaxTrackerPage'
 import { TermSheetCashPage } from '../pages/TermSheetCashPage'
 import { YieldOptimisationPage } from '../pages/YieldOptimisationPage'
 import { PrivacyPolicyPage } from '../pages/PrivacyPolicyPage'
+import { TermsOfServicePage } from '../pages/TermsOfServicePage'
 import { CompanyOnboardingPage } from '../pages/CompanyOnboardingPage'
 import { ProfilePage } from '../pages/ProfilePage'
+import { PreferencesPage } from '../pages/PreferencesPage'
+import { IntegrationsPage } from '../pages/IntegrationsPage'
 import './NavigationShell.css'
 
 export function NavigationShell() {
@@ -38,6 +40,7 @@ export function NavigationShell() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/onboarding" element={<ProtectedRoute />}>
           <Route index element={<CompanyOnboardingPage />} />
         </Route>
@@ -45,7 +48,7 @@ export function NavigationShell() {
           <Route element={<RequireCompanyProfile />}>
             <Route element={<DashboardLayout />}>
               <Route index element={<TreasuryDashboard />} />
-              <Route path="control" element={<CashControlPage />} />
+              <Route path="control" element={<Navigate to="/app" replace />} />
               <Route path="yield" element={<YieldOptimisationPage />} />
               <Route path="concentration" element={<ConcentrationRiskPage />} />
               <Route path="runway" element={<RunwayBurnPage />} />
@@ -61,6 +64,8 @@ export function NavigationShell() {
               <Route path="tax" element={<TaxTrackerPage />} />
               <Route path="report" element={<InvestorReportPage />} />
               <Route path="profile" element={<ProfilePage />} />
+              <Route path="preferences" element={<PreferencesPage />} />
+              <Route path="integrations" element={<IntegrationsPage />} />
               <Route path="fundraise" element={<FundraiseTimingPage />} />
               <Route path="yield-optimisation" element={<Navigate to="/app/yield" replace />} />
               <Route path="concentration-risk" element={<Navigate to="/app/concentration" replace />} />

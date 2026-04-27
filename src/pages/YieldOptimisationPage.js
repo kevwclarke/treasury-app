@@ -1,46 +1,17 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useUserTransactions } from '../hooks/useUserTransactions'
 import { YIELD_MARKETPLACE_PRODUCTS } from '../data/yieldMarketplace'
 import { YIELD_BEST_PCT } from '../utils/treasuryYield'
 import { computeLiquidityBuffer } from '../utils/treasuryLiquidity'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { buildYieldCapitalMoves } from '../utils/capitalMovesFromData'
 import { YieldApplyConfirmModal } from '../components/YieldApplyConfirmModal'
+import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
+import { TermTooltip } from '../components/TermTooltip'
 import '../components/DetailPage.css'
 
 const DEFAULT_BLENDED_PCT = 0.1
-
-/** Static BoE reference points (last 12 months), illustrative. */
-const BOE_HISTORY = [4.0, 4.1, 4.15, 4.2, 4.35, 4.45, 4.5, 4.6, 4.65, 4.7, 4.72, 4.75]
-
-function BoeRateChart() {
-  const w = 640
-  const h = 200
-  const pad = 28
-  const minR = Math.min(...BOE_HISTORY)
-  const maxR = Math.max(...BOE_HISTORY)
-  const xStep = (w - pad * 2) / (BOE_HISTORY.length - 1)
-  const pts = BOE_HISTORY.map((r, i) => {
-    const x = pad + i * xStep
-    const y = pad + (1 - (r - minR) / (maxR - minR || 1)) * (h - pad * 2)
-    return `${x},${y}`
-  }).join(' ')
-
-  return (
-    <svg className="detail-chart" viewBox={`0 0 ${w} ${h}`} role="img" aria-label="BoE base rate last 12 months">
-      <rect width={w} height={h} fill="#FAFAFA" rx="8" />
-      <text x={pad} y={20} fontSize="11" fill="#6B7280" fontFamily="'Inter', 'DM Sans', sans-serif">
-        Bank of England base rate — reference (illustrative)
-      </text>
-      <polyline fill="none" stroke="#1B2B8C" strokeWidth="2.5" points={pts} />
-      {BOE_HISTORY.map((r, i) => {
-        const x = pad + i * xStep
-        const y = pad + (1 - (r - minR) / (maxR - minR || 1)) * (h - pad * 2)
-        return <circle key={i} cx={x} cy={y} r="3" fill="#1B2B8C" />
-      })}
-    </svg>
-  )
-}
 
 export function YieldOptimisationPage() {
   const { rows, loading, error } = useUserTransactions()
@@ -62,6 +33,27 @@ export function YieldOptimisationPage() {
   const blendedDec = blendedPct / 100
   const bestDec = YIELD_BEST_PCT / 100
   const annualOpp = cashBasis * Math.max(0, bestDec - blendedDec)
+  const monthlyOpp = annualOpp / 12
+
+  const topProduct = YIELD_MARKETPLACE_PRODUCTS[0] || null
+
+  const onApplyTop = useCallback(() => {
+    if (topProduct) setApplyProduct(topProduct)
+  }, [topProduct])
+
+  const capitalMoves = useMemo(
+    () =>
+      buildYieldCapitalMoves({
+        totalCash: cashBasis,
+        annualOppCost: annualOpp,
+        monthlyOppCost: monthlyOpp,
+        currentYieldPct: blendedPct,
+        bestYieldPct: YIELD_BEST_PCT,
+        topProduct,
+        onApplyTop: topProduct ? onApplyTop : undefined,
+      }),
+    [annualOpp, blendedPct, cashBasis, monthlyOpp, onApplyTop, topProduct],
+  )
 
   const strategyCards = [
     {
@@ -86,16 +78,23 @@ export function YieldOptimisationPage() {
 
   return (
     <div className="detail-page">
+      <ModuleCapitalMoves actions={capitalMoves} />
+
       <header className="detail-hero">
         <h1 className="detail-title">Yield Optimisation</h1>
-        <p className="detail-sub">Maximise returns on idle cash without sacrificing liquidity</p>
+        <p className="detail-sub">
+          How much your idle cash is earning vs what it could earn at the same liquidity level — and exactly how to
+          close the gap.
+        </p>
       </header>
 
       <section className="detail-section">
-        <h2 className="detail-section__title">Your position</h2>
+        <h2 className="detail-section__title">
+          Your position (<TermTooltip term="aer" label="AER" />)
+        </h2>
         <p className="detail-section__lead">
-          Figures use your imported statement totals. Override the blended yield you earn today if it differs from
-          the Barclays default.
+          Figures use your imported statement totals. Override the blended yield you earn today if it differs from the
+          Barclays default.
         </p>
         {loading ? (
           <p className="detail-muted">Loading…</p>
@@ -118,7 +117,9 @@ export function YieldOptimisationPage() {
                 <p className="detail-stat__val detail-stat__val--salmon">{formatPct(blendedPct, 2)}</p>
               </div>
               <div className="detail-stat">
-                <p className="detail-stat__cap">Annual opportunity cost</p>
+                <p className="detail-stat__cap">
+                  <TermTooltip term="yield-gap" label="Annual opportunity cost" />
+                </p>
                 <p className="detail-stat__val detail-stat__val--salmon">{formatGBP(Math.round(annualOpp))}</p>
               </div>
             </div>
@@ -144,7 +145,9 @@ export function YieldOptimisationPage() {
       </section>
 
       <section className="detail-section">
-        <h2 className="detail-section__title">Opportunities marketplace</h2>
+        <h2 className="detail-section__title">
+          Opportunities marketplace (<TermTooltip term="mmf" label="Money market funds" />)
+        </h2>
         <p className="detail-section__lead">Ranked by headline rate. Estimated gain uses your net cash position.</p>
         <div className="detail-product-list">
           {YIELD_MARKETPLACE_PRODUCTS.map((p) => {
@@ -181,12 +184,6 @@ export function YieldOptimisationPage() {
             )
           })}
         </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Rate history</h2>
-        <p className="detail-section__lead">BoE base rate as a macro reference — static illustrative series.</p>
-        <BoeRateChart />
       </section>
 
       <section className="detail-section">
