@@ -297,7 +297,7 @@ export function LandingPage() {
             <h2 className="lp-feature__heading">Not insights. Actions.</h2>
             <p className="lp-feature__body">
               Every recommendation comes with a specific pound value, a 30-day cost of inaction, and one-click
-              execution. Our autopilot recommendations are generated from your real data — not generic tips.
+              execution. Capital Moves — your highest-impact treasury decisions, calculated from your real data.
             </p>
           </div>
           <div className="lp-feature__visual">

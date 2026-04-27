@@ -28,7 +28,7 @@ const SECTIONS = [
     body: [
       '**We do not sell your data.** We do not share your email or transaction data with advertisers or data brokers.',
       'Infrastructure providers (Supabase, and our hosting provider) process data solely to run the service, under appropriate agreements.',
-      'If you use **autopilot recommendations** (AI-generated), relevant **non-secret** metrics derived from your data may be sent to **Anthropic** to generate suggestions; we do not send your Supabase credentials. Do not put API keys intended for server-only use in client-side environment variables.',
+      'If you use **capital moves** (data-driven), relevant **non-secret** metrics derived from your data may be sent to **Anthropic** to generate suggestions; we do not send your Supabase credentials. Do not put API keys intended for server-only use in client-side environment variables.',
     ],
   },
   {

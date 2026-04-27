@@ -491,10 +491,10 @@ export function BurnIntelligencePage() {
         })),
       }
       const data = await fetchBurnIntelligenceAi({ mode: 'opportunities', payload })
-      if (!Array.isArray(data?.opportunities)) throw new Error('Unexpected AI response')
+      if (!Array.isArray(data?.opportunities)) throw new Error('Unexpected response')
       setOpps(data.opportunities)
     } catch (e) {
-      setAiError(e?.message || 'AI request failed')
+      setAiError(e?.message || 'Request failed')
       setOpps([])
     } finally {
       setAiLoading(false)
@@ -671,7 +671,7 @@ export function BurnIntelligencePage() {
         <p className="detail-sub">Specific actions to reduce your monthly spend — ranked by impact</p>
         <p className="burn-intel__crosslink-top">
           For treasury and cash structure actions see{' '}
-          <Link to="/app">Autopilot Recommendations</Link> on the dashboard.
+          <Link to="/app">Capital Moves</Link> on the dashboard.
         </p>
       </header>
 
@@ -783,16 +783,18 @@ export function BurnIntelligencePage() {
         <div className="burn-intel__ai-head">
           <div className="burn-intel__ai-head-text">
             <div className="burn-intel__title-row">
-              <h2 className="detail-section__title burn-intel__ai-title">AI opportunities</h2>
+              <h2 className="detail-section__title burn-intel__ai-title">Priority Actions</h2>
               <span className="burn-intel__badge-spend">Spend</span>
             </div>
-            <p className="burn-intel__subtitle-spend">Spend actions — reduce costs without cutting headcount</p>
+            <p className="burn-intel__subtitle-spend">
+              Specific spend reductions ranked by monthly impact — no headcount cuts
+            </p>
             <p className="detail-section__lead burn-intel__ai-lead">
               Five concrete opportunities ranked by impact. We never recommend headcount or salary cuts.
             </p>
           </div>
           <button type="button" className="detail-btn detail-btn--dark" onClick={handleFetchOpportunities} disabled={aiLoading || txnLoading}>
-            {aiLoading ? 'Generating…' : 'Generate 5 actions'}
+            {aiLoading ? 'Generating…' : 'Generate Priority Actions'}
           </button>
         </div>
         {aiError ? <p className="detail-muted" style={{ color: '#DC2626' }}>{aiError}</p> : null}

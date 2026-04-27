@@ -14,7 +14,7 @@ const STEPS = [
   },
   {
     n: 3,
-    title: 'Get your autopilot recommendations — specific actions with pound value impact',
+    title: 'Get your Capital Moves — specific actions ranked by pound value impact',
     body: 'Prioritised moves you can take this week, with impact in pounds.',
   },
 ]

@@ -623,7 +623,7 @@ export function TreasuryDashboard() {
         <div className="tdash__promo-copy">
           <h2 className="tdash__promo-title">Investor-Ready Treasury Report</h2>
           <p className="tdash__promo-desc">
-            Five-page investor pack: health score, cash, runway, concentration, and AI actions — from live data.
+            Five-page investor pack: health score, cash, runway, concentration, and capital moves — from live data.
           </p>
         </div>
         <div className="tdash__promo-preview" aria-hidden />

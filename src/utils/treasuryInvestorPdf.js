@@ -104,7 +104,7 @@ export function downloadTreasuryInvestorPdf(payload) {
   setInk(doc)
   doc.setFontSize(9)
   const foot =
-    'This report summarises cash, yield, runway, concentration, and recent AI recommendations. ' +
+    'This report summarises cash, yield, runway, concentration, and recent capital moves. ' +
     'Figures derive from uploaded transaction data and illustrative market benchmarks.'
   const footLines = doc.splitTextToSize(foot, PAGE_W - 2 * M)
   doc.text(footLines, M, 154)
@@ -218,14 +218,14 @@ export function downloadTreasuryInvestorPdf(payload) {
     y += 8
   }
 
-  // —— Page 5: AI ——
+  // —— Page 5: Capital Moves ——
   doc.addPage()
-  y = drawPageHeader(doc, 'AI actions summary')
+  y = drawPageHeader(doc, 'Capital Moves Summary')
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   setMuted(doc)
   const intro = doc.splitTextToSize(
-    'The three most recent autopilot recommendations (from Treasury Autopilot). Refresh actions there to update.',
+    'The three most recent capital moves (from Treasury Autopilot). Refresh capital moves there to update.',
     PAGE_W - 2 * M,
   )
   doc.text(intro, M, y)
@@ -235,7 +235,7 @@ export function downloadTreasuryInvestorPdf(payload) {
   if (!actions.length) {
     doc.setFont('helvetica', 'italic')
     setMuted(doc)
-    doc.text('No cached actions yet. Open Treasury Autopilot and use “Refresh Actions”.', M, y)
+    doc.text('No cached moves yet. Open Treasury Autopilot and use “Refresh Capital Moves”.', M, y)
   } else {
     actions.forEach((a, idx) => {
       if (y > PAGE_H - 50) return

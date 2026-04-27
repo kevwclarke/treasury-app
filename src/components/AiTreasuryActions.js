@@ -116,16 +116,18 @@ export function AiTreasuryActions({
   const showPlaceholder = !hasTxn && !txnLoading
 
   return (
-    <section className="ai-actions" aria-labelledby="ai-autopilot-recommendations-heading">
+    <section className="ai-actions" aria-labelledby="capital-moves-heading">
       <div className="ai-actions__head">
         <div className="ai-actions__intro">
           <div className="ai-actions__title-row">
-            <h2 id="ai-autopilot-recommendations-heading" className="ai-actions__title">
-              Autopilot Recommendations
+            <h2 id="capital-moves-heading" className="ai-actions__title">
+              Capital Moves
             </h2>
             <span className="ai-actions__badge ai-actions__badge--treasury">Treasury</span>
           </div>
-          <p className="ai-actions__subtitle">Treasury actions — yield, protection, and cash structure</p>
+          <p className="ai-actions__subtitle">
+            Your highest-impact treasury actions this week — ranked by pound value
+          </p>
           <p className="ai-actions__lead">
             Ranked by pound impact — with the cost of inaction if ignored
           </p>
@@ -136,7 +138,7 @@ export function AiTreasuryActions({
           onClick={() => runFetch(true)}
           disabled={!canRequest || loading}
         >
-          {loading ? 'Loading…' : 'Refresh Actions'}
+          {loading ? 'Loading…' : 'Refresh Capital Moves'}
         </button>
       </div>
 
@@ -145,7 +147,7 @@ export function AiTreasuryActions({
 
       {showPlaceholder ? (
         <p className="ai-actions__hint">
-          Upload transactions to generate autopilot recommendations. <Link to="/upload">Upload statement</Link>
+          Upload transactions to generate capital moves. <Link to="/upload">Upload statement</Link>
         </p>
       ) : null}
 

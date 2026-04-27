@@ -13,7 +13,7 @@ const PDF_INCLUDES = [
   'Cash position and yield gap',
   'Runway scenarios',
   'Concentration risk and FSCS exposure',
-  'AI-generated priority actions',
+  'Data-driven capital moves summary',
 ]
 
 export function InvestorReportPage() {
