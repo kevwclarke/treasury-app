@@ -492,7 +492,7 @@
 
 .yld-bar-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 52px;
   align-items: center;
   gap: 0.75rem;
 }
@@ -875,7 +875,7 @@
 
 .yld-opp-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) 52px;
   align-items: center;
   gap: 1rem;
   padding: 20px;
