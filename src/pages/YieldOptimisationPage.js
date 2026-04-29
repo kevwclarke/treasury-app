@@ -432,18 +432,18 @@ export function YieldOptimisationPage() {
             <div className="yld-compare-stack">
               <div
                 className="yld-compare-block"
-                style={{ overflow: 'visible', boxSizing: 'border-box' }}
+                style={{ overflow: 'visible', boxSizing: 'border-box', paddingRight: '0' }}
               >
                 <h3 className="yld-subsection-label">Market rates</h3>
                 <div className="yld-market-rows" aria-label="Market rates comparison">
                   <div
                     className="yld-market-row"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(0, 1fr) auto',
+                      display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
                       width: '100%',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
@@ -455,21 +455,16 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span
-                      className="yld-market-row__rate"
-                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {formatPct(RATE_CHART_REF_PCT, 2)}
-                    </span>
+                    <span className="yld-market-row__rate">{formatPct(RATE_CHART_REF_PCT, 2)}</span>
                   </div>
                   <div
                     className="yld-market-row"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(0, 1fr) auto',
+                      display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
                       width: '100%',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
@@ -481,21 +476,16 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span
-                      className="yld-market-row__rate"
-                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {formatPct(RATE_MARKET_AVG_PCT, 2)}
-                    </span>
+                    <span className="yld-market-row__rate">{formatPct(RATE_MARKET_AVG_PCT, 2)}</span>
                   </div>
                   <div
                     className="yld-market-row"
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(0, 1fr) auto',
+                      display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
                       width: '100%',
+                      boxSizing: 'border-box',
                     }}
                   >
                     <div style={{ minWidth: 0 }}>
@@ -507,12 +497,7 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span
-                      className="yld-market-row__rate"
-                      style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {formatPct(blendedPct, 2)}
-                    </span>
+                    <span className="yld-market-row__rate">{formatPct(blendedPct, 2)}</span>
                   </div>
                 </div>
                 {yieldBelowMult != null ? (
