@@ -436,17 +436,8 @@ export function YieldOptimisationPage() {
               >
                 <h3 className="yld-subsection-label">Market rates</h3>
                 <div className="yld-market-rows" aria-label="Market rates comparison">
-                  <div
-                    className="yld-market-row"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
+                  <div className="yld-market-row" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <span className="yld-market-row__label">Best available</span>
                       <div className="yld-market-row__track">
                         <div
@@ -455,19 +446,10 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span className="yld-market-row__rate">{formatPct(RATE_CHART_REF_PCT, 2)}</span>
+                    <span className="yld-market-row__rate" style={{ flexShrink: 0, width: '52px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPct(RATE_CHART_REF_PCT, 2)}</span>
                   </div>
-                  <div
-                    className="yld-market-row"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
+                  <div className="yld-market-row" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <span className="yld-market-row__label">Market average</span>
                       <div className="yld-market-row__track">
                         <div
@@ -476,19 +458,10 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span className="yld-market-row__rate">{formatPct(RATE_MARKET_AVG_PCT, 2)}</span>
+                    <span className="yld-market-row__rate" style={{ flexShrink: 0, width: '52px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPct(RATE_MARKET_AVG_PCT, 2)}</span>
                   </div>
-                  <div
-                    className="yld-market-row"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      width: '100%',
-                      boxSizing: 'border-box',
-                    }}
-                  >
-                    <div style={{ minWidth: 0 }}>
+                  <div className="yld-market-row" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', width: '100%', boxSizing: 'border-box', minWidth: 0 }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
                       <span className="yld-market-row__label">Your current</span>
                       <div className="yld-market-row__track">
                         <div
@@ -497,7 +470,7 @@ export function YieldOptimisationPage() {
                         />
                       </div>
                     </div>
-                    <span className="yld-market-row__rate">{formatPct(blendedPct, 2)}</span>
+                    <span className="yld-market-row__rate" style={{ flexShrink: 0, width: '52px', textAlign: 'right', whiteSpace: 'nowrap' }}>{formatPct(blendedPct, 2)}</span>
                   </div>
                 </div>
                 {yieldBelowMult != null ? (
