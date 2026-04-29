@@ -312,6 +312,34 @@ export function UploadPage() {
         }
       }
 
+      if (txs.length > 0) {
+        const { data: prof, error: profErr } = await supabase
+          .from('company_profiles')
+          .select('first_data_upload_at, company_name, funding_stage')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (profErr) {
+          console.warn('Could not read company_profiles for first_data_upload_at:', profErr)
+        } else if (prof && !prof.first_data_upload_at) {
+          const { error: upsertErr } = await supabase.from('company_profiles').upsert(
+            {
+              user_id: user.id,
+              company_name: prof.company_name,
+              funding_stage: prof.funding_stage,
+              first_data_upload_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id' },
+          )
+          if (upsertErr) {
+            const msg = String(upsertErr.message ?? '').toLowerCase()
+            if (!msg.includes('first_data_upload_at') && !msg.includes('column')) {
+              console.warn('Could not set first_data_upload_at:', upsertErr)
+            }
+          }
+        }
+      }
+
       setImportCelebration(true)
     } catch (e) {
       setError(e?.message ?? 'Import failed.')

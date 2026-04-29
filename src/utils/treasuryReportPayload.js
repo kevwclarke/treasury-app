@@ -2,7 +2,7 @@ import { BURN_CATEGORY_ORDER, categorisePayee } from './treasuryBurn'
 import { computeConcentrationFromTransactions } from './treasuryConcentration'
 import { computeBurn30Vs90Pct } from './treasuryKpi'
 import { computeRunwayFromTransactions } from './treasuryRunway'
-import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from './treasuryYield'
+import { YIELD_BEST_DEC, YIELD_BEST_PCT, YIELD_CURRENT_DEC, YIELD_CURRENT_PCT } from './treasuryYield'
 import { computeTreasuryHealthScore100 } from './treasuryHealthScore'
 import { getReportCompanyName, TREASURY_AI_ACTIONS_CACHE_KEY } from '../constants/treasuryReport'
 
@@ -10,7 +10,15 @@ function since90dIso() {
   return new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
 }
 
-function computeYieldSummary(txnRows) {
+/**
+ * @param {Array<{ amount?: number|string }>} txnRows
+ * @param {{ currentYieldDec?: number }} [opts]
+ */
+export function computeYieldSummary(txnRows, opts = {}) {
+  const currentYieldDec =
+    opts.currentYieldDec != null && Number.isFinite(Number(opts.currentYieldDec))
+      ? Math.max(0, Math.min(0.25, Number(opts.currentYieldDec)))
+      : YIELD_CURRENT_DEC
   const list = Array.isArray(txnRows) ? txnRows : []
   let totalCash = 0
   for (const t of list) {
@@ -18,9 +26,10 @@ function computeYieldSummary(txnRows) {
     if (!Number.isFinite(a)) continue
     totalCash += a
   }
-  const annualOppCost = totalCash * YIELD_SPREAD_DEC
+  const spreadDec = Math.max(0, YIELD_BEST_DEC - currentYieldDec)
+  const annualOppCost = totalCash * spreadDec
   const monthlyOppCost = annualOppCost / 12
-  return { totalCash, annualOppCost, monthlyOppCost }
+  return { totalCash, annualOppCost, monthlyOppCost, currentYieldDec, spreadDec }
 }
 
 function computeBurnSummaryFromRows(burnRows) {
