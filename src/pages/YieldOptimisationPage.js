@@ -32,8 +32,10 @@ const BOE_RATE_SERIES = [
 const OPP_ROWS = [
   {
     key: 'tbills',
+    rank: '#1 BEST OPTION',
     title: 'UK T-Bills 91-day',
     meta: 'HM Treasury · Rate: 5.25% · Access: Quarterly · Not FSCS',
+    bestFor: 'Best for: idle cash above your liquidity buffer',
     mult: TBILL_ANNUAL_MULT,
     basis: 'eligible',
     borderClass: 'yld-opp-row--tbills',
@@ -43,8 +45,10 @@ const OPP_ROWS = [
   },
   {
     key: 'blackrock',
+    rank: '#2 ALTERNATIVE',
     title: 'BlackRock Liquidity Fund',
     meta: 'BlackRock · Rate: 5.12% · Access: Same day · Not FSCS',
+    bestFor: 'Best for: operating cash requiring same-day access',
     mult: BR_MMF_ANNUAL_MULT,
     basis: 'total',
     borderClass: 'yld-opp-row--blackrock',
@@ -54,8 +58,10 @@ const OPP_ROWS = [
   },
   {
     key: 'shawbrook',
+    rank: '#3 FIXED RETURN',
     title: 'Shawbrook 12-mo Fixed',
     meta: 'Shawbrook Bank · Rate: 4.95% · Access: 12 months · FSCS protected',
+    bestFor: 'Best for: locked-in yield certainty on surplus cash',
     mult: SHAW_ANNUAL_MULT,
     basis: 'eligible',
     borderClass: 'yld-opp-row--shawbrook',
@@ -65,8 +71,10 @@ const OPP_ROWS = [
   },
   {
     key: 'flagstone',
+    rank: '#4 PLATFORM',
     title: 'Flagstone Platform',
     meta: 'Flagstone · Rate: 4.80% · Access: Varies · FSCS per institution',
+    bestFor: 'Best for: FSCS-protected diversification across banks',
     mult: FLAG_ANNUAL_MULT,
     basis: 'eligible',
     borderClass: 'yld-opp-row--flagstone',
@@ -168,6 +176,14 @@ export function YieldOptimisationPage() {
         <div className="yld-header__titles">
           <h1 className="yld-title">Yield Optimisation</h1>
           <p className="yld-subtitle">Maximise return on idle cash while preserving liquidity</p>
+          <div className="yld-dominant-metric" aria-label="Annual yield opportunity cost">
+            <p className="yld-dominant-metric__value">{formatGBP(Math.round(annualOpp))} / yr</p>
+            <p className="yld-dominant-metric__label">Annual yield opportunity lost</p>
+            <p className="yld-dominant-metric__support">
+              You are earning {formatPct(blendedPct, 2)} vs {formatPct(RATE_CHART_REF_PCT, 2)} available —{' '}
+              {daysUnaddressedLoading || daysUnaddressed == null ? '—' : daysUnaddressed} days unaddressed
+            </p>
+          </div>
         </div>
         {loading ? (
           <span className="ds-skeleton ds-skeleton--line" style={{ width: 120, height: 28, borderRadius: 999 }} />
@@ -204,7 +220,8 @@ export function YieldOptimisationPage() {
           </div>
         ) : (
           <div className="yld-nba__row">
-            <article className="yld-action-card">
+            <article className="yld-action-card yld-action-card--primary">
+              <p className="yld-action-card__recommended">RECOMMENDED</p>
               <p className="yld-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="yld-action-card__impact">{formatGBP(Math.round(nba1Impact))}/yr</p>
               <p className="yld-action-card__rate-shift">
@@ -213,8 +230,9 @@ export function YieldOptimisationPage() {
                 <span style={{ color: '#16A34A' }}>5.25%</span>
               </p>
               <p className="yld-action-card__title">
-                Move {formatGBP(Math.round(eligible))} to UK T-Bills at 5.25%
+                Earn 5.25% on idle cash
               </p>
+              <p className="yld-action-card__confidence">Lowest risk, highest return</p>
               <p className="yld-action-card__desc">
                 Your idle cash above the liquidity buffer earns {formatPct(blendedPct, 2)}. Moving it to UK T-Bills at
                 5.25% captures the full yield gap immediately.
@@ -240,7 +258,7 @@ export function YieldOptimisationPage() {
               </div>
             </article>
 
-            <article className="yld-action-card">
+            <article className="yld-action-card yld-action-card--secondary">
               <p className="yld-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="yld-action-card__impact">{formatGBP(Math.round(nba2Impact))}/yr</p>
               <p className="yld-action-card__rate-shift">
@@ -248,7 +266,7 @@ export function YieldOptimisationPage() {
                 <span style={{ color: '#9CA3AF' }}> → </span>
                 <span style={{ color: '#16A34A' }}>5.12%</span>
               </p>
-              <p className="yld-action-card__title">Open BlackRock MMF for operating cash</p>
+              <p className="yld-action-card__title">Earn 5.12% with same-day access</p>
               <p className="yld-action-card__desc">
                 Park your operating reserves at 5.12% with same-day access. Replaces your Barclays current account
                 yield immediately.
@@ -274,7 +292,7 @@ export function YieldOptimisationPage() {
               </div>
             </article>
 
-            <article className="yld-action-card">
+            <article className="yld-action-card yld-action-card--secondary yld-action-card--tertiary">
               <p className="yld-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="yld-action-card__impact-qual">
                 <ShieldIcon />
@@ -314,7 +332,7 @@ export function YieldOptimisationPage() {
           <div className="yld-inaction__left">
             <span className="yld-inaction__dot" aria-hidden />
             <p className="yld-inaction__text">
-              At current yield, you are losing {formatGBP(Math.round(monthlyOpp))} every month —{' '}
+              At your current yield, you are losing {formatGBP(Math.round(monthlyOpp))} every month —{' '}
               {daysUnaddressedLoading || daysUnaddressed == null ? '—' : daysUnaddressed} days unaddressed.
             </p>
           </div>
@@ -355,6 +373,11 @@ export function YieldOptimisationPage() {
           ) : (
             <>
               <p className="yld-cash-hero">{formatGBP(Math.round(totalCash))}</p>
+              <div className="yld-position-loss">
+                <p className="yld-position-loss__label">ANNUAL OPPORTUNITY COST</p>
+                <p className="yld-position-loss__value">{formatGBP(Math.round(annualOpp))} / yr lost</p>
+                <p className="yld-position-loss__cause">Most of your cash is sitting in near-zero yield accounts</p>
+              </div>
               <div className="yld-stat-rows">
                 <div className="yld-stat-row">
                   <span className="yld-stat-row__label">Current yield</span>
@@ -432,7 +455,7 @@ export function YieldOptimisationPage() {
             <div className="yld-compare-stack">
               <div
                 className="yld-compare-block"
-                style={{ overflow: 'visible', boxSizing: 'border-box', paddingRight: '0' }}
+                style={{ overflow: 'visible', boxSizing: 'border-box', paddingRight: '14px' }}
               >
                 <h3 className="yld-subsection-label">Market rates</h3>
                 <div className="yld-market-rows" aria-label="Market rates comparison">
@@ -474,7 +497,7 @@ export function YieldOptimisationPage() {
                   </div>
                 </div>
                 {yieldBelowMult != null ? (
-                  <p className="yld-market-row__below">Your yield is {yieldBelowMult}x below best available</p>
+                  <p className="yld-market-row__below">You're earning ~{yieldBelowMult}x less than available rates</p>
                 ) : null}
               </div>
 
@@ -550,9 +573,14 @@ export function YieldOptimisationPage() {
                   const gain = basisAmt * row.mult
                   return (
                     <div key={row.key} className={`yld-opp-row ${row.borderClass}`}>
-                      <div>
+                      <div className="yld-opp-row__content">
+                        <p className="yld-opp-row__rank">
+                          {row.rank}
+                          {row.key === 'tbills' ? <span className="yld-opp-row__impact-tag">Highest impact</span> : null}
+                        </p>
                         <h3 className="yld-opp-row__title">{row.title}</h3>
                         <p className="yld-opp-row__meta">{row.meta}</p>
+                        <p className="yld-opp-row__best-for">{row.bestFor}</p>
                         <p className="yld-opp-row__rationale">{row.rationale}</p>
                         <p className="yld-opp-row__gain">{formatGBP(Math.round(gain))} / yr</p>
                       </div>
@@ -638,7 +666,7 @@ export function YieldOptimisationPage() {
                 </ResponsiveContainer>
               </div>
               <p className="yld-insight">
-                Rates are stable at elevated levels. Idle cash drag is significant and growing.
+                Rates remain elevated — idle cash drag is near peak levels
               </p>
               <p className="yld-monthly-cost">
                 Every month unaddressed costs you {formatGBP(Math.round(monthlyOpp))}.
