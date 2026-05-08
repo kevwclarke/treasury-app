@@ -4,7 +4,6 @@ import { useUserTransactions } from '../hooks/useUserTransactions'
 import { useDaysDataUnaddressed } from '../hooks/useDaysDataUnaddressed'
 import { computeConcentrationFromTransactions, FSCS_LIMIT_GBP } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
-import { buildConcentrationCapitalMoves } from '../utils/capitalMovesFromData'
 import { TermTooltip } from '../components/TermTooltip'
 import '../styles/design-system.css'
 import './ConcentrationRiskPage.css'
@@ -46,7 +45,6 @@ export function ConcentrationRiskPage() {
   const { days: daysUnaddressed, loading: daysUnaddressedLoading } = useDaysDataUnaddressed()
 
   const concentration = useMemo(() => computeConcentrationFromTransactions(rows), [rows])
-  const capitalMoves = useMemo(() => buildConcentrationCapitalMoves({ concentration }), [concentration])
 
   const {
     totalCash,
