@@ -126,8 +126,11 @@ export function ConcentrationRiskPage() {
             Upload transaction data to unlock ranked concentration actions. <Link to="/upload">Upload bank statement</Link>
           </div>
         ) : (
-          <div className="conc-nba__row">
-            <article className="conc-action-card conc-action-card--primary">
+          <div className="conc-nba__row" style={{ alignItems: 'stretch' }}>
+            <article
+              className="conc-action-card conc-action-card--primary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="conc-action-card__recommended">RECOMMENDED</p>
               <p className="conc-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="conc-action-card__impact">{formatGBP(Math.round(amountToMove))}</p>
@@ -155,14 +158,17 @@ export function ConcentrationRiskPage() {
                 <span className="conc-action-wait__label">Cost of waiting</span>
                 <span className="conc-action-wait__val">{formatGBP(Math.round(unprotectedTotal))} at risk every day</span>
               </div>
-              <div className="conc-action-card__footer">
+              <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <a className="conc-action-card__cta-pill" href="https://www.starling.com/business" target="_blank" rel="noopener noreferrer">
                   Open new account
                 </a>
               </div>
             </article>
 
-            <article className="conc-action-card conc-action-card--secondary">
+            <article
+              className="conc-action-card conc-action-card--secondary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="conc-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="conc-action-card__impact">{formatGBP(Math.round(amountToMove))}</p>
               <p className="conc-action-card__title">Move surplus to FSCS-protected products</p>
@@ -187,14 +193,17 @@ export function ConcentrationRiskPage() {
                 <span className="conc-action-wait__label">Cost of waiting</span>
                 <span className="conc-action-wait__val">Unprotected exposure continues daily</span>
               </div>
-              <div className="conc-action-card__footer">
+              <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="conc-action-card__cta-pill" to="/app/opportunities">
                   View options
                 </Link>
               </div>
             </article>
 
-            <article className="conc-action-card conc-action-card--secondary conc-action-card--tertiary">
+            <article
+              className="conc-action-card conc-action-card--secondary conc-action-card--tertiary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="conc-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="conc-action-card__impact-qual">
                 <ShieldIcon />
@@ -222,7 +231,7 @@ export function ConcentrationRiskPage() {
                 <span className="conc-action-wait__label">Cost of waiting</span>
                 <span className="conc-action-wait__val conc-action-wait__val--neutral">Zero — act now</span>
               </div>
-              <div className="conc-action-card__footer">
+              <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="conc-action-card__cta-pill" to="/app/preferences">
                   Configure
                 </Link>
@@ -381,6 +390,20 @@ export function ConcentrationRiskPage() {
                     </div>
                   ))}
                 </div>
+                {positiveRows.length === 1 ? (
+                  <p
+                    style={{
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      fontSize: '12px',
+                      fontWeight: 400,
+                      color: '#6B7280',
+                      fontStyle: 'italic',
+                      margin: '10px 0 0',
+                    }}
+                  >
+                    Only one institution detected. Connect additional bank accounts to see your full distribution across providers.
+                  </p>
+                ) : null}
                 <p className="conc-market-row__below">
                   Your largest exposure is {largestInstitutionName} at {formatPct(largestInstitutionPct, 1)} of total
                   cash

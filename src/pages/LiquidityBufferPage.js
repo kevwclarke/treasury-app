@@ -104,6 +104,7 @@ export function LiquidityBufferPage() {
   const blendedPct = yieldSummary.currentYieldDec * 100
   const eligible = liq.eligibleForYield
   const bufferCash = Math.max(0, liq.totalCash - eligible)
+  const instantlyLiquidCash = Math.max(0, liq.totalCash)
   const nba2Annual = bufferCash * BR_BUFFER_ANNUAL_MULT
   const nba2Daily = nba2Annual / 365
 
@@ -229,8 +230,11 @@ export function LiquidityBufferPage() {
             Upload transaction data to unlock liquidity actions. <Link to="/upload">Upload bank statement</Link>
           </div>
         ) : (
-          <div className="liq-nba__row">
-            <article className="liq-action-card liq-action-card--primary">
+          <div className="liq-nba__row" style={{ alignItems: 'stretch' }}>
+            <article
+              className="liq-action-card liq-action-card--primary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="liq-action-card__recommended">RECOMMENDED</p>
               <p className="liq-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="liq-action-card__impact--qual">6 months operational security</p>
@@ -249,21 +253,33 @@ export function LiquidityBufferPage() {
                 </div>
                 <div className="liq-action-meta__cell liq-action-meta__cell--wide">
                   <span className="liq-action-meta__label">Annual impact</span>
-                  <span className="liq-action-meta__val liq-action-meta__val--gain">6 months operational security</span>
+                  <span
+                    style={{
+                      fontFamily: 'Plus Jakarta Sans, system-ui, sans-serif',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      color: '#16a34a',
+                    }}
+                  >
+                    {formatGBP(Math.round(instantlyLiquidCash))} protected
+                  </span>
                 </div>
               </div>
               <div className="liq-action-wait">
                 <span className="liq-action-wait__label">Cost of waiting</span>
                 <span className="liq-action-wait__val">Operational risk continues</span>
               </div>
-              <div className="liq-action-card__footer">
+              <div className="liq-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="liq-action-card__cta-pill" to="/app/concentration">
                   Review accounts
                 </Link>
               </div>
             </article>
 
-            <article className="liq-action-card liq-action-card--secondary">
+            <article
+              className="liq-action-card liq-action-card--secondary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="liq-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="liq-action-card__impact">{formatGBP(Math.round(nba2Annual))}/yr</p>
               <p className="liq-action-card__title">Optimise yield on buffer cash</p>
@@ -290,14 +306,17 @@ export function LiquidityBufferPage() {
                 <span className="liq-action-wait__label">Cost of waiting</span>
                 <span className="liq-action-wait__val">{formatGBP(Math.round(nba2Daily))}/day</span>
               </div>
-              <div className="liq-action-card__footer">
+              <div className="liq-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="liq-action-card__cta-pill" to="/app/yield">
                   View options
                 </Link>
               </div>
             </article>
 
-            <article className="liq-action-card liq-action-card--secondary liq-action-card--tertiary">
+            <article
+              className="liq-action-card liq-action-card--secondary liq-action-card--tertiary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="liq-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="liq-action-card__impact-qual">
                 <ShieldIcon />
@@ -325,7 +344,7 @@ export function LiquidityBufferPage() {
                 <span className="liq-action-wait__label">Cost of waiting</span>
                 <span className="liq-action-wait__val liq-action-wait__val--neutral">Zero — act now</span>
               </div>
-              <div className="liq-action-card__footer">
+              <div className="liq-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="liq-action-card__cta-pill" to="/app/preferences">
                   Configure
                 </Link>

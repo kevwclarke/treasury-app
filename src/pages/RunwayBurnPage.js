@@ -254,8 +254,11 @@ export function RunwayBurnPage() {
             No monthly burn detected in your import — add debits or check column mapping to model runway.
           </div>
         ) : (
-          <div className="rnwy-nba__row">
-            <article className="rnwy-action-card rnwy-action-card--primary">
+          <div className="rnwy-nba__row" style={{ alignItems: 'stretch' }}>
+            <article
+              className="rnwy-action-card rnwy-action-card--primary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="rnwy-action-card__recommended">RECOMMENDED</p>
               <p className="rnwy-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="rnwy-action-card__impact">+{runwayLiftMo.toFixed(1)} mo</p>
@@ -285,14 +288,17 @@ export function RunwayBurnPage() {
                   Every month costs {formatGBP(Math.round(runwayCore.monthlyBurn))}
                 </span>
               </div>
-              <div className="rnwy-action-card__footer">
+              <div className="rnwy-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="rnwy-action-card__cta-pill" to="/app/yield">
                   Optimise yield
                 </Link>
               </div>
             </article>
 
-            <article className="rnwy-action-card rnwy-action-card--secondary">
+            <article
+              className="rnwy-action-card rnwy-action-card--secondary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="rnwy-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="rnwy-action-card__impact">
                 {monthsAdded10PctBurnCut != null ? `Up to ${monthsAdded10PctBurnCut.toFixed(1)} mo` : '—'}
@@ -327,14 +333,17 @@ export function RunwayBurnPage() {
                   {formatGBP(Math.round(runwayCore.monthlyBurn))} per month continuing
                 </span>
               </div>
-              <div className="rnwy-action-card__footer">
+              <div className="rnwy-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="rnwy-action-card__cta-pill" to="/app/burn-intelligence">
                   View burn breakdown
                 </Link>
               </div>
             </article>
 
-            <article className="rnwy-action-card rnwy-action-card--secondary rnwy-action-card--tertiary">
+            <article
+              className="rnwy-action-card rnwy-action-card--secondary rnwy-action-card--tertiary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="rnwy-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="rnwy-action-card__impact-qual">
                 <ShieldIcon />
@@ -362,7 +371,7 @@ export function RunwayBurnPage() {
                 <span className="rnwy-action-wait__label">Cost of waiting</span>
                 <span className="rnwy-action-wait__val rnwy-action-wait__val--neutral">Zero — act now</span>
               </div>
-              <div className="rnwy-action-card__footer">
+              <div className="rnwy-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="rnwy-action-card__cta-pill" to="/app/fundraise">
                   Configure
                 </Link>
@@ -571,16 +580,56 @@ export function RunwayBurnPage() {
             </div>
           ) : (
             <div className="rnwy-opp-list">
-              {burnRollup.rows.map((r) => (
-                <div key={r.name} className={`rnwy-opp-row ${categoryBorderClass(r.name)}`}>
-                  <div className="rnwy-opp-row__content">
-                    <h3 className="rnwy-opp-row__title">{r.name}</h3>
-                    <p className="rnwy-opp-row__meta">Monthly average over last 6 months</p>
-                    <p className="rnwy-opp-row__rationale">{formatPct(r.pct, 1)} of total burn</p>
-                    <p className="rnwy-opp-row__gain">{formatGBP(Math.round(r.monthlyAvg))}/mo</p>
+              {burnRollup.rows.map((r) => {
+                const pctWidth = Math.max(0, Math.min(100, Number(r.pct) || 0))
+                const barColor =
+                  r.name === 'Payroll'
+                    ? '#1B2F8C'
+                    : r.name === 'Infrastructure'
+                      ? '#9CA3AF'
+                      : r.name === 'Contractors'
+                        ? '#F59E0B'
+                        : r.name === 'Office & Ops'
+                          ? '#16A34A'
+                          : r.name === 'Marketing'
+                            ? '#3B82F6'
+                            : '#D1D5DB'
+
+                return (
+                  <div key={r.name} className={`rnwy-opp-row ${categoryBorderClass(r.name)}`}>
+                    <div className="rnwy-opp-row__content">
+                      <h3 className="rnwy-opp-row__title">{r.name}</h3>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="rnwy-market-row__track">
+                            <div
+                              className="rnwy-market-row__fill"
+                              style={{ width: `${pctWidth}%`, backgroundColor: barColor }}
+                            />
+                          </div>
+                        </div>
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            width: '48px',
+                            textAlign: 'right',
+                            whiteSpace: 'nowrap',
+                            fontFamily: 'Inter, system-ui, sans-serif',
+                            fontSize: '11px',
+                            fontWeight: 500,
+                            color: '#6B7280',
+                          }}
+                        >
+                          {formatPct(r.pct, 1)}
+                        </span>
+                      </div>
+                      <p className="rnwy-opp-row__meta">Monthly average over last 6 months</p>
+                      <p className="rnwy-opp-row__rationale">{formatPct(r.pct, 1)} of total burn</p>
+                      <p className="rnwy-opp-row__gain">{formatGBP(Math.round(r.monthlyAvg))}/mo</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>

@@ -224,7 +224,15 @@ export function BurnIntelligencePage() {
     const debits = txnRows
       .filter((r) => Number(r.amount) < 0)
       .slice()
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .sort((a, b) => {
+        const ta = new Date(a.date).getTime()
+        const tb = new Date(b.date).getTime()
+        const dt = (Number.isFinite(tb) ? tb : 0) - (Number.isFinite(ta) ? ta : 0)
+        if (dt !== 0) return dt
+        const pa = String(a.payee ?? '').trim() || '—'
+        const pb = String(b.payee ?? '').trim() || '—'
+        return pa.localeCompare(pb)
+      })
 
     function payeeDateKey(t) {
       const payee = String(t.payee ?? '').trim() || '—'
@@ -346,8 +354,11 @@ export function BurnIntelligencePage() {
             No outflows found in your import — add debits or check column mapping.
           </div>
         ) : (
-          <div className="burn-nba__row">
-            <article className="burn-action-card burn-action-card--primary">
+          <div className="burn-nba__row" style={{ alignItems: 'stretch' }}>
+            <article
+              className="burn-action-card burn-action-card--primary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="burn-action-card__recommended">RECOMMENDED</p>
               <p className="burn-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="burn-action-card__impact">{formatGBP(Math.round(saving10TopAnnual))}</p>
@@ -377,14 +388,17 @@ export function BurnIntelligencePage() {
                 <span className="burn-action-wait__label">Cost of waiting</span>
                 <span className="burn-action-wait__val">{formatGBP(Math.round(monthlyOvershoot))} per month</span>
               </div>
-              <div className="burn-action-card__footer">
+              <div className="burn-action-card__footer" style={{ marginTop: 'auto' }}>
                 <button type="button" className="burn-action-card__cta-pill" onClick={scrollToBreakdown}>
                   View breakdown
                 </button>
               </div>
             </article>
 
-            <article className="burn-action-card burn-action-card--secondary">
+            <article
+              className="burn-action-card burn-action-card--secondary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="burn-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="burn-action-card__impact">
                 {runwayCore.baseRunwayMo != null ? `${runwayCore.baseRunwayMo.toFixed(1)} mo` : '—'}
@@ -413,14 +427,17 @@ export function BurnIntelligencePage() {
                 <span className="burn-action-wait__label">Cost of waiting</span>
                 <span className="burn-action-wait__val">Runway shortening daily</span>
               </div>
-              <div className="burn-action-card__footer">
+              <div className="burn-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="burn-action-card__cta-pill" to="/app/scenarios">
                   Open modeller
                 </Link>
               </div>
             </article>
 
-            <article className="burn-action-card burn-action-card--secondary burn-action-card--tertiary">
+            <article
+              className="burn-action-card burn-action-card--secondary burn-action-card--tertiary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="burn-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="burn-action-card__impact-qual">
                 <ShieldIcon />
@@ -448,7 +465,7 @@ export function BurnIntelligencePage() {
                 <span className="burn-action-wait__label">Cost of waiting</span>
                 <span className="burn-action-wait__val burn-action-wait__val--neutral">Zero — act now</span>
               </div>
-              <div className="burn-action-card__footer">
+              <div className="burn-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="burn-action-card__cta-pill" to="/app/preferences">
                   Configure
                 </Link>
@@ -675,8 +692,15 @@ export function BurnIntelligencePage() {
                   ) : (
                     <p
                       key={`more-${item.payee}-${item.dateStr}-${idx}`}
-                      className="burn-opp-row__meta"
-                      style={{ margin: '-4px 0 10px', paddingLeft: 4, fontSize: 12, color: '#9ca3af' }}
+                      style={{
+                        fontFamily: 'Inter, system-ui, sans-serif',
+                        fontSize: 11,
+                        fontWeight: 400,
+                        color: '#9ca3af',
+                        margin: '4px 0 10px',
+                        paddingLeft: 4,
+                        lineHeight: 1.4,
+                      }}
                     >
                       + {item.n} more from {item.payee} on this date
                     </p>

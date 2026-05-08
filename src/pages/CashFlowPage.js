@@ -264,8 +264,11 @@ export function CashFlowPage() {
             Upload transaction data to unlock cash flow actions. <Link to="/upload">Upload bank statement</Link>
           </div>
         ) : (
-          <div className="cf-nba__row">
-            <article className="cf-action-card cf-action-card--primary">
+          <div className="cf-nba__row" style={{ alignItems: 'stretch' }}>
+            <article
+              className="cf-action-card cf-action-card--primary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="cf-action-card__recommended">RECOMMENDED</p>
               <p className="cf-action-card__kicker">NEXT BEST ACTION 1</p>
               <p className="cf-action-card__impact">{formatGBP(Math.round(summary.avgMonthlyIn))}</p>
@@ -292,16 +295,29 @@ export function CashFlowPage() {
                 <span className="cf-action-wait__label">Cost of waiting</span>
                 <span className="cf-action-wait__val">Cash gap widens daily</span>
               </div>
-              <div className="cf-action-card__footer">
+              <div className="cf-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="cf-action-card__cta-pill" to="/app/ar">
                   View AR
                 </Link>
               </div>
             </article>
 
-            <article className="cf-action-card cf-action-card--secondary">
+            <article
+              className="cf-action-card cf-action-card--secondary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="cf-action-card__kicker">NEXT BEST ACTION 2</p>
-              <p className="cf-action-card__impact">Real-time forecast accuracy</p>
+              <p
+                className="cf-action-card__impact-qual"
+                style={{
+                  color: '#16a34a',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontSize: '13px',
+                  fontWeight: 500,
+                }}
+              >
+                Real-time forecast accuracy
+              </p>
               <p className="cf-action-card__title">Connect Xero for live forecasting</p>
               <p className="cf-action-card__desc">
                 Connecting Xero adds outstanding invoices and bills to your forecast, making it significantly more accurate.
@@ -324,14 +340,17 @@ export function CashFlowPage() {
                 <span className="cf-action-wait__label">Cost of waiting</span>
                 <span className="cf-action-wait__val">Forecast based on patterns only</span>
               </div>
-              <div className="cf-action-card__footer">
+              <div className="cf-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="cf-action-card__cta-pill" to="/app/integrations">
                   Connect Xero
                 </Link>
               </div>
             </article>
 
-            <article className="cf-action-card cf-action-card--secondary cf-action-card--tertiary">
+            <article
+              className="cf-action-card cf-action-card--secondary cf-action-card--tertiary"
+              style={{ height: '100%', display: 'flex', flexDirection: 'column' }}
+            >
               <p className="cf-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="cf-action-card__impact-qual">
                 <ShieldIcon />
@@ -359,7 +378,7 @@ export function CashFlowPage() {
                 <span className="cf-action-wait__label">Cost of waiting</span>
                 <span className="cf-action-wait__val cf-action-wait__val--neutral">Zero — act now</span>
               </div>
-              <div className="cf-action-card__footer">
+              <div className="cf-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="cf-action-card__cta-pill" to="/app/preferences">
                   Configure
                 </Link>
