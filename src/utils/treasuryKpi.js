@@ -20,13 +20,38 @@ export function computeTotalCashAndMoMNetDelta(rows, now = new Date()) {
 
   let totalCash = 0
   const netByMonth = new Map()
+  let hasRunning = false
+  let newestRunningT = -Infinity
+  let newestRunningBal = null
+  const monthEndRunning = new Map() // key -> { t, bal }
+
   for (const r of list) {
     const a = Number(r?.amount)
-    if (!Number.isFinite(a)) continue
-    totalCash += a
-    const k = monthKeyLocal(r.date)
-    if (!k) continue
-    netByMonth.set(k, (netByMonth.get(k) || 0) + a)
+    if (Number.isFinite(a)) {
+      totalCash += a
+      const k = monthKeyLocal(r.date)
+      if (k) netByMonth.set(k, (netByMonth.get(k) || 0) + a)
+    }
+
+    const rb = Number(r?.running_balance)
+    if (Number.isFinite(rb) && r?.date) {
+      const t = new Date(r.date).getTime()
+      if (!Number.isFinite(t)) continue
+      hasRunning = true
+      if (t >= newestRunningT) {
+        newestRunningT = t
+        newestRunningBal = rb
+      }
+      const mk = monthKeyLocal(r.date)
+      if (mk) {
+        const prev = monthEndRunning.get(mk)
+        if (!prev || t >= prev.t) monthEndRunning.set(mk, { t, bal: rb })
+      }
+    }
+  }
+
+  if (hasRunning && newestRunningBal != null) {
+    totalCash = newestRunningBal
   }
 
   const y = now.getFullYear()
@@ -35,8 +60,8 @@ export function computeTotalCashAndMoMNetDelta(rows, now = new Date()) {
   const prev = new Date(y, now.getMonth() - 1, 1)
   const prevKey = `${prev.getFullYear()}-${pad2(prev.getMonth() + 1)}`
 
-  const netThisMonth = netByMonth.get(thisKey) ?? 0
-  const netPrevMonth = netByMonth.get(prevKey) ?? 0
+  const netThisMonth = hasRunning ? (monthEndRunning.get(thisKey)?.bal ?? 0) : (netByMonth.get(thisKey) ?? 0)
+  const netPrevMonth = hasRunning ? (monthEndRunning.get(prevKey)?.bal ?? 0) : (netByMonth.get(prevKey) ?? 0)
   const deltaNet = netThisMonth - netPrevMonth
 
   return { totalCash, netThisMonth, netPrevMonth, deltaNet }

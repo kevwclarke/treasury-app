@@ -175,33 +175,12 @@ function transactionDedupeKey(dateIso, amount, payee) {
   return `${day}|${amt}|${p}`
 }
 
-async function fetchExistingDedupeKeys(supabaseClient, userId) {
-  const keys = new Set()
-  const pageSize = 1000
-  let from = 0
-  for (;;) {
-    const { data, error } = await supabaseClient
-      .from('transactions')
-      .select('date, amount, payee')
-      .eq('user_id', userId)
-      .range(from, from + pageSize - 1)
-    if (error) throw error
-    if (!data?.length) break
-    for (const row of data) {
-      const k = transactionDedupeKey(row.date, row.amount, row.payee)
-      if (k) keys.add(k)
-    }
-    if (data.length < pageSize) break
-    from += pageSize
-  }
-  return keys
-}
-
 export function UploadPage() {
   const inputRef = useRef(null)
   const navigate = useNavigate()
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState('')
+  const [dedupeSkipped, setDedupeSkipped] = useState(0)
   const [fileName, setFileName] = useState('')
   const [headers, setHeaders] = useState([])
   const [previewRows, setPreviewRows] = useState([])
@@ -295,6 +274,7 @@ export function UploadPage() {
   async function handleConfirmImport() {
     if (!mappingComplete || importing) return
     setError('')
+    setDedupeSkipped(0)
     setImportCelebration(false)
     setImporting(true)
 
@@ -325,6 +305,7 @@ export function UploadPage() {
             amount,
             payee,
             balance,
+            running_balance: balance,
             institution: uploadInstitution,
             raw_data: raw,
           }
@@ -336,28 +317,34 @@ export function UploadPage() {
         return
       }
 
-      const existingKeys = await fetchExistingDedupeKeys(supabase, user.id)
       const seenInUpload = new Set()
       const toInsert = []
       for (const tx of txs) {
         const k = transactionDedupeKey(tx.date, tx.amount, tx.payee)
-        if (!k || existingKeys.has(k) || seenInUpload.has(k)) continue
+        if (!k || seenInUpload.has(k)) continue
         seenInUpload.add(k)
         toInsert.push(tx)
       }
 
+      let insertedCount = 0
       for (const batch of chunk(toInsert, 500)) {
-        const { error: insertError } = await supabase.from('transactions').insert(batch).select('id')
-        if (insertError) {
-          if ((insertError?.message ?? '').toLowerCase().includes('relation') &&
-              (insertError?.message ?? '').toLowerCase().includes('does not exist')) {
+        const { data, error: writeError } = await supabase
+          .from('transactions')
+          .upsert(batch, { onConflict: 'user_id,date,amount,payee', ignoreDuplicates: true })
+          .select('id')
+        if (writeError) {
+          if ((writeError?.message ?? '').toLowerCase().includes('relation') &&
+              (writeError?.message ?? '').toLowerCase().includes('does not exist')) {
             throw new Error(
               "Supabase table 'transactions' does not exist yet. Apply the SQL migration in `supabase/migrations/` to create it, then retry."
             )
           }
-          throw insertError
+          throw writeError
         }
+        insertedCount += Array.isArray(data) ? data.length : 0
       }
+
+      setDedupeSkipped(Math.max(0, toInsert.length - insertedCount))
 
       if (toInsert.length > 0) {
         const { data: prof, error: profErr } = await supabase
@@ -480,6 +467,20 @@ export function UploadPage() {
             </div>
             <p className="upload__celebrate-title">Import complete</p>
             <p className="upload__celebrate-sub">Taking you to Treasury Autopilot…</p>
+            {dedupeSkipped > 0 ? (
+              <p
+                style={{
+                  margin: '0.65rem 0 0',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: '#6B7280',
+                  lineHeight: 1.5,
+                }}
+              >
+                {dedupeSkipped.toLocaleString('en-GB')} duplicate transactions were skipped.
+              </p>
+            ) : null}
           </div>
         </div>
       ) : null}

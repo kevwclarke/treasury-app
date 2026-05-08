@@ -21,11 +21,31 @@ export function computeYieldSummary(txnRows, opts = {}) {
       : YIELD_CURRENT_DEC
   const list = Array.isArray(txnRows) ? txnRows : []
   let totalCash = 0
+  let hasRunning = false
+  let newestRunningT = -Infinity
+  let newestRunningBal = null
   for (const t of list) {
     const a = Number(t?.amount)
     if (!Number.isFinite(a)) continue
     totalCash += a
+
+    const rb = Number(t?.running_balance)
+    if (Number.isFinite(rb) && t?.date) {
+      const tt = new Date(t.date).getTime()
+      if (Number.isFinite(tt)) {
+        hasRunning = true
+        if (tt >= newestRunningT) {
+          newestRunningT = tt
+          newestRunningBal = rb
+        }
+      }
+    }
   }
+
+  if (hasRunning && newestRunningBal != null) {
+    totalCash = newestRunningBal
+  }
+
   const spreadDec = Math.max(0, YIELD_BEST_DEC - currentYieldDec)
   const annualOppCost = totalCash * spreadDec
   const monthlyOppCost = annualOppCost / 12

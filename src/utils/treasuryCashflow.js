@@ -55,20 +55,40 @@ export function computeCashflowSummary(rows) {
   const list = Array.isArray(rows) ? rows : []
   let totalIn = 0
   let totalOutAbs = 0
+  let hasRunning = false
+  let newestRunningT = -Infinity
+  let newestRunningBal = null
   for (const r of list) {
     const a = Number(r?.amount)
     if (!Number.isFinite(a)) continue
     if (a > 0) totalIn += a
     if (a < 0) totalOutAbs += -a
+
+    const rb = Number(r?.running_balance)
+    if (Number.isFinite(rb) && r?.date) {
+      const t = new Date(r.date).getTime()
+      if (Number.isFinite(t)) {
+        hasRunning = true
+        if (t >= newestRunningT) {
+          newestRunningT = t
+          newestRunningBal = rb
+        }
+      }
+    }
   }
   const months = monthsSpannedByTransactions(list)
   const avgMonthlyIn = months > 0 ? totalIn / months : 0
   const avgMonthlyOut = months > 0 ? totalOutAbs / months : 0
   const netMonthly = avgMonthlyIn - avgMonthlyOut
-  const totalCash = list.reduce((s, r) => {
+  let totalCash = list.reduce((s, r) => {
     const a = Number(r?.amount)
     return s + (Number.isFinite(a) ? a : 0)
   }, 0)
+
+  if (hasRunning && newestRunningBal != null) {
+    totalCash = newestRunningBal
+  }
+
   return {
     months,
     avgMonthlyIn,

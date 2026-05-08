@@ -39,11 +39,31 @@ export function computeRunwayFromTransactions(rows) {
   let totalCash = 0
   let totalOutflows = 0
 
+  let hasRunning = false
+  let newestRunningT = -Infinity
+  let newestRunningBal = null
+
   for (const r of list) {
     const a = Number(r?.amount)
     if (!Number.isFinite(a)) continue
     totalCash += a
     if (a < 0) totalOutflows += Math.abs(a)
+
+    const rb = Number(r?.running_balance)
+    if (Number.isFinite(rb) && r?.date) {
+      const t = new Date(r.date).getTime()
+      if (Number.isFinite(t)) {
+        hasRunning = true
+        if (t >= newestRunningT) {
+          newestRunningT = t
+          newestRunningBal = rb
+        }
+      }
+    }
+  }
+
+  if (hasRunning && newestRunningBal != null) {
+    totalCash = newestRunningBal
   }
 
   const months = monthsSpannedByTransactions(list)
