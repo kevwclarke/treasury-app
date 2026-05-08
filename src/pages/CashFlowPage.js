@@ -301,7 +301,7 @@ export function CashFlowPage() {
 
             <article className="cf-action-card cf-action-card--secondary">
               <p className="cf-action-card__kicker">NEXT BEST ACTION 2</p>
-              <p className="cf-action-card__impact">Live</p>
+              <p className="cf-action-card__impact">Real-time forecast accuracy</p>
               <p className="cf-action-card__title">Connect Xero for live forecasting</p>
               <p className="cf-action-card__desc">
                 Connecting Xero adds outstanding invoices and bills to your forecast, making it significantly more accurate.

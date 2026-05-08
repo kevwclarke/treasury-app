@@ -64,6 +64,22 @@ function burnByCategory(rows) {
   return { total, byCat }
 }
 
+/** Signed display for 30d vs 90d burn delta; avoids broken extremes when data is sparse. */
+function formatBurnDeltaPctSigned(deltaPct) {
+  if (deltaPct == null || !Number.isFinite(deltaPct)) return '—'
+  if (deltaPct < -99) return '-99%+'
+  if (deltaPct > 999) return '999%+'
+  return formatPct(deltaPct, 1)
+}
+
+/** Magnitude for “increased/decreased … over 90 days” copy. */
+function formatBurnDeltaPctAbsTrend(deltaPct) {
+  if (deltaPct == null || !Number.isFinite(deltaPct)) return '—'
+  if (deltaPct < -99) return '99%+'
+  if (deltaPct > 999) return '999%+'
+  return formatPct(Math.abs(deltaPct), 1)
+}
+
 function burnIntelStatus(deltaPct) {
   if (deltaPct == null || !Number.isFinite(deltaPct)) return { text: 'REVIEW', tone: 'review' }
   if (deltaPct < 5) return { text: 'HEALTHY', tone: 'healthy' }
@@ -209,8 +225,42 @@ export function BurnIntelligencePage() {
       .filter((r) => Number(r.amount) < 0)
       .slice()
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 15)
-    return debits
+
+    function payeeDateKey(t) {
+      const payee = String(t.payee ?? '').trim() || '—'
+      const dateStr = String(t.date ?? '').slice(0, 10)
+      return `${payee}\0${dateStr}`
+    }
+
+    const countsByKey = new Map()
+    for (const t of debits) {
+      const k = payeeDateKey(t)
+      countsByKey.set(k, (countsByKey.get(k) ?? 0) + 1)
+    }
+
+    const shownByKey = new Map()
+    const items = []
+    let txnRowsShown = 0
+    const maxTxnRows = 15
+
+    for (const t of debits) {
+      if (txnRowsShown >= maxTxnRows) break
+      const k = payeeDateKey(t)
+      const shown = shownByKey.get(k) ?? 0
+      const totalForKey = countsByKey.get(k) ?? 0
+      if (shown >= 2) continue
+
+      items.push({ kind: 'txn', t })
+      txnRowsShown += 1
+      shownByKey.set(k, shown + 1)
+      if (shown + 1 === 2 && totalForKey > 2) {
+        const payee = String(t.payee ?? '').trim() || '—'
+        const dateStr = String(t.date ?? '').slice(0, 10)
+        items.push({ kind: 'more', payee, dateStr, n: totalForKey - 2 })
+      }
+    }
+
+    return items
   }, [txnRows])
 
   const scrollToBreakdown = useCallback(() => {
@@ -219,12 +269,12 @@ export function BurnIntelligencePage() {
 
   const deltaSentence =
     deltaPct != null && Number.isFinite(deltaPct)
-      ? `${formatPct(deltaPct, 1)} vs prior period`
+      ? `${formatBurnDeltaPctSigned(deltaPct)} vs prior period`
       : '— vs prior period'
 
   const trendInsight =
     deltaPct != null && Number.isFinite(deltaPct)
-      ? `Burn has ${deltaPct >= 0 ? 'increased' : 'decreased'} ${formatPct(Math.abs(deltaPct), 1)} over 90 days`
+      ? `Burn has ${deltaPct >= 0 ? 'increased' : 'decreased'} ${formatBurnDeltaPctAbsTrend(deltaPct)} over 90 days`
       : 'Insufficient recent outflows to measure 90-day burn momentum.'
 
   const reducedBurn = monthlyBurn90 * 0.9
@@ -413,7 +463,7 @@ export function BurnIntelligencePage() {
           <div className="burn-inaction__left">
             <span className="burn-inaction__dot" aria-hidden />
             <p className="burn-inaction__text">
-              Burn rate has increased {formatPct(deltaPct, 1)} in the last 30 days. At this trajectory, runway reduces by{' '}
+              Burn rate has increased {formatBurnDeltaPctSigned(deltaPct)} in the last 30 days. At this trajectory, runway reduces by{' '}
               {runwayReductionSixMo != null ? runwayReductionSixMo.toFixed(1) : '—'} months over the next 6 months.
             </p>
           </div>
@@ -471,7 +521,7 @@ export function BurnIntelligencePage() {
                 <div className="burn-stat-row">
                   <span className="burn-stat-row__label">30-day vs 90-day delta</span>
                   <span className="burn-stat-row__val burn-stat-row__val--opp">
-                    {deltaPct != null ? formatPct(deltaPct, 1) : '—'}
+                    {deltaPct != null ? formatBurnDeltaPctSigned(deltaPct) : '—'}
                   </span>
                 </div>
                 <div className="burn-stat-row">
@@ -608,17 +658,30 @@ export function BurnIntelligencePage() {
           ) : (
             <>
               <div className="burn-opp-list">
-                {recentTransactions.map((t, idx) => (
-                  <div key={`${String(t.date)}-${String(t.payee)}-${t.amount}-${idx}`} className="burn-opp-row">
-                    <div className="burn-opp-row__content">
-                      <h3 className="burn-opp-row__title">{String(t.payee || '—')}</h3>
-                      <p className="burn-opp-row__meta">
-                        {String(t.date).slice(0, 10)} · {categorisePayee(t.payee)}
-                      </p>
-                      <p className="burn-feed__amount">{formatGBP(Math.round(Math.abs(Number(t.amount))))}</p>
+                {recentTransactions.map((item, idx) =>
+                  item.kind === 'txn' ? (
+                    <div
+                      key={`txn-${String(item.t.date)}-${String(item.t.payee)}-${item.t.amount}-${idx}`}
+                      className="burn-opp-row"
+                    >
+                      <div className="burn-opp-row__content">
+                        <h3 className="burn-opp-row__title">{String(item.t.payee || '—')}</h3>
+                        <p className="burn-opp-row__meta">
+                          {String(item.t.date).slice(0, 10)} · {categorisePayee(item.t.payee)}
+                        </p>
+                        <p className="burn-feed__amount">{formatGBP(Math.round(Math.abs(Number(item.t.amount))))}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ) : (
+                    <p
+                      key={`more-${item.payee}-${item.dateStr}-${idx}`}
+                      className="burn-opp-row__meta"
+                      style={{ margin: '-4px 0 10px', paddingLeft: 4, fontSize: 12, color: '#9ca3af' }}
+                    >
+                      + {item.n} more from {item.payee} on this date
+                    </p>
+                  ),
+                )}
               </div>
               <button type="button" className="burn-feed__link" onClick={scrollToBreakdown}>
                 View all
