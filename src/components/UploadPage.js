@@ -160,6 +160,43 @@ function chunk(arr, size) {
   return out
 }
 
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
+
+/** Stable key: calendar day (UTC) + numeric amount + trimmed payee — matches duplicate CSV re-uploads. */
+function transactionDedupeKey(dateIso, amount, payee) {
+  const d = new Date(dateIso)
+  if (Number.isNaN(d.getTime())) return null
+  const day = `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`
+  const amt = Number(amount)
+  if (!Number.isFinite(amt)) return null
+  const p = String(payee ?? '').trim()
+  return `${day}|${amt}|${p}`
+}
+
+async function fetchExistingDedupeKeys(supabaseClient, userId) {
+  const keys = new Set()
+  const pageSize = 1000
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabaseClient
+      .from('transactions')
+      .select('date, amount, payee')
+      .eq('user_id', userId)
+      .range(from, from + pageSize - 1)
+    if (error) throw error
+    if (!data?.length) break
+    for (const row of data) {
+      const k = transactionDedupeKey(row.date, row.amount, row.payee)
+      if (k) keys.add(k)
+    }
+    if (data.length < pageSize) break
+    from += pageSize
+  }
+  return keys
+}
+
 export function UploadPage() {
   const inputRef = useRef(null)
   const navigate = useNavigate()
@@ -299,7 +336,17 @@ export function UploadPage() {
         return
       }
 
-      for (const batch of chunk(txs, 500)) {
+      const existingKeys = await fetchExistingDedupeKeys(supabase, user.id)
+      const seenInUpload = new Set()
+      const toInsert = []
+      for (const tx of txs) {
+        const k = transactionDedupeKey(tx.date, tx.amount, tx.payee)
+        if (!k || existingKeys.has(k) || seenInUpload.has(k)) continue
+        seenInUpload.add(k)
+        toInsert.push(tx)
+      }
+
+      for (const batch of chunk(toInsert, 500)) {
         const { error: insertError } = await supabase.from('transactions').insert(batch).select('id')
         if (insertError) {
           if ((insertError?.message ?? '').toLowerCase().includes('relation') &&
@@ -312,7 +359,7 @@ export function UploadPage() {
         }
       }
 
-      if (txs.length > 0) {
+      if (toInsert.length > 0) {
         const { data: prof, error: profErr } = await supabase
           .from('company_profiles')
           .select('first_data_upload_at, company_name, funding_stage')
@@ -359,6 +406,16 @@ export function UploadPage() {
         Import a CSV export from your bank to power all modules. Supported banks: Barclays, HSBC, Starling, Monzo,
         NatWest and more.
       </p>
+
+      <section className="upload__sample" aria-label="Sample bank statement">
+        <a className="upload__sample-btn" href={`${process.env.PUBLIC_URL || ''}/sample-demo.csv`} download="nexus-software-demo-barclays.csv">
+          Download sample bank statement
+        </a>
+        <p className="upload__sample-hint">
+          A realistic 6-month Barclays statement for Nexus Software Ltd — use this to explore the product before
+          uploading your own data.
+        </p>
+      </section>
 
       <input
         ref={inputRef}
