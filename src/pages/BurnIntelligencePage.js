@@ -1,30 +1,44 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { supabase } from '../supabase'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
-import { useCountUp } from '../hooks/useCountUp'
-import { fetchBurnIntelligenceAi } from '../api/burnIntelligenceAnthropic'
-import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
-import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { computeBurn30Vs90Pct } from '../utils/treasuryKpi'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { ModuleCapitalMoves } from '../components/ModuleCapitalMoves'
-import { TermTooltip } from '../components/TermTooltip'
-import '../components/DetailPage.css'
+import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
+import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFormat'
+import '../styles/design-system.css'
 import './BurnIntelligencePage.css'
 
-function lastNDaysRows(rows, days) {
-  const since = Date.now() - days * 24 * 60 * 60 * 1000
+function pad2(n) {
+  return String(n).padStart(2, '0')
+}
+
+function monthKey(iso) {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return null
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`
+}
+
+function lastNDaysRows(rows, days, nowMs = Date.now()) {
+  const since = nowMs - days * 86400000
   return rows.filter((r) => {
     const t = new Date(r.date).getTime()
     return Number.isFinite(t) && t >= since
   })
 }
 
-function splitLast30VsPrior30(rows) {
-  const now = Date.now()
-  const start30 = now - 30 * 24 * 60 * 60 * 1000
-  const start60 = now - 60 * 24 * 60 * 60 * 1000
+function splitLast30VsPrior30(rows, nowMs = Date.now()) {
+  const start30 = nowMs - 30 * 86400000
+  const start60 = nowMs - 60 * 86400000
   const last = []
   const prior = []
   rows.forEach((r) => {
@@ -50,756 +64,633 @@ function burnByCategory(rows) {
   return { total, byCat }
 }
 
-function topDriversSentence(delta, drivers) {
-  if (!drivers.length) return ''
-  const lead = drivers[0]
-  const second = drivers[1]
-  const parts = []
-  parts.push(
-    `The largest driver is ${lead.category.toLowerCase()} spend which is ${lead.delta >= 0 ? 'up' : 'down'} ${formatGBP(
-      Math.round(Math.abs(lead.delta)),
-    )} month on month.`,
-  )
-  if (second && Math.abs(second.delta) > 0) {
-    parts.push(
-      `${second.category} has also ${second.delta >= 0 ? 'increased' : 'decreased'} ${formatGBP(
-        Math.round(Math.abs(second.delta)),
-      )}.`,
-    )
+function burnIntelStatus(deltaPct) {
+  if (deltaPct == null || !Number.isFinite(deltaPct)) return { text: 'REVIEW', tone: 'review' }
+  if (deltaPct < 5) return { text: 'HEALTHY', tone: 'healthy' }
+  if (deltaPct <= 12) return { text: 'REVIEW', tone: 'review' }
+  return { text: 'ACTION REQUIRED', tone: 'action' }
+}
+
+function categoryFillClass(name) {
+  const map = {
+    Payroll: 'burn-market-row__fill--payroll',
+    Infrastructure: 'burn-market-row__fill--infra',
+    Contractors: 'burn-market-row__fill--contractors',
+    Travel: 'burn-market-row__fill--travel',
+    'Office & Ops': 'burn-market-row__fill--office',
+    Marketing: 'burn-market-row__fill--marketing',
+    Other: 'burn-market-row__fill--other',
   }
-  return parts.join(' ')
+  return map[name] || 'burn-market-row__fill--other'
 }
 
-function clamp(n, lo, hi) {
-  return Math.min(hi, Math.max(lo, n))
-}
-
-function scoreBand(score) {
-  if (score > 75) return 'good'
-  if (score >= 50) return 'warn'
-  return 'risk'
-}
-
-function toMoneyRange(range) {
-  const low = Number(range?.low)
-  const high = Number(range?.high)
-  if (!Number.isFinite(low) || !Number.isFinite(high)) return null
-  return { low, high }
-}
-
-function escapeHtml(s) {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function makeBurnScheduleUrl(opp, runwayMo, monthlyBurn) {
-  const who = `CFO, Finance lead, and owner of the ${opp.category || 'category'} budget`
-  const details = [
-    `Who should attend: ${who}`,
-    '',
-    'What to discuss:',
-    '- Validate current spend vs benchmarks',
-    '- Agree negotiation targets and timeline',
-    '- Assign owners for vendor outreach',
-    '',
-    `Context: ${String(opp.recommendedAction || '')}`,
-    '',
-    `Figures: ~${formatGBP(Math.round(monthlyBurn))}/mo burn`,
-    runwayMo != null && Number.isFinite(runwayMo) ? `Runway ~${runwayMo.toFixed(1)} months.` : '',
-  ]
-    .filter(Boolean)
-    .join('\n')
-  const text = `Review: ${opp.title}`
-  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(text)}&details=${encodeURIComponent(details)}`
-}
-
-function buildOpportunitySummaryHtml(opp, ctx) {
-  const s = toMoneyRange(opp.estimatedMonthlySaving) || { low: 0, high: 0 }
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><title>${escapeHtml(
-    opp.title,
-  )}</title><style>body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;padding:0 1rem;color:#111;line-height:1.5}</style></head><body>
-<h1>${escapeHtml(opp.title)}</h1>
-<p><strong>Category:</strong> ${escapeHtml(String(opp.category || ''))}</p>
-<p>${escapeHtml(String(opp.recommendedAction || ''))}</p>
-<p><strong>Current spend:</strong> ${formatGBP(Math.round(Number(opp.currentMonthlySpend) || 0))}/month</p>
-<p><strong>Estimated saving:</strong> ${formatGBP(Math.round(s.low))}–${formatGBP(Math.round(s.high))}/month</p>
-<p><strong>Runway extension:</strong> ~${Math.round(Number(opp.runwayExtensionDays) || 0)} days if savings confirmed</p>
-<hr/>
-<p style="color:#666;font-size:14px">Burn Intelligence summary — ${escapeHtml(ctx.generatedAt)}</p>
-</body></html>`
-}
-
-function BurnTooltip({ active, payload }) {
-  if (!active || !payload?.length) return null
-  const p = payload[0]?.payload
-  if (!p) return null
+function ShieldIcon() {
   return (
-    <div
-      style={{
-        background: '#fff',
-        border: '1px solid rgba(15,15,15,0.10)',
-        borderRadius: 10,
-        padding: '0.65rem 0.75rem',
-        boxShadow: '0 8px 24px rgba(15,23,42,0.08), 0 2px 8px rgba(15,23,42,0.05)',
-      }}
-    >
-      <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: '#0F0F0F' }}>{p.label}</p>
-      <p style={{ margin: '0.35rem 0 0', fontSize: 12, color: '#6B7280' }}>
-        Current: <strong style={{ color: '#DC2626' }}>{formatGBP(Math.round(p.current))}</strong>
-      </p>
-      <p style={{ margin: '0.25rem 0 0', fontSize: 12, color: '#6B7280' }}>
-        Optimised: <strong style={{ color: '#1B2B8C' }}>{formatGBP(Math.round(p.optimised))}</strong>
-      </p>
-    </div>
+    <svg className="burn-shield" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 2L4 5v6c0 5.55 3.84 10.74 8 12 4.16-1.26 8-6.45 8-12V5l-8-3z"
+        stroke="#6b7280"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
   )
-}
-
-async function downloadHtml(filename, html) {
-  const blob = new Blob([html], { type: 'text/html;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
 }
 
 export function BurnIntelligencePage() {
   const { txnLoading, txnError, txnRows } = useTreasuryTransactions()
-  const [userId, setUserId] = useState(null)
 
-  const [actioned, setActioned] = useState([])
-
-  const [targetPct, setTargetPct] = useState(12)
-  const [targetPounds, setTargetPounds] = useState('')
-  const [targetMode, setTargetMode] = useState('pct') // 'pct' | 'gbp'
-
-  const [aiLoading, setAiLoading] = useState(false)
-  const [aiError, setAiError] = useState('')
-  const [opps, setOpps] = useState([])
-
-  useEffect(() => {
-    let cancelled = false
-    async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (cancelled) return
-      setUserId(user?.id ?? null)
-    }
-    loadUser()
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!userId) return undefined
-    let cancelled = false
-
-    async function loadTables() {
-      const { data: ba } = await supabase
-        .from('burn_actions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('actioned_at', { ascending: false })
-      if (cancelled) return
-      setActioned(Array.isArray(ba) ? ba : [])
-    }
-
-    loadTables()
-    return () => {
-      cancelled = true
-    }
-  }, [userId])
+  const burnKpi = useMemo(() => computeBurn30Vs90Pct(txnRows), [txnRows])
+  const runwayCore = useMemo(() => computeRunwayFromTransactions(txnRows), [txnRows])
 
   const rows90 = useMemo(() => lastNDaysRows(txnRows, 90), [txnRows])
-  const rows60 = useMemo(() => lastNDaysRows(txnRows, 60), [txnRows])
   const { last: last30, prior: prior30 } = useMemo(() => splitLast30VsPrior30(txnRows), [txnRows])
 
+  const burn90 = useMemo(() => burnByCategory(rows90), [rows90])
   const burnLast30 = useMemo(() => burnByCategory(last30), [last30])
   const burnPrior30 = useMemo(() => burnByCategory(prior30), [prior30])
 
-  const burnDelta = burnLast30.total - burnPrior30.total
-  const driverDeltas = useMemo(() => {
-    const list = BURN_CATEGORY_ORDER.map((c) => ({
-      category: c,
-      delta: (burnLast30.byCat[c] || 0) - (burnPrior30.byCat[c] || 0),
-    }))
-    return list
-      .filter((x) => Math.abs(x.delta) > 0)
-      .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-      .slice(0, 3)
+  const monthlyBurn90 = burnKpi?.monthlyBurn90 ?? 0
+  const monthlyImplied30 = burnKpi?.monthlyImplied30 ?? 0
+  const deltaPct = burnKpi?.deltaPct
+
+  const hasData = txnRows.length > 0
+  const fetchFailed = Boolean(txnError) && !txnLoading
+  const status = burnIntelStatus(deltaPct)
+
+  const topCategoryEntry = useMemo(() => {
+    let best = null
+    let maxAmt = 0
+    BURN_CATEGORY_ORDER.forEach((c) => {
+      const v = burn90.byCat[c] || 0
+      if (v > maxAmt) {
+        maxAmt = v
+        best = c
+      }
+    })
+    return { name: best, total: maxAmt }
+  }, [burn90.byCat])
+
+  const topCategory = topCategoryEntry.name ?? '—'
+
+  const topCatGrowthPct = useMemo(() => {
+    if (!topCategoryEntry.name) return null
+    const c = topCategoryEntry.name
+    const last = burnLast30.byCat[c] || 0
+    const prior = burnPrior30.byCat[c] || 0
+    if (prior <= 0) return last > 0 ? 100 : 0
+    return ((last - prior) / prior) * 100
+  }, [burnLast30.byCat, burnPrior30.byCat, topCategoryEntry.name])
+
+  const fastestGrowing = useMemo(() => {
+    let bestCat = null
+    let bestPct = -Infinity
+    BURN_CATEGORY_ORDER.forEach((c) => {
+      const last = burnLast30.byCat[c] || 0
+      const prior = burnPrior30.byCat[c] || 0
+      let pct = 0
+      if (prior > 0) pct = ((last - prior) / prior) * 100
+      else if (last > 0) pct = 100
+      if (pct > bestPct) {
+        bestPct = pct
+        bestCat = c
+      }
+    })
+    if (bestCat == null || !Number.isFinite(bestPct)) return { cat: null, pct: null }
+    return { cat: bestCat, pct: bestPct }
   }, [burnLast30.byCat, burnPrior30.byCat])
 
-  const summarySentence = useMemo(() => {
-    if (!burnLast30.total && !burnPrior30.total) return 'Upload transactions to generate your burn intelligence summary.'
-    const main =
-      burnDelta >= 0
-        ? `Since last month your burn has increased by ${formatGBP(Math.round(burnDelta))}.`
-        : `Since last month your burn has decreased by ${formatGBP(Math.round(Math.abs(burnDelta)))}.`
-    const drivers = topDriversSentence(burnDelta, driverDeltas)
-    return [main, drivers].filter(Boolean).join(' ')
-  }, [burnDelta, burnLast30.total, burnPrior30.total, driverDeltas])
-
-  const burn90 = useMemo(() => burnByCategory(rows90), [rows90])
-  const burn60ForTrend = useMemo(() => burnByCategory(rows60), [rows60])
-  const burn90Monthly = burn90.total / 3
-  const burn60Monthly = burn60ForTrend.total / 2
-  const burnChangePct90 = burn60Monthly > 0 ? ((burn90Monthly - burn60Monthly) / burn60Monthly) * 100 : 0
-
-  const catShareTop = useMemo(() => {
-    const entries = Object.entries(burn90.byCat || {})
-    const top = entries.sort((a, b) => (b[1] || 0) - (a[1] || 0))[0]
-    if (!top) return { cat: null, pct: 0 }
-    const pct = burn90.total > 0 ? (top[1] / burn90.total) * 100 : 0
-    return { cat: top[0], pct }
+  const categoryBars = useMemo(() => {
+    const rowsOut = BURN_CATEGORY_ORDER.map((name) => ({
+      name,
+      amt: burn90.byCat[name] || 0,
+      pct: burn90.total > 0 ? ((burn90.byCat[name] || 0) / burn90.total) * 100 : 0,
+    }))
+      .filter((r) => r.amt > 0)
+      .sort((a, b) => b.amt - a.amt)
+    return rowsOut
   }, [burn90.byCat, burn90.total])
 
-  const monthlyBuckets = useMemo(() => {
-    const byMonth = {}
-    rows90.forEach((r) => {
-      const t = new Date(r.date)
-      if (Number.isNaN(t.getTime())) return
-      const k = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`
-      if (!byMonth[k]) byMonth[k] = 0
+  const monthlyAvgTopCat = topCategoryEntry.name ? (burn90.byCat[topCategoryEntry.name] || 0) / 3 : 0
+  const saving10TopMo = monthlyAvgTopCat * 0.1
+  const saving10TopAnnual = saving10TopMo * 12
+  const monthlyOvershoot = Math.max(0, monthlyImplied30 - monthlyBurn90)
+
+  const runwayReductionSixMo = useMemo(() => {
+    if (monthlyBurn90 <= 0) return null
+    const overshoot = Math.max(0, monthlyImplied30 - monthlyBurn90)
+    return (6 * overshoot) / monthlyBurn90
+  }, [monthlyBurn90, monthlyImplied30])
+
+  const chartSeries = useMemo(() => {
+    const now = new Date()
+    const keys = []
+    for (let i = 5; i >= 0; i -= 1) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      keys.push({
+        key: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`,
+        label: d.toLocaleDateString('en-GB', { month: 'short' }),
+      })
+    }
+    const totals = Object.fromEntries(keys.map((k) => [k.key, 0]))
+    txnRows.forEach((r) => {
+      const k = monthKey(r.date)
+      if (!k || totals[k] === undefined) return
       const a = Number(r.amount)
       if (!Number.isFinite(a) || a >= 0) return
-      byMonth[k] += Math.abs(a)
+      totals[k] += Math.abs(a)
     })
-    const keys = Object.keys(byMonth).sort()
-    const totals = keys.map((k) => ({ k, total: byMonth[k] }))
-    return totals.slice(-4) // enough for 3 consecutive check
-  }, [rows90])
-
-  const increased3ConsecutiveMonths = useMemo(() => {
-    if (monthlyBuckets.length < 4) return false
-    const a = monthlyBuckets.slice(-4).map((x) => x.total)
-    return a[1] > a[0] && a[2] > a[1] && a[3] > a[2]
-  }, [monthlyBuckets])
-
-  const contractorChangePct90 = useMemo(() => {
-    const rowsA = lastNDaysRows(txnRows, 90)
-    const rowsB = lastNDaysRows(txnRows, 180).filter((r) => {
-      const t = new Date(r.date).getTime()
-      return Number.isFinite(t) && t < Date.now() - 90 * 24 * 60 * 60 * 1000
-    })
-    const a = burnByCategory(rowsA).byCat.Contractors || 0
-    const b = burnByCategory(rowsB).byCat.Contractors || 0
-    const am = a / 3
-    const bm = b / 3
-    return bm > 0 ? ((am - bm) / bm) * 100 : 0
+    return keys.map(({ key, label }) => ({ month: label, burn: totals[key] || 0 }))
   }, [txnRows])
 
-  const infraChangePct90 = useMemo(() => {
-    const rowsA = lastNDaysRows(txnRows, 90)
-    const rowsB = lastNDaysRows(txnRows, 180).filter((r) => {
-      const t = new Date(r.date).getTime()
-      return Number.isFinite(t) && t < Date.now() - 90 * 24 * 60 * 60 * 1000
-    })
-    const a = burnByCategory(rowsA).byCat.Infrastructure || 0
-    const b = burnByCategory(rowsB).byCat.Infrastructure || 0
-    const am = a / 3
-    const bm = b / 3
-    return bm > 0 ? ((am - bm) / bm) * 100 : 0
+  const recentTransactions = useMemo(() => {
+    const debits = txnRows
+      .filter((r) => Number(r.amount) < 0)
+      .slice()
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 15)
+    return debits
   }, [txnRows])
 
-  const burnHealth = useMemo(() => {
-    let score = 100
-    const reasons = []
-
-    if (burnChangePct90 > 15) {
-      score -= 25
-      reasons.push(`Monthly burn is up ${formatPct(burnChangePct90, 1)} vs the prior period.`)
-    }
-    if (catShareTop.pct > 70) {
-      score -= 20
-      reasons.push(`${catShareTop.cat} is ${formatPct(catShareTop.pct, 0)} of total burn (category concentration).`)
-    }
-    if (increased3ConsecutiveMonths) {
-      score -= 15
-      reasons.push('Burn has increased for three consecutive months.')
-    }
-    if (contractorChangePct90 > 20) {
-      score -= 15
-      reasons.push(`Contractor spend is up ${formatPct(contractorChangePct90, 1)} over 90 days.`)
-    }
-    if (infraChangePct90 > 30) {
-      score -= 10
-      reasons.push(`Infrastructure spend is up ${formatPct(infraChangePct90, 1)} over 90 days.`)
-    }
-
-    score = clamp(score, 0, 100)
-    return { score, band: scoreBand(score), reasons }
-  }, [burnChangePct90, catShareTop.cat, catShareTop.pct, increased3ConsecutiveMonths, contractorChangePct90, infraChangePct90])
-
-  const scoreAnimated = useCountUp(burnHealth.score, { enabled: !txnLoading })
-
-  const runwayCore = useMemo(() => computeRunwayFromTransactions(txnRows), [txnRows])
-  const currentRunwayMo = runwayCore.baseRunwayMo ?? null
-
-  const currentMonthlyBurn = useMemo(() => (Number.isFinite(burn90Monthly) ? burn90Monthly : 0), [burn90Monthly])
-
-  const targetSavingFromPct = (currentMonthlyBurn * targetPct) / 100
-  const targetSavingFromPounds = Number(targetPounds) || 0
-  const targetSaving = targetMode === 'gbp' ? Math.max(0, targetSavingFromPounds) : Math.max(0, targetSavingFromPct)
-  const targetBurn = Math.max(0, currentMonthlyBurn - targetSaving)
-
-  const savingFor24Mo = useMemo(() => {
-    if (!Number.isFinite(runwayCore.totalCash) || runwayCore.totalCash <= 0) return null
-    const requiredBurn = runwayCore.totalCash / 24
-    return Math.max(0, currentMonthlyBurn - requiredBurn)
-  }, [currentMonthlyBurn, runwayCore.totalCash])
-
-  const actionedTotals = useMemo(() => {
-    const all = actioned || []
-    let actionedLow = 0
-    let actionedHigh = 0
-    all.forEach((a) => {
-      actionedLow += Number(a.estimated_saving_low) || 0
-      actionedHigh += Number(a.estimated_saving_high) || 0
-    })
-    return { actionedLow, actionedHigh }
-  }, [actioned])
-
-  const totalOppIdentified = useMemo(() => {
-    let low = 0
-    let high = 0
-    opps.forEach((o) => {
-      const r = toMoneyRange(o?.estimatedMonthlySaving)
-      if (!r) return
-      low += r.low
-      high += r.high
-    })
-    return { low, high }
-  }, [opps])
-
-  const remainingOpp = useMemo(() => {
-    return {
-      low: Math.max(0, totalOppIdentified.low - actionedTotals.actionedLow),
-      high: Math.max(0, totalOppIdentified.high - actionedTotals.actionedHigh),
-    }
-  }, [actionedTotals.actionedHigh, actionedTotals.actionedLow, totalOppIdentified.high, totalOppIdentified.low])
-
-  const forecast = useMemo(() => {
-    const current = currentMonthlyBurn
-    const optimised = Math.max(0, currentMonthlyBurn - actionedTotals.actionedHigh)
-    const points = []
-    const now = new Date()
-    for (let i = 0; i <= 6; i += 1) {
-      const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
-      points.push({
-        label: d.toLocaleDateString('en-GB', { month: 'short' }),
-        current,
-        optimised,
-      })
-    }
-    const runwayExtMo =
-      runwayCore.totalCash > 0 && optimised > 0 ? runwayCore.totalCash / optimised - (runwayCore.totalCash / current || 0) : 0
-    return { points, runwayExtMo }
-  }, [actionedTotals.actionedHigh, currentMonthlyBurn, runwayCore.totalCash])
-
-  const insertAudit = useCallback(async ({ action_type, category, description, metadata }) => {
-    if (!userId) return
-    await supabase.from('audit_log').insert({
-      user_id: userId,
-      action_type,
-      category: category || null,
-      description,
-      metadata: metadata || null,
-    })
-  }, [userId])
-
-  const refreshActioned = useCallback(async () => {
-    if (!userId) return
-    const { data } = await supabase
-      .from('burn_actions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('actioned_at', { ascending: false })
-    setActioned(Array.isArray(data) ? data : [])
-  }, [userId])
-
-  async function handleFetchOpportunities() {
-    setAiLoading(true)
-    setAiError('')
-    try {
-      const spend90 = burn90.byCat
-      const payload = {
-        spendByCategoryGbp: BURN_CATEGORY_ORDER.map((c) => ({
-          category: c,
-          monthlySpend: Math.round((spend90[c] || 0) / 3),
-        })),
-      }
-      const data = await fetchBurnIntelligenceAi({ mode: 'opportunities', payload })
-      if (!Array.isArray(data?.opportunities)) throw new Error('Unexpected response')
-      setOpps(data.opportunities)
-    } catch (e) {
-      setAiError(e?.message || 'Request failed')
-      setOpps([])
-    } finally {
-      setAiLoading(false)
-    }
-  }
-
-  const handleDownloadSummary = useCallback(
-    async (opp) => {
-      if (!opp) return
-      await insertAudit({
-        action_type: 'download_summary',
-        category: opp.category,
-        description: `Downloaded summary: ${opp.title}`,
-        metadata: { opportunity: opp },
-      })
-      const today = new Date().toISOString().slice(0, 10)
-      const safeCat = String(opp.category || 'category').toLowerCase().replace(/[^a-z0-9]+/g, '-')
-      const html = buildOpportunitySummaryHtml(opp, { generatedAt: new Date().toLocaleString('en-GB') })
-      await downloadHtml(`${safeCat}-summary-${today}.html`, html)
-    },
-    [insertAudit],
-  )
-
-  const handleMarkActioned = useCallback(
-    async (opp) => {
-      if (!userId || !opp) return
-      const r = toMoneyRange(opp.estimatedMonthlySaving) || { low: 0, high: 0 }
-      await supabase.from('burn_actions').insert({
-        user_id: userId,
-        category: opp.category,
-        title: opp.title,
-        estimated_saving_low: r.low,
-        estimated_saving_high: r.high,
-        actioned_at: new Date().toISOString(),
-        confirmed: false,
-      })
-      await insertAudit({
-        action_type: 'mark_actioned',
-        category: opp.category,
-        description: `Marked actioned: ${opp.title}`,
-        metadata: { opportunity: opp },
-      })
-      await refreshActioned()
-    },
-    [insertAudit, refreshActioned, userId],
-  )
-
-  const sortedOpps = useMemo(() => {
-    const actionedTitles = new Set(actioned.map((a) => String(a.title)))
-    const open = opps.filter((o) => !actionedTitles.has(String(o.title)))
-    const done = opps.filter((o) => actionedTitles.has(String(o.title)))
-    return [...open, ...done]
-  }, [actioned, opps])
-
-  const toCapsSixWords = useCallback((title) => {
-    return String(title || '')
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 6)
-      .map((w) => w.toUpperCase())
-      .join(' ')
+  const scrollToBreakdown = useCallback(() => {
+    document.getElementById('burn-category-breakdown')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
 
-  const burnCapitalMoves = useMemo(() => {
-    const actionedTitles = new Set(actioned.map((a) => String(a.title)))
-    const runwayMo = currentRunwayMo
-    return sortedOpps
-      .filter((o) => !actionedTitles.has(String(o.title)))
-      .map((o) => {
-        const saving = toMoneyRange(o.estimatedMonthlySaving) || { low: 0, high: 0 }
-        const effort = String(o.effort || '').trim()
-        const impactYear = saving.high * 12
-        const wait30 = saving.high
-        return {
-          id: `opp-${String(o.title).slice(0, 80)}`,
-          titleCaps: toCapsSixWords(o.title),
-          description: String(
-            o.recommendedAction ||
-              `Negotiate ${o.category} spend using your latest 90-day transaction pattern.`,
-          ),
-          who: effort === 'High' ? 'CFO' : 'Finance Team',
-          time: effort === 'Low' ? 'This week' : 'Within 30 days',
-          impactGbpYear: impactYear,
-          costWaiting30: wait30,
-          primaryLabel: 'Download Summary',
-          onPrimary: () => handleDownloadSummary(o),
-          secondaryLabel: 'Schedule',
-          secondaryHref: makeBurnScheduleUrl(o, runwayMo, currentMonthlyBurn),
-          onSecondaryClick: () => {
-            void insertAudit({
-              action_type: 'schedule_review',
-              category: o.category,
-              description: `Opened schedule: ${o.title}`,
-              metadata: { opportunity: o },
-            })
-          },
-          onMark: () => handleMarkActioned(o),
-          markLabel: 'Mark actioned',
-        }
-      })
-  }, [
-    actioned,
-    currentMonthlyBurn,
-    currentRunwayMo,
-    handleDownloadSummary,
-    handleMarkActioned,
-    insertAudit,
-    sortedOpps,
-    toCapsSixWords,
-  ])
+  const deltaSentence =
+    deltaPct != null && Number.isFinite(deltaPct)
+      ? `${formatPct(deltaPct, 1)} vs prior period`
+      : '— vs prior period'
+
+  const trendInsight =
+    deltaPct != null && Number.isFinite(deltaPct)
+      ? `Burn has ${deltaPct >= 0 ? 'increased' : 'decreased'} ${formatPct(Math.abs(deltaPct), 1)} over 90 days`
+      : 'Insufficient recent outflows to measure 90-day burn momentum.'
+
+  const reducedBurn = monthlyBurn90 * 0.9
+  const spend90Total = burn90.total
 
   return (
-    <div className="detail-page burn-intel">
-      <ModuleCapitalMoves actions={burnCapitalMoves} />
-
-      <header className="detail-hero">
-        <h1 className="detail-title">Burn Intelligence</h1>
-        <p className="detail-sub">Specific actions to reduce your monthly spend — ranked by impact</p>
-        <p className="burn-intel__crosslink-top">
-          For yield, runway, and liquidity decisions, open the relevant module — each opens with a{' '}
-          <TermTooltip term="capital-moves" label="Capital Moves" /> block ranked from your data.
-        </p>
-      </header>
-
-      <section className="detail-section burn-intel__summary">
-        <h2 className="detail-section__title">What changed</h2>
-        {txnLoading ? <p className="detail-muted">Loading transactions…</p> : <p>{summarySentence}</p>}
-        {txnError ? <p className="detail-muted" style={{ marginTop: 8, color: '#DC2626' }}>{txnError}</p> : null}
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Burn health score</h2>
-        <div className="burn-intel__score-row">
-          <div className="burn-intel__score">
-            <div className="burn-intel__score-val">
-              {txnLoading ? '—' : Math.round(scoreAnimated)}
-              <span style={{ fontSize: 14, color: '#9CA3AF', fontWeight: 600 }}> / 100</span>
-            </div>
-            <div className={`burn-intel__score-pill burn-intel__score-pill--${burnHealth.band}`}>
-              <span className="burn-intel__score-dot" aria-hidden />
-              {burnHealth.band === 'good' ? 'Green (healthy)' : burnHealth.band === 'warn' ? 'Amber (watch)' : 'Red (risk)'}
-            </div>
-          </div>
-          <p className="burn-intel__score-notes">
-            {txnLoading
-              ? 'Calculating score drivers…'
-              : burnHealth.reasons.length
-                ? burnHealth.reasons.slice(0, 3).join(' ')
-                : 'No major burn risk signals detected from the last 90 days.'}
-          </p>
-        </div>
-      </section>
-
-      <section className="detail-section">
-        <h2 className="detail-section__title">Reduction target</h2>
-        {txnLoading ? (
-          <p className="detail-muted">Loading…</p>
-        ) : (
-          <>
-            <p className="detail-section__lead" style={{ marginBottom: 12 }}>
-              Current monthly burn (last 90 days): <strong>{formatGBP(Math.round(currentMonthlyBurn))}</strong>
-            </p>
-
-            <div className="burn-intel__target-grid">
-              <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.25)', background: 'rgba(27, 43, 140, 0.04)' }}>
-                <p className="detail-stat__cap">Option A — % reduction</p>
-                <input
-                  className="detail-input"
-                  type="range"
-                  min={5}
-                  max={30}
-                  value={targetPct}
-                  onChange={(e) => {
-                    setTargetMode('pct')
-                    setTargetPct(Number(e.target.value) || 12)
-                  }}
-                />
-                <p className="detail-muted" style={{ marginTop: 6 }}>
-                  Target: <strong>{targetPct}%</strong> (save {formatGBP(Math.round(targetSavingFromPct))}/mo)
-                </p>
-              </div>
-              <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.25)', background: 'rgba(27, 43, 140, 0.04)' }}>
-                <p className="detail-stat__cap">Option B — £ saving / month</p>
-                <input
-                  className="detail-input"
-                  type="number"
-                  min={0}
-                  value={targetPounds}
-                  onChange={(e) => {
-                    setTargetMode('gbp')
-                    setTargetPounds(e.target.value)
-                  }}
-                  placeholder="e.g. 15000"
-                />
-                <p className="detail-muted" style={{ marginTop: 6 }}>
-                  Target saving: <strong>{formatGBP(Math.round(targetSavingFromPounds || 0))}</strong> / month
-                </p>
-              </div>
-            </div>
-
-            <div className="burn-intel__bar" aria-label="Before and after burn">
-              <div className="burn-intel__bar-row">
-                <div className="burn-intel__bar-cell burn-intel__bar-cell--current">
-                  <span>Current burn</span>
-                  <strong style={{ color: '#DC2626' }}>{formatGBP(Math.round(currentMonthlyBurn))}</strong>
-                </div>
-                <div className="burn-intel__bar-cell burn-intel__bar-cell--target">
-                  <span>Target burn</span>
-                  <strong style={{ color: '#1B2B8C' }}>{formatGBP(Math.round(targetBurn))}</strong>
-                </div>
-              </div>
-            </div>
-
-            <p className="detail-muted" style={{ marginTop: 10 }}>
-              Target saving: <strong>{formatGBP(Math.round(targetSaving))}</strong> / month.{' '}
-              {savingFor24Mo != null ? (
-                <>
-                  To reach <strong>24 months runway</strong> you need to save{' '}
-                  <strong>{formatGBP(Math.round(savingFor24Mo))}</strong> per month.
-                </>
-              ) : (
-                'Upload a longer history to compute runway targets.'
-              )}
-            </p>
-          </>
-        )}
-      </section>
-
-      <section className="detail-section">
-        <div className="burn-intel__ai-head">
-          <div className="burn-intel__ai-head-text">
-            <div className="burn-intel__title-row">
-              <h2 className="detail-section__title burn-intel__ai-title">
-                <TermTooltip term="priority-actions" label="Priority Actions" />
-              </h2>
-              <span className="burn-intel__badge-spend">Spend</span>
-            </div>
-            <p className="burn-intel__subtitle-spend">
-              Specific spend reductions ranked by monthly impact — no headcount cuts
-            </p>
-            <p className="detail-section__lead burn-intel__ai-lead">
-              Five concrete opportunities ranked by impact. We never recommend headcount or salary cuts.
-            </p>
-          </div>
-          <button type="button" className="detail-btn detail-btn--dark" onClick={handleFetchOpportunities} disabled={aiLoading || txnLoading}>
-            {aiLoading ? 'Generating…' : 'Generate Priority Actions'}
+    <div className="burn-page">
+      {txnError && !txnLoading ? (
+        <div className="burn-error" role="alert">
+          <p>{txnError}</p>
+          <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+            Retry
           </button>
         </div>
-        {aiError ? <p className="detail-muted" style={{ color: '#DC2626' }}>{aiError}</p> : null}
-        {!txnLoading && !txnRows.length ? (
-          <p className="detail-muted">
-            Upload a bank CSV first. <Link to="/upload">Upload Bank Statement</Link>
-          </p>
-        ) : null}
-        {opps.length ? (
-          <p className="detail-muted" style={{ marginTop: 14 }}>
-            Each opportunity is shown in <strong>Capital Moves</strong> at the top of this page with download and
-            calendar actions.
-          </p>
-        ) : (
-          <p className="detail-muted" style={{ marginTop: 10 }}>
-            Click “Generate Priority Actions” to create ranked burn reduction opportunities from your last 90 days of
-            spend.
-          </p>
-        )}
-      </section>
+      ) : null}
 
-      <section className="detail-section">
-        <h2 className="detail-section__title">Actioned savings tracker</h2>
-        <div className="detail-grid3">
-          <div className="detail-stat" style={{ borderColor: 'rgba(27, 43, 140, 0.28)', background: 'rgba(27, 43, 140, 0.06)' }}>
-            <p className="detail-stat__cap">Total savings identified</p>
-            <p className="detail-stat__val" style={{ color: '#1B2B8C' }}>
-              {formatGBP(Math.round(totalOppIdentified.low))}–{formatGBP(Math.round(totalOppIdentified.high))}
-            </p>
-          </div>
-          <div className="detail-stat" style={{ borderColor: 'rgba(22, 163, 74, 0.28)', background: 'rgba(22, 163, 74, 0.06)' }}>
-            <p className="detail-stat__cap">Total actioned</p>
-            <p className="detail-stat__val detail-stat__val--green">
-              {formatGBP(Math.round(actionedTotals.actionedLow))}–{formatGBP(Math.round(actionedTotals.actionedHigh))}
-            </p>
-          </div>
-          <div className="detail-stat" style={{ borderColor: 'rgba(107, 114, 128, 0.2)', background: 'rgba(107, 114, 128, 0.06)' }}>
-            <p className="detail-stat__cap">Remaining opportunity</p>
-            <p className="detail-stat__val" style={{ color: '#6B7280' }}>
-              {formatGBP(Math.round(remainingOpp.low))}–{formatGBP(Math.round(remainingOpp.high))}
-            </p>
+      <header className="burn-header">
+        <div className="burn-header__titles">
+          <h1 className="burn-title">Burn Intelligence</h1>
+          <p className="burn-subtitle">Where your money is going and what is driving cost increases</p>
+          <div className="burn-dominant-metric" aria-label="Average monthly burn">
+            {txnLoading ? (
+              <span className="ds-skeleton ds-skeleton--value-lg" style={{ width: '55%', display: 'block' }} />
+            ) : (
+              <>
+                <p className="burn-dominant-metric__value">{formatGBP(Math.round(monthlyBurn90))} / month</p>
+                <p className="burn-dominant-metric__label">Average monthly burn — last 90 days</p>
+                <p className="burn-dominant-metric__support">
+                  {deltaSentence} · {topCategory} is your largest cost driver
+                </p>
+              </>
+            )}
           </div>
         </div>
+        {txnLoading ? (
+          <span className="ds-skeleton ds-skeleton--line" style={{ width: 120, height: 28, borderRadius: 999 }} />
+        ) : fetchFailed ? (
+          <span className="burn-badge burn-badge--review">REVIEW</span>
+        ) : (
+          <span className={`burn-badge burn-badge--${status.tone}`}>{status.text}</span>
+        )}
+      </header>
 
-        {actioned.length ? (
-          <div style={{ marginTop: 14 }}>
-            {actioned.map((a) => (
-              <div key={a.id} className="detail-row" style={{ marginBottom: 10 }}>
-                <div>
-                  <p className="detail-row__title">{a.title}</p>
-                  <p className="detail-muted" style={{ margin: 0 }}>
-                    {a.category} · actioned {a.actioned_at ? new Date(a.actioned_at).toLocaleDateString('en-GB') : '—'}
-                  </p>
-                </div>
-                <div className="detail-row__val" style={{ color: '#166534' }}>
-                  {formatGBP(Math.round(Number(a.estimated_saving_low) || 0))}–{formatGBP(Math.round(Number(a.estimated_saving_high) || 0))}/mo
-                </div>
+      <section className="burn-nba" aria-label="Next best actions">
+        {txnLoading ? (
+          <div className="burn-nba__row">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="burn-skel-card">
+                <span className="ds-skeleton ds-skeleton--line" style={{ width: '55%', marginBottom: 12 }} />
+                <span className="ds-skeleton ds-skeleton--line" style={{ width: '85%', height: 18, marginBottom: 10 }} />
+                <span className="ds-skeleton ds-skeleton--line" />
+                <span className="ds-skeleton ds-skeleton--line ds-skeleton--short" style={{ marginTop: 16 }} />
               </div>
             ))}
           </div>
+        ) : fetchFailed ? (
+          <div className="burn-nba-empty">
+            Could not load burn actions.{' '}
+            <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+              Retry
+            </button>
+          </div>
+        ) : !hasData ? (
+          <div className="burn-nba-empty">
+            Upload transaction data to unlock burn intelligence. <Link to="/upload">Upload bank statement</Link>
+          </div>
+        ) : monthlyBurn90 <= 0 ? (
+          <div className="burn-nba-empty">
+            No outflows found in your import — add debits or check column mapping.
+          </div>
         ) : (
-          <p className="detail-muted" style={{ marginTop: 10 }}>
-            Mark actions as actioned to track your savings pipeline.
-          </p>
+          <div className="burn-nba__row">
+            <article className="burn-action-card burn-action-card--primary">
+              <p className="burn-action-card__recommended">RECOMMENDED</p>
+              <p className="burn-action-card__kicker">NEXT BEST ACTION 1</p>
+              <p className="burn-action-card__impact">{formatGBP(Math.round(saving10TopAnnual))}</p>
+              <p className="burn-action-card__title">Review {topCategory} spend</p>
+              <p className="burn-action-card__desc">
+                Your largest burn category has grown{' '}
+                {topCatGrowthPct != null ? formatPct(topCatGrowthPct, 1) : '—'} this period. A 10% reduction saves{' '}
+                {formatGBP(Math.round(saving10TopMo))} per month.
+              </p>
+              <div className="burn-action-meta">
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Who</span>
+                  <span className="burn-action-meta__val">CFO</span>
+                </div>
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Time to act</span>
+                  <span className="burn-action-meta__val">This week</span>
+                </div>
+                <div className="burn-action-meta__cell burn-action-meta__cell--wide">
+                  <span className="burn-action-meta__label">Annual impact</span>
+                  <span className="burn-action-meta__val burn-action-meta__val--gain">
+                    {formatGBP(Math.round(saving10TopAnnual))}
+                  </span>
+                </div>
+              </div>
+              <div className="burn-action-wait">
+                <span className="burn-action-wait__label">Cost of waiting</span>
+                <span className="burn-action-wait__val">{formatGBP(Math.round(monthlyOvershoot))} per month</span>
+              </div>
+              <div className="burn-action-card__footer">
+                <button type="button" className="burn-action-card__cta-pill" onClick={scrollToBreakdown}>
+                  View breakdown
+                </button>
+              </div>
+            </article>
+
+            <article className="burn-action-card burn-action-card--secondary">
+              <p className="burn-action-card__kicker">NEXT BEST ACTION 2</p>
+              <p className="burn-action-card__impact">
+                {runwayCore.baseRunwayMo != null ? `${runwayCore.baseRunwayMo.toFixed(1)} mo` : '—'}
+              </p>
+              <p className="burn-action-card__title">Model burn reduction impact</p>
+              <p className="burn-action-card__desc">
+                Use the scenario modeller to see exactly how reducing burn by 10-20% extends your runway.
+              </p>
+              <div className="burn-action-meta">
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Who</span>
+                  <span className="burn-action-meta__val">CFO</span>
+                </div>
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Time to act</span>
+                  <span className="burn-action-meta__val">5 minutes</span>
+                </div>
+                <div className="burn-action-meta__cell burn-action-meta__cell--wide">
+                  <span className="burn-action-meta__label">Annual impact</span>
+                  <span className="burn-action-meta__val burn-action-meta__val--gain">
+                    Extended runway modelled live
+                  </span>
+                </div>
+              </div>
+              <div className="burn-action-wait">
+                <span className="burn-action-wait__label">Cost of waiting</span>
+                <span className="burn-action-wait__val">Runway shortening daily</span>
+              </div>
+              <div className="burn-action-card__footer">
+                <Link className="burn-action-card__cta-pill" to="/app/scenarios">
+                  Open modeller
+                </Link>
+              </div>
+            </article>
+
+            <article className="burn-action-card burn-action-card--secondary burn-action-card--tertiary">
+              <p className="burn-action-card__kicker">NEXT BEST ACTION 3</p>
+              <p className="burn-action-card__impact-qual">
+                <ShieldIcon />
+                <span>Ongoing monitoring</span>
+              </p>
+              <p className="burn-action-card__title">Set burn rate alert</p>
+              <p className="burn-action-card__desc">
+                Get alerted the moment any category grows more than 15% month on month.
+              </p>
+              <div className="burn-action-meta">
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Who</span>
+                  <span className="burn-action-meta__val">CFO</span>
+                </div>
+                <div className="burn-action-meta__cell">
+                  <span className="burn-action-meta__label">Time to act</span>
+                  <span className="burn-action-meta__val">2 minutes</span>
+                </div>
+                <div className="burn-action-meta__cell burn-action-meta__cell--wide">
+                  <span className="burn-action-meta__label">Annual impact</span>
+                  <span className="burn-action-meta__val burn-action-meta__val--neutral">Ongoing monitoring</span>
+                </div>
+              </div>
+              <div className="burn-action-wait">
+                <span className="burn-action-wait__label">Cost of waiting</span>
+                <span className="burn-action-wait__val burn-action-wait__val--neutral">Zero — act now</span>
+              </div>
+              <div className="burn-action-card__footer">
+                <Link className="burn-action-card__cta-pill" to="/app/preferences">
+                  Configure
+                </Link>
+              </div>
+            </article>
+          </div>
         )}
       </section>
 
-      <section className="detail-section">
-        <h2 className="detail-section__title">Burn forecast</h2>
-        <p className="detail-section__lead">
-          Before/after projection: current burn in red, optimised burn in navy (using your actioned savings).
-        </p>
-        <div style={{ width: '100%', height: 240, marginTop: 12 }}>
-          <ResponsiveContainer>
-            <LineChart data={forecast.points} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-              <CartesianGrid stroke="rgba(15,15,15,0.06)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: '#9CA3AF', fontSize: 12 }} axisLine={false} tickLine={false} />
-              <YAxis
-                tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `£${Math.round(v / 1000)}k`}
-                width={44}
-              />
-              <Tooltip content={<BurnTooltip />} />
-              <Line type="monotone" dataKey="current" stroke="#DC2626" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="optimised" stroke="#1B2B8C" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="burn-intel__bar" aria-label="Forecast summary">
-          <div className="burn-intel__bar-row">
-            <div className="burn-intel__bar-cell burn-intel__bar-cell--current">
-              <span>Projected burn</span>
-              <strong style={{ color: '#DC2626' }}>{formatGBP(Math.round(currentMonthlyBurn))}/mo</strong>
-            </div>
-            <div className="burn-intel__bar-cell burn-intel__bar-cell--target">
-              <span>Optimised burn</span>
-              <strong style={{ color: '#1B2B8C' }}>
-                {formatGBP(Math.round(Math.max(0, currentMonthlyBurn - actionedTotals.actionedHigh)))}/mo
-              </strong>
-            </div>
+      {!txnLoading && !fetchFailed && hasData && deltaPct != null && deltaPct > 10 ? (
+        <section className="burn-inaction" aria-label="Cost of inaction">
+          <div className="burn-inaction__left">
+            <span className="burn-inaction__dot" aria-hidden />
+            <p className="burn-inaction__text">
+              Burn rate has increased {formatPct(deltaPct, 1)} in the last 30 days. At this trajectory, runway reduces by{' '}
+              {runwayReductionSixMo != null ? runwayReductionSixMo.toFixed(1) : '—'} months over the next 6 months.
+            </p>
           </div>
-        </div>
-        <p className="detail-muted" style={{ marginTop: 10 }}>
-          Runway extension if all actioned savings confirmed: <strong>{Number.isFinite(forecast.runwayExtMo) ? forecast.runwayExtMo.toFixed(1) : '0.0'} months</strong>
-        </p>
-      </section>
+          <button type="button" className="burn-inaction__link" onClick={scrollToBreakdown}>
+            View breakdown ↓
+          </button>
+        </section>
+      ) : null}
 
-      <p className="detail-muted" style={{ marginTop: 6 }}>
-        Policies, Slack, email, and audit log are in{' '}
-        <Link to="/app/preferences">Preferences</Link>. Back to <Link to="/app">Dashboard</Link>.
+      <div className="burn-grid">
+        <section className="burn-panel burn-panel--tall" aria-labelledby="burn-position-heading">
+          <h2 id="burn-position-heading" className="burn-section-label">
+            Your position
+          </h2>
+          {txnLoading ? (
+            <div className="burn-skel-panel">
+              <span className="ds-skeleton ds-skeleton--value-lg" style={{ width: '70%', display: 'block' }} />
+              <span className="ds-skeleton ds-skeleton--line" style={{ marginTop: 20 }} />
+              <span className="ds-skeleton ds-skeleton--line" style={{ marginTop: 12 }} />
+            </div>
+          ) : fetchFailed ? (
+            <div className="burn-empty">
+              <p>
+                Could not load your position.{' '}
+                <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+                  Retry
+                </button>
+              </p>
+            </div>
+          ) : !hasData ? (
+            <div className="burn-empty">
+              <p>
+                No transactions yet. <Link to="/upload">Upload a bank statement</Link> to see burn intelligence.
+              </p>
+            </div>
+          ) : monthlyBurn90 <= 0 ? (
+            <div className="burn-empty">
+              <p>No outflows found in your import — add debits or check column mapping.</p>
+            </div>
+          ) : (
+            <>
+              <p className="burn-cash-hero">{formatGBP(Math.round(monthlyBurn90))}</p>
+              <div className="burn-position-loss">
+                <p className="burn-position-loss__label">MONTHLY BURN</p>
+              </div>
+              <div className="burn-stat-rows">
+                <div className="burn-stat-row">
+                  <span className="burn-stat-row__label">Total 90-day spend</span>
+                  <span className="burn-stat-row__val">{formatGBP(Math.round(spend90Total))}</span>
+                </div>
+                <div className="burn-stat-row">
+                  <span className="burn-stat-row__label">Monthly average</span>
+                  <span className="burn-stat-row__val">{formatGBP(Math.round(monthlyBurn90))}</span>
+                </div>
+                <div className="burn-stat-row">
+                  <span className="burn-stat-row__label">30-day vs 90-day delta</span>
+                  <span className="burn-stat-row__val burn-stat-row__val--opp">
+                    {deltaPct != null ? formatPct(deltaPct, 1) : '—'}
+                  </span>
+                </div>
+                <div className="burn-stat-row">
+                  <span className="burn-stat-row__label">Top category</span>
+                  <span className="burn-stat-row__val">{topCategory}</span>
+                </div>
+              </div>
+              <div className="burn-compare">
+                <div className="burn-compare__side burn-compare__side--current">
+                  <p className="burn-compare__col-title">CURRENT</p>
+                  <p className="burn-compare__body">
+                    <span className="burn-rate burn-rate--current">{formatGBP(Math.round(monthlyBurn90))}</span> / mo
+                    burn
+                  </p>
+                </div>
+                <div className="burn-compare__side burn-compare__side--optimised">
+                  <p className="burn-compare__col-title">REDUCED</p>
+                  <p className="burn-compare__body">
+                    <span className="burn-rate burn-rate--best">{formatGBP(Math.round(reducedBurn))}</span> / mo at 10%
+                    reduction
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </section>
+
+        <section className="burn-panel burn-panel--tall" id="burn-category-breakdown" aria-labelledby="burn-cats-heading">
+          <h2 id="burn-cats-heading" className="burn-section-label">
+            Where the money goes
+          </h2>
+          {txnLoading ? (
+            <div className="burn-skel-panel">
+              <span className="ds-skeleton ds-skeleton--line" style={{ width: '100%', height: 120, borderRadius: 8 }} />
+            </div>
+          ) : fetchFailed ? (
+            <div className="burn-empty">
+              <p>
+                Could not load categories.{' '}
+                <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+                  Retry
+                </button>
+              </p>
+            </div>
+          ) : !hasData || monthlyBurn90 <= 0 ? (
+            <div className="burn-empty">
+              <p>Category breakdown appears once we detect spend.</p>
+            </div>
+          ) : (
+            <div
+              className="burn-compare-block"
+              style={{ overflow: 'visible', boxSizing: 'border-box', paddingRight: '14px' }}
+            >
+              <div className="burn-market-rows" aria-label="Spend by category">
+                {categoryBars.map((row) => (
+                  <div
+                    key={row.name}
+                    className="burn-market-row"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: '12px',
+                      width: '100%',
+                      boxSizing: 'border-box',
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <span className="burn-market-row__label">{row.name}</span>
+                      <div className="burn-market-row__track">
+                        <div
+                          className={`burn-market-row__fill ${categoryFillClass(row.name)}`}
+                          style={{ width: `${Math.max(2, row.pct)}%` }}
+                        />
+                      </div>
+                    </div>
+                    <span
+                      className="burn-market-row__rate"
+                      style={{ flexShrink: 0, width: '88px', textAlign: 'right', whiteSpace: 'nowrap' }}
+                    >
+                      {formatGBP(Math.round(row.amt))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="burn-market-row__below">
+                {fastestGrowing.cat != null && fastestGrowing.pct != null ? (
+                  <>
+                    Your fastest growing category is {fastestGrowing.cat} up {formatPct(fastestGrowing.pct, 1)} this
+                    period
+                  </>
+                ) : (
+                  'Category growth rates appear once there are two comparable 30-day windows.'
+                )}
+              </p>
+            </div>
+          )}
+        </section>
+
+        <section className="burn-panel" aria-labelledby="burn-feed-heading">
+          <h2 id="burn-feed-heading" className="burn-section-label">
+            Recent transactions
+          </h2>
+          {txnLoading ? (
+            <div className="burn-skel-panel">
+              {[1, 2, 3].map((i) => (
+                <span
+                  key={i}
+                  className="ds-skeleton ds-skeleton--line"
+                  style={{ width: '100%', height: 72, borderRadius: 10, marginBottom: 10, display: 'block' }}
+                />
+              ))}
+            </div>
+          ) : fetchFailed ? (
+            <div className="burn-empty">
+              <p>
+                Could not load transactions.{' '}
+                <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+                  Retry
+                </button>
+              </p>
+            </div>
+          ) : !hasData ? (
+            <div className="burn-empty">
+              <p>
+                Recent debits appear here. <Link to="/upload">Upload data</Link>
+              </p>
+            </div>
+          ) : recentTransactions.length === 0 ? (
+            <div className="burn-empty">
+              <p>No debit transactions in your import.</p>
+            </div>
+          ) : (
+            <>
+              <div className="burn-opp-list">
+                {recentTransactions.map((t, idx) => (
+                  <div key={`${String(t.date)}-${String(t.payee)}-${t.amount}-${idx}`} className="burn-opp-row">
+                    <div className="burn-opp-row__content">
+                      <h3 className="burn-opp-row__title">{String(t.payee || '—')}</h3>
+                      <p className="burn-opp-row__meta">
+                        {String(t.date).slice(0, 10)} · {categorisePayee(t.payee)}
+                      </p>
+                      <p className="burn-feed__amount">{formatGBP(Math.round(Math.abs(Number(t.amount))))}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" className="burn-feed__link" onClick={scrollToBreakdown}>
+                View all
+              </button>
+            </>
+          )}
+        </section>
+
+        <section className="burn-panel" aria-labelledby="burn-trend-heading">
+          <h2 id="burn-trend-heading" className="burn-section-label">
+            Burn trend
+          </h2>
+          {txnLoading ? (
+            <div className="burn-skel-panel">
+              <span className="ds-skeleton ds-skeleton--line" style={{ width: '100%', height: 200, borderRadius: 8 }} />
+            </div>
+          ) : fetchFailed ? (
+            <div className="burn-empty">
+              <p>
+                Could not load trend.{' '}
+                <button type="button" className="burn-error__retry" onClick={() => window.location.reload()}>
+                  Retry
+                </button>
+              </p>
+            </div>
+          ) : !hasData ? (
+            <div className="burn-empty">
+              <p>
+                Trend charts need outflows. <Link to="/upload">Upload data</Link>
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="burn-chart-h">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: '#6b7280' }}
+                      axisLine={{ stroke: '#e5e7eb' }}
+                      tickFormatter={(v) => formatCompactAxisGBP(v)}
+                      width={56}
+                    />
+                    <Tooltip
+                      formatter={(v) => [formatGBP(Math.round(Number(v))), 'Burn']}
+                      contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
+                    />
+                    {monthlyBurn90 > 0 ? (
+                      <ReferenceLine
+                        y={monthlyBurn90}
+                        stroke="#9ca3af"
+                        strokeDasharray="4 4"
+                        strokeWidth={1}
+                      />
+                    ) : null}
+                    <Line type="monotone" dataKey="burn" stroke="#1b2f8c" strokeWidth={2} dot={{ r: 3, fill: '#1b2f8c' }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <p className="burn-insight">{trendInsight}</p>
+              <p className="burn-monthly-cost">
+                Current: {formatGBP(Math.round(monthlyBurn90))} per month
+              </p>
+            </>
+          )}
+        </section>
+      </div>
+
+      <p className="burn-trust-signal">
+        Read-only analysis · No funds are moved without your approval · Data sourced from your connected accounts.
       </p>
     </div>
   )
 }
-
