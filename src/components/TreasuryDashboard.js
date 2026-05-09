@@ -162,6 +162,15 @@ export function TreasuryDashboard() {
   const sparkRunwayPoints = useMemo(() => kpiChartPoints(computeRunwaySparkline(txnRows)), [txnRows])
   const sparkBurnPoints = useMemo(() => kpiChartPoints(computeBurnSparkline(txnRows)), [txnRows])
 
+  const runwaySparklineDistorted = useMemo(() => {
+    const pts = sparkRunwayPoints
+    if (!pts?.length) return false
+    const first = Number(pts[0]?.value)
+    const last = Number(pts[pts.length - 1]?.value)
+    if (!Number.isFinite(first) || !Number.isFinite(last)) return false
+    return first > 2 * last
+  }, [sparkRunwayPoints])
+
   const showFundraiseAlert =
     !txnLoading &&
     (txnRows?.length ?? 0) > 0 &&
@@ -366,6 +375,19 @@ export function TreasuryDashboard() {
               aria-hidden
               style={{ display: 'block', height: '88px', width: '100%', marginTop: '0.25rem' }}
             />
+          ) : runwaySparklineDistorted ? (
+            <p
+              style={{
+                margin: '0.25rem 0 0',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: 12,
+                fontWeight: 400,
+                color: '#9CA3AF',
+                lineHeight: 1.45,
+              }}
+            >
+              Trend reflects opening balance — connect live bank for accurate history.
+            </p>
           ) : (
             <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#1B2B8C" />
           )}
@@ -449,11 +471,15 @@ export function TreasuryDashboard() {
 
       <section className="tdash__open-banking" aria-label="Open Banking">
         <div className="tdash__open-banking-inner">
-          <p className="tdash__open-banking-copy">
-            Connect your bank directly — no CSV uploads needed. Automatic daily sync. Coming soon via Open Banking.
-          </p>
+          <div className="tdash__open-banking-left">
+            <p className="tdash__open-banking-label">COMING SOON</p>
+            <p className="tdash__open-banking-heading">Live bank connection via Open Banking</p>
+            <p className="tdash__open-banking-copy">
+              No CSV uploads. Automatic daily sync. Real-time alerts. Connect Barclays, HSBC, Starling, and Monzo directly.
+            </p>
+          </div>
           <button type="button" className="tdash__open-banking-btn" onClick={openConnectBankModal}>
-            Join the waitlist for Open Banking
+            Join the waitlist →
           </button>
         </div>
       </section>

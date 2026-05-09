@@ -28,6 +28,18 @@
   box-shadow: var(--ds-shadow-card);
 }
 
+.dsum-card--green {
+  border-left: 3px solid #16a34a;
+}
+
+.dsum-card--amber {
+  border-left: 3px solid #d97706;
+}
+
+.dsum-card--red {
+  border-left: 3px solid #dc2626;
+}
+
 .dsum-card__head {
   display: flex;
   align-items: flex-start;
@@ -118,19 +130,20 @@
   font-family: var(--ds-font-display);
   text-align: center;
   text-decoration: none;
-  color: #fff;
-  background: linear-gradient(180deg, var(--ds-brand) 0%, var(--ds-brand-mid) 100%);
-  border: 1px solid var(--ds-brand);
-  border-radius: var(--ds-radius-btn);
+  color: #1b2f8c;
+  background: transparent;
+  border: 1.5px solid #1b2f8c;
+  border-radius: 8px;
   transition:
-    background var(--ds-transition),
-    box-shadow var(--ds-transition);
+    background 0.15s ease-out,
+    color 0.15s ease-out,
+    border-color 0.15s ease-out;
 }
 
 .dsum-card__link:hover {
-  background: var(--ds-brand-hover);
-  border-color: var(--ds-brand-hover);
-  box-shadow: 0 0 12px rgba(27, 43, 140, 0.35);
+  background: #1b2f8c;
+  color: #fff;
+  border-color: #1b2f8c;
 }
 
 .dsum-card__skeleton {

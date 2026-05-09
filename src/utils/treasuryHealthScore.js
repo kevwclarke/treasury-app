@@ -11,35 +11,35 @@ import { YIELD_BEST_PCT, YIELD_CURRENT_PCT } from './treasuryYield'
  * }} p
  */
 export function computeTreasuryHealthScore100(p) {
-  let score = 100
-
-  if (p.maxInstitutionConcentrationPct > 75) {
-    score -= 20
-  }
-
+  // Additive pillars (max 100): runway 35, yield gap 25, concentration 25, burn 15.
   const yieldGapPct = YIELD_BEST_PCT - YIELD_CURRENT_PCT
-  if (p.totalCash > 0 && yieldGapPct > 2) {
-    score -= 15
+
+  let runwayPts = 0
+  const r = p.baseRunwayMo
+  if (r != null && Number.isFinite(r) && r > 0) {
+    runwayPts = r >= 18 ? 35 : (r / 18) * 35
   }
 
-  if (
-    p.baseRunwayMo != null &&
-    Number.isFinite(p.baseRunwayMo) &&
-    p.baseRunwayMo > 0 &&
-    p.baseRunwayMo < 18
-  ) {
-    score -= 15
+  let yieldPts = 25
+  if (p.totalCash > 0 && yieldGapPct > 0) {
+    yieldPts = Math.max(0, 25 - yieldGapPct * 6)
   }
 
-  if (p.fscsUnprotectedGbp > 500_000) {
-    score -= 10
+  let concPts = 25
+  if (p.maxInstitutionConcentrationPct > 75) concPts -= 15
+  else if (p.maxInstitutionConcentrationPct > 50) concPts -= 8
+  if (p.fscsUnprotectedGbp > 500_000) concPts -= 10
+  else if (p.fscsUnprotectedGbp > 250_000) concPts -= 5
+  concPts = Math.max(0, concPts)
+
+  let burnPts = 15
+  if (p.burnMomGrowthPct != null && Number.isFinite(p.burnMomGrowthPct)) {
+    if (p.burnMomGrowthPct > 10) burnPts = 0
+    else if (p.burnMomGrowthPct > 5) burnPts = 7.5
   }
 
-  if (p.burnMomGrowthPct != null && Number.isFinite(p.burnMomGrowthPct) && p.burnMomGrowthPct > 10) {
-    score -= 10
-  }
-
-  return Math.max(0, Math.round(score))
+  const raw = runwayPts + yieldPts + concPts + burnPts
+  return Math.max(0, Math.min(100, Math.round(raw)))
 }
 
 /** Display band for colour-coding the score in the UI. */

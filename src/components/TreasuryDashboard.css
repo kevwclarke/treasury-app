@@ -1959,51 +1959,68 @@
   display: block;
 }
 
-/* Open Banking waitlist — subtle footer card */
+/* Open Banking waitlist */
 .tdash__open-banking {
-  margin-top: 1.75rem;
-  padding: 1.25rem 1.35rem;
-  background: #f4f4f5;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-  box-shadow: 0 1px 2px rgba(15, 15, 15, 0.04);
+  margin-top: 2rem;
+  padding: 32px 40px;
+  background: linear-gradient(to right, #0f1b5c, #1b2f8c);
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(15, 27, 92, 0.25);
+}
+
+.tdash__open-banking-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0 0 0.5rem;
+}
+
+.tdash__open-banking-heading {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 0.5rem;
+}
+
+.tdash__open-banking-copy {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+.tdash__open-banking-left {
+  flex: 1;
 }
 
 .tdash__open-banking-inner {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem 1.25rem;
-}
-
-.tdash__open-banking-copy {
-  margin: 0;
-  max-width: 36rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
-  color: #52525b;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
 .tdash__open-banking-btn {
-  flex-shrink: 0;
-  padding: 0.55rem 1rem;
-  font-family: var(--td-sans);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #3f3f46;
   background: #ffffff;
-  border: 1px solid #d4d4d8;
+  color: #1b2f8c;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 12px 24px;
   border-radius: 8px;
+  border: none;
   cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s ease-out;
 }
 
 .tdash__open-banking-btn:hover {
-  background: #fafafa;
-  border-color: #a1a1aa;
-  color: #18181b;
+  background: #f0f4ff;
 }

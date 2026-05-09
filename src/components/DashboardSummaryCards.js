@@ -14,6 +14,7 @@ import './DashboardSummaryCards.css'
  *   status: StatusTone,
  *   context: [string, string],
  *   to: string,
+ *   ctaLabel: string,
  * }} SummaryCardSpec
  */
 
@@ -23,7 +24,7 @@ function StatusPill({ status }) {
 
 function SummaryCard({ spec }) {
   return (
-    <article className="dsum-card">
+    <article className={`dsum-card dsum-card--${spec.status.tone}`}>
       <div className="dsum-card__head">
         <h2 className="dsum-card__title">
           {spec.term ? <TermTooltip term={spec.term} label={spec.title} /> : spec.title}
@@ -37,7 +38,7 @@ function SummaryCard({ spec }) {
       </ul>
       <div className="dsum-card__cta">
         <Link className="dsum-card__link" to={spec.to}>
-          View Full Analysis
+          {spec.ctaLabel}
         </Link>
       </div>
     </article>
@@ -99,6 +100,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'Optimise Yield →',
       },
       {
         key: 'conc',
@@ -108,6 +110,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'Fix Exposure →',
       },
       {
         key: 'runway',
@@ -117,6 +120,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'Model Runway →',
       },
       {
         key: 'burn',
@@ -126,6 +130,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'Review Burn →',
       },
       {
         key: 'cf',
@@ -134,6 +139,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'View Forecast →',
       },
       {
         key: 'liq',
@@ -143,6 +149,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
+        ctaLabel: 'Check Buffer →',
       },
     ]
     return (
@@ -213,6 +220,7 @@ export function DashboardSummaryCards({
         `Idle drag ≈ ${formatGBP(Math.round((yieldMonthlyOpp || 0)))} per month at current blended yield.`,
       ],
       to: '/app/yield',
+      ctaLabel: 'Optimise Yield →',
     },
     {
       key: 'conc',
@@ -225,6 +233,7 @@ export function DashboardSummaryCards({
         'Compare to £120,000 protection limit per authorised firm.',
       ],
       to: '/app/concentration',
+      ctaLabel: 'Fix Exposure →',
     },
     {
       key: 'runway',
@@ -237,6 +246,7 @@ export function DashboardSummaryCards({
         'Bear / base / bull scenarios available on the module page.',
       ],
       to: '/app/runway',
+      ctaLabel: 'Model Runway →',
     },
     {
       key: 'burn',
@@ -251,6 +261,7 @@ export function DashboardSummaryCards({
         'Category breakdown on Runway & Burn.',
       ],
       to: '/app/runway',
+      ctaLabel: 'Review Burn →',
     },
     {
       key: 'cf',
@@ -262,6 +273,7 @@ export function DashboardSummaryCards({
         cfLowCash ? 'Trajectory shows a low-cash week inside the forecast horizon.' : 'No low-cash flag on current averages.',
       ],
       to: '/app/cashflow',
+      ctaLabel: 'View Forecast →',
     },
     {
       key: 'liq',
@@ -274,6 +286,7 @@ export function DashboardSummaryCards({
         'Target 6 months minimum operating cover where possible.',
       ],
       to: '/app/liquidity',
+      ctaLabel: 'Check Buffer →',
     },
   ]
 
