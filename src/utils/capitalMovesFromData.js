@@ -2,6 +2,7 @@ import { formatGBP, formatPct } from './treasuryFormat'
 import { YIELD_BEST_PCT, YIELD_CURRENT_PCT } from './treasuryYield'
 import { LIQUIDITY_TARGET_MONTHS } from './treasuryLiquidity'
 import { FUNDRAISE_RUNWAY_ALERT_MONTHS } from './treasuryRunway'
+import { FSCS_LIMIT_GBP } from './treasuryConcentration'
 
 /** @typedef {import('../components/ModuleCapitalMoves').CapitalMoveAction} CapitalMoveAction */
 
@@ -93,7 +94,7 @@ export function buildConcentrationCapitalMoves(ctx) {
     actions.push({
       id: 'conc-fscs-buffer',
       titleCaps: 'CAP FSCS EXPOSURE',
-      description: `Ring-fence ${formatGBP(Math.round(unprot))} that sits above £85k FSCS protection per bank until diversified.`,
+      description: `Ring-fence ${formatGBP(Math.round(unprot))} that sits above £120k FSCS protection per bank until diversified.`,
       who: 'Finance Team',
       time: 'This week',
       impactGbpYear: unprot * 0.015,
@@ -274,7 +275,7 @@ export function summaryStatusYield(annualOpp) {
 
 export function summaryStatusConcentration(maxPct, unprotected) {
   if (maxPct > 75 || unprotected > 500_000) return { label: 'Action Required', tone: 'red' }
-  if (maxPct > 50 || unprotected > 85_000) return { label: 'Watch', tone: 'amber' }
+  if (maxPct > 50 || unprotected > FSCS_LIMIT_GBP) return { label: 'Watch', tone: 'amber' }
   return { label: 'Healthy', tone: 'green' }
 }
 

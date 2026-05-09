@@ -88,7 +88,7 @@ export function ConcentrationRiskPage() {
             <p className="conc-dominant-metric__value">{formatGBP(Math.round(unprotectedTotal))} unprotected</p>
             <p className="conc-dominant-metric__label">Total unprotected cash across all institutions</p>
             <p className="conc-dominant-metric__support">
-              <TermTooltip term="fscs" label="FSCS" /> protects only {formatGBP(FSCS_LIMIT_GBP)} per authorised institution —{' '}
+              <TermTooltip term="fscs" label="FSCS" /> protects {formatGBP(FSCS_LIMIT_GBP)} per authorised institution (from December 2025) —{' '}
               {daysUnaddressedLoading || daysUnaddressed == null ? '—' : daysUnaddressed} days since last review
             </p>
           </div>
@@ -173,7 +173,7 @@ export function ConcentrationRiskPage() {
               <p className="conc-action-card__impact">{formatGBP(Math.round(amountToMove))}</p>
               <p className="conc-action-card__title">Move surplus to FSCS-protected products</p>
               <p className="conc-action-card__desc">
-                Fixed-term savings accounts at Shawbrook or similar offer FSCS protection up to £85k per institution.
+                Fixed-term savings accounts at Shawbrook or similar offer FSCS protection up to £120k per institution.
               </p>
               <div className="conc-action-meta">
                 <div className="conc-action-meta__cell">
@@ -454,7 +454,7 @@ export function ConcentrationRiskPage() {
                     <p className="conc-opp-row__meta">Account ending: ••••</p>
                     <p className="conc-opp-row__best-for">Current rate: —</p>
                     <p className="conc-opp-row__rationale">
-                      FSCS status: {row.unprotectedAmt > 0 ? 'Above £85,000 limit' : 'Within FSCS limit'}
+                      FSCS status: {row.unprotectedAmt > 0 ? 'Above £120,000 limit' : 'Within FSCS limit'}
                     </p>
                     <p className="conc-opp-row__gain">{formatGBP(Math.round(row.balance))}</p>
                   </div>

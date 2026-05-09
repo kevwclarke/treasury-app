@@ -551,7 +551,7 @@ export function LiquidityBufferPage() {
                       </p>
                       <p className="liq-opp-row__best-for">
                         {fscs
-                          ? 'Within £85k FSCS coverage per banking licence on this import.'
+                          ? 'Within £120k FSCS coverage per banking licence on this import.'
                           : `${formatGBP(Math.round(acc.unprotectedAmt))} sits above typical FSCS limits — diversify where needed.`}
                       </p>
                     </div>

@@ -38,7 +38,7 @@ export const YIELD_MARKETPLACE_PRODUCTS = [
     fscsLabel: 'FSCS',
     liquidity: '12 month',
     applyUrl: 'https://www.shawbrook.co.uk/',
-    description: 'Fixed-term deposit with FSCS protection per institution up to £85,000.',
+    description: 'Fixed-term deposit with FSCS protection per institution up to £120,000.',
     minDeposit: '£1,000',
   },
   {

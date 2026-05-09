@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { TermTooltip } from './TermTooltip'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
+import { FSCS_LIMIT_GBP } from '../utils/treasuryConcentration'
 import './DashboardSummaryCards.css'
 
 /**
@@ -166,7 +167,7 @@ export function DashboardSummaryCards({
   const concStatus =
     conc > 75 || unprot > 500_000
       ? { label: 'Action Required', tone: 'red' }
-      : conc > 50 || unprot > 85_000
+      : conc > 50 || unprot > FSCS_LIMIT_GBP
         ? { label: 'Watch', tone: 'amber' }
         : { label: 'Healthy', tone: 'green' }
   const runwayStatus =
@@ -221,7 +222,7 @@ export function DashboardSummaryCards({
       status: concStatus,
       context: [
         `FSCS unprotected balance ${formatGBP(Math.round(unprot))} across institutions.`,
-        'Compare to £85,000 protection limit per authorised firm.',
+        'Compare to £120,000 protection limit per authorised firm.',
       ],
       to: '/app/concentration',
     },

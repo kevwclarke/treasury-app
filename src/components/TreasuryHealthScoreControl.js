@@ -86,7 +86,7 @@ export function TreasuryHealthScoreControl({ score, loading, peerAverage = 68 })
               <strong>−15</strong> if base-case runway is <strong>below 18 months</strong>
             </li>
             <li>
-              <strong>−10</strong> if FSCS-unprotected cash (above £85k per bank) exceeds <strong>£500,000</strong>
+              <strong>−10</strong> if FSCS-unprotected cash (above £120k per bank) exceeds <strong>£500,000</strong>
             </li>
             <li>
               <strong>−10</strong> if implied monthly burn (last 30 days vs 90-day average) is growing by{' '}

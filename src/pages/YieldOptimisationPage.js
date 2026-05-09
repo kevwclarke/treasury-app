@@ -65,7 +65,7 @@ const OPP_ROWS = [
     mult: SHAW_ANNUAL_MULT,
     basis: 'eligible',
     borderClass: 'yld-opp-row--shawbrook',
-    rationale: 'FSCS protected up to £85k',
+    rationale: 'FSCS protected up to £120k',
     href: 'https://www.shawbrook.co.uk',
     cta: 'Apply — Shawbrook',
   },

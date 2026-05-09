@@ -2,7 +2,7 @@ import { CSV_SOURCE_INSTITUTIONS } from '../constants/institutions'
 
 export const CONCENTRATION_INSTITUTIONS = [...CSV_SOURCE_INSTITUTIONS]
 
-export const FSCS_LIMIT_GBP = 85_000
+export const FSCS_LIMIT_GBP = 120_000
 
 const STACK_COLORS = ['#1B2B8C', '#374151', '#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#E5E7EB']
 

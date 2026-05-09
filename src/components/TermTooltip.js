@@ -3,7 +3,7 @@ import './TermTooltip.css'
 const GLOSSARY = {
   'yield-gap':
     'The difference between what your cash earns now and what it could earn at the same liquidity level.',
-  fscs: 'The UK government scheme that protects up to £85,000 of deposits per bank if a bank fails.',
+  fscs: 'The UK government scheme that protects up to £120,000 of deposits per bank (from December 2025) if a bank fails.',
   'liquidity-buffer': 'How many months of instantly accessible cash you have to cover operating costs.',
   'concentration-risk': 'How much of your total cash sits in a single bank — a risk if that bank fails.',
   runway: 'How many months your company can operate before running out of cash at current burn rate.',

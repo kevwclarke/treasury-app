@@ -184,7 +184,7 @@ export function downloadTreasuryInvestorPdf(payload) {
   doc.text('FSCS coverage (illustrative)', M, y)
   y += 8
   doc.setFont('helvetica', 'normal')
-  doc.text('Total protected (within £85k / institution)', M, y)
+  doc.text('Total protected (within £120k / institution)', M, y)
   doc.text(formatGBP(Math.round(payload.concentration.protectedTotal)), PAGE_W - M, y, { align: 'right' })
   y += 9
   doc.text('Total unprotected above FSCS limit', M, y)
