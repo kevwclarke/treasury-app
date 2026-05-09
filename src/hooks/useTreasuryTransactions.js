@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 
 /**
  * Loads the signed-in user’s transactions (same query as Treasury Autopilot).
- * @returns {{ txnLoading: boolean, txnError: string, txnRows: Array<{ amount?: number|string, payee?: string, date?: string, institution?: string }> }}
+ * @returns {{ txnLoading: boolean, txnError: string, txnRows: Array<{ amount?: number|string, payee?: string, date?: string, institution?: string, running_balance?: number|null }> }}
  */
 export function useTreasuryTransactions() {
   const [txnLoading, setTxnLoading] = useState(true)
@@ -27,7 +27,7 @@ export function useTreasuryTransactions() {
 
         const { data, error } = await supabase
           .from('transactions')
-          .select('amount,payee,date,institution')
+          .select('amount,payee,date,institution,running_balance')
           .eq('user_id', user.id)
           .order('date', { ascending: true })
 
