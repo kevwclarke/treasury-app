@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
 import { computeConcentrationFromTransactions } from '../utils/treasuryConcentration'
 import { formatGBP, formatPct } from '../utils/treasuryFormat'
@@ -69,6 +69,7 @@ function KpiAnimatedRunwayMo({ months, loading }) {
 const PEER_TREASURY_HEALTH_AVG = 68
 
 export function TreasuryDashboard() {
+  const navigate = useNavigate()
   const { openConnectBankModal } = useConnectBankModal()
   const [searchParams, setSearchParams] = useSearchParams()
   const [onboardingSkipped, setOnboardingSkipped] = useState(
@@ -171,6 +172,22 @@ export function TreasuryDashboard() {
     return first > 2 * last
   }, [sparkRunwayPoints])
 
+  const stateHeadline = useMemo(() => {
+    const annual = yieldSummary.annualOppCost
+    const burnDelta = kpiBurnKpi?.deltaPct
+    if ((Number.isFinite(burnDelta) && burnDelta > 10) || annual > 50_000) {
+      return 'Your treasury position needs attention.'
+    }
+    const runway = runwayMetrics.baseRunwayMo
+    if (runway != null && Number.isFinite(runway) && runway > 20 && annual < 20_000) {
+      return 'Your treasury position is strong.'
+    }
+    return 'Your treasury position is stable.'
+  }, [yieldSummary.annualOppCost, kpiBurnKpi?.deltaPct, runwayMetrics.baseRunwayMo])
+
+  const eligibleCash = Math.round(Math.max(0, kpiCash?.totalCash ?? yieldSummary.totalCash ?? 0))
+  const annualGainTbill = Math.round(Math.max(0, yieldSummary.annualOppCost ?? 0))
+
   const showFundraiseAlert =
     !txnLoading &&
     (txnRows?.length ?? 0) > 0 &&
@@ -211,8 +228,8 @@ export function TreasuryDashboard() {
       ) : null}
       <header className="tdash__topbar">
         <div className="tdash__title-block">
-          <h1 className="tdash__page-title">Dashboard</h1>
-          <p className="tdash__page-subtitle">Your cash position, runway, and where to act next.</p>
+          <h1 className="tdash__page-title">Treasury Intelligence</h1>
+          <p className="tdash__page-subtitle">Where capital is leaking, compounding, and at risk.</p>
         </div>
         <div className="tdash__topbar-actions">
           <TreasuryHealthScoreControl
@@ -222,6 +239,37 @@ export function TreasuryDashboard() {
           />
         </div>
       </header>
+
+      <section className="tdash__state-strip" aria-label="Treasury state">
+        <div className="tdash__state-left">
+          <p className="tdash__state-label">TREASURY STATE</p>
+          <p className="tdash__state-headline">{stateHeadline}</p>
+          <p className="tdash__state-summary">
+            <span style={{ color: '#dc2626' }}>
+              £{Math.round(yieldSummary.monthlyOppCost).toLocaleString('en-GB')}/month lost to idle cash.{' '}
+            </span>
+            {kpiBurnKpi?.deltaPct != null && Number.isFinite(kpiBurnKpi.deltaPct) ? (
+              <span style={{ color: kpiBurnKpi.deltaPct > 0 ? '#dc2626' : kpiBurnKpi.deltaPct < 0 ? '#16a34a' : '#374151' }}>
+                Burn {kpiBurnKpi.deltaPct > 0 ? 'up' : kpiBurnKpi.deltaPct < 0 ? 'down' : 'flat'}{' '}
+                {Math.abs(kpiBurnKpi.deltaPct).toFixed(1)}%.{' '}
+              </span>
+            ) : null}
+            <span style={{ color: concentration.maxPct > 75 ? '#dc2626' : '#374151' }}>
+              {formatPct(concentration.maxPct, 1)} concentrated in one bank.
+            </span>
+          </p>
+          <p className="tdash__state-action-label">TOP CAPITAL MOVE</p>
+          <p className="tdash__state-action">
+            Move £{eligibleCash.toLocaleString('en-GB')} to UK T-Bills for +£
+            <span style={{ color: '#16a34a' }}>{annualGainTbill.toLocaleString('en-GB')}</span>/yr.
+          </p>
+        </div>
+        <div className="tdash__state-right">
+          <button type="button" className="tdash__state-cta" onClick={() => navigate('/app/yield')}>
+            Review Capital Moves
+          </button>
+        </div>
+      </section>
 
       {showFundraiseAlert ? (
         <section className="tdash__alerts" aria-label="Priority alerts">
@@ -249,7 +297,7 @@ export function TreasuryDashboard() {
       ) : null}
 
       <section className="tdash__kpis" aria-label="Key performance indicators">
-        <article className="tdash__kpi">
+        <article className="tdash__kpi tdash__kpi--cash">
           <p className="tdash__kpi-label">Total Cash</p>
           {txnLoading ? (
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading total cash">
@@ -294,7 +342,7 @@ export function TreasuryDashboard() {
             <KpiRechartsArea variant="cash" data={sparkTotalPoints} stroke="#0F0F0F" />
           )}
         </article>
-        <article className="tdash__kpi">
+        <article className="tdash__kpi tdash__kpi--yield">
           <p className="tdash__kpi-label">Effective Yield</p>
           {txnLoading ? (
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading effective yield">
@@ -322,6 +370,11 @@ export function TreasuryDashboard() {
             )}
           </p>
           {!txnLoading && txnRows.length ? (
+            <p className="tdash__kpi-loss">
+              £{Math.round(yieldSummary.monthlyOppCost).toLocaleString('en-GB')}/month lost to idle cash
+            </p>
+          ) : null}
+          {!txnLoading && txnRows.length ? (
             <p className="tdash__kpi-yield-note">Blended rate is flat until live bank rates are connected — trend chart hidden.</p>
           ) : txnLoading ? (
             <span
@@ -331,7 +384,7 @@ export function TreasuryDashboard() {
             />
           ) : null}
         </article>
-        <article className="tdash__kpi">
+        <article className="tdash__kpi tdash__kpi--runway">
           <p className="tdash__kpi-label">Runway</p>
           {txnLoading ? (
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading runway">
@@ -392,7 +445,7 @@ export function TreasuryDashboard() {
             <KpiRechartsArea variant="runway" data={sparkRunwayPoints} stroke="#1B2B8C" />
           )}
         </article>
-        <article className="tdash__kpi">
+        <article className="tdash__kpi tdash__kpi--burn">
           <p className="tdash__kpi-label">Monthly Burn</p>
           {txnLoading ? (
             <div className="tdash__kpi-skel" aria-busy="true" aria-label="Loading burn">
@@ -438,6 +491,9 @@ export function TreasuryDashboard() {
               </>
             )}
           </p>
+          {!txnLoading && kpiBurnKpi?.deltaPct != null && Number.isFinite(kpiBurnKpi.deltaPct) && kpiBurnKpi.deltaPct > 10 ? (
+            <p className="tdash__kpi-warning">Burn worsening — review spend categories</p>
+          ) : null}
           {txnLoading ? (
             <span
               className="ds-skeleton tdash__kpi-chart-skel"

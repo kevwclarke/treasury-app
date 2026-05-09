@@ -110,7 +110,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
-        ctaLabel: 'Fix Exposure →',
+        ctaLabel: 'Reduce Exposure →',
       },
       {
         key: 'runway',
@@ -120,7 +120,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
-        ctaLabel: 'Model Runway →',
+        ctaLabel: 'Model Scenarios →',
       },
       {
         key: 'burn',
@@ -130,7 +130,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
-        ctaLabel: 'Review Burn →',
+        ctaLabel: 'Analyse Spend →',
       },
       {
         key: 'cf',
@@ -149,7 +149,7 @@ export function DashboardSummaryCards({
         status: { label: 'Watch', tone: 'amber' },
         context: emptyCtx,
         to: '/upload',
-        ctaLabel: 'Check Buffer →',
+        ctaLabel: 'Adjust Buffer →',
       },
     ]
     return (
@@ -233,7 +233,7 @@ export function DashboardSummaryCards({
         'Compare to £120,000 protection limit per authorised firm.',
       ],
       to: '/app/concentration',
-      ctaLabel: 'Fix Exposure →',
+      ctaLabel: 'Reduce Exposure →',
     },
     {
       key: 'runway',
@@ -246,7 +246,7 @@ export function DashboardSummaryCards({
         'Bear / base / bull scenarios available on the module page.',
       ],
       to: '/app/runway',
-      ctaLabel: 'Model Runway →',
+      ctaLabel: 'Model Scenarios →',
     },
     {
       key: 'burn',
@@ -261,7 +261,7 @@ export function DashboardSummaryCards({
         'Category breakdown on Runway & Burn.',
       ],
       to: '/app/runway',
-      ctaLabel: 'Review Burn →',
+      ctaLabel: 'Analyse Spend →',
     },
     {
       key: 'cf',
@@ -286,7 +286,7 @@ export function DashboardSummaryCards({
         'Target 6 months minimum operating cover where possible.',
       ],
       to: '/app/liquidity',
-      ctaLabel: 'Check Buffer →',
+      ctaLabel: 'Adjust Buffer →',
     },
   ]
 
