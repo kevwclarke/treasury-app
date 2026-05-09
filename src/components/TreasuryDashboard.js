@@ -433,7 +433,11 @@ export function TreasuryDashboard() {
               runwayMetrics.baseRunwayMo != null &&
               Number.isFinite(runwayMetrics.bullRunwayMo) &&
               Number.isFinite(runwayMetrics.baseRunwayMo) ? (
-              `+${(runwayMetrics.bullRunwayMo - runwayMetrics.baseRunwayMo).toFixed(1)} mo from yield optimisation (bull case)`
+              runwayMetrics.bullRunwayMo > runwayMetrics.baseRunwayMo ? (
+                `+${(runwayMetrics.bullRunwayMo - runwayMetrics.baseRunwayMo).toFixed(1)} mo from yield optimisation (bull case)`
+              ) : (
+                'Cash ÷ average monthly outflow (same as Runway & Burn)'
+              )
             ) : (
               'Cash ÷ average monthly outflow (same as Runway & Burn)'
             )}

@@ -117,7 +117,7 @@ export function computeRunwayFromTransactions(rows) {
   if (monthlyBurn > 0 && Number.isFinite(totalCash)) {
     baseRunwayMo = totalCash / monthlyBurn
     bearRunwayMo = baseRunwayMo * (1 / 1.15)
-    bullRunwayMo = baseRunwayMo * 0.95
+    bullRunwayMo = baseRunwayMo * 1.08
   }
 
   return {
