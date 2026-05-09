@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
+import { filterToRelevantDateRange } from '../utils/filterToRelevantDateRange'
 
 export function useUserTransactions() {
   const [rows, setRows] = useState([])
@@ -27,7 +28,7 @@ export function useUserTransactions() {
           .order('date', { ascending: true })
 
         if (qError) throw qError
-        if (!cancelled) setRows(data ?? [])
+        if (!cancelled) setRows(filterToRelevantDateRange(data ?? []))
       } catch (e) {
         if (!cancelled) {
           setError(e?.message ?? 'Failed to load transactions.')

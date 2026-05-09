@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabase'
+import { filterToRelevantDateRange } from '../utils/filterToRelevantDateRange'
 
 /**
  * Loads the signed-in user’s transactions (same query as Treasury Autopilot).
@@ -33,7 +34,7 @@ export function useTreasuryTransactions() {
 
         if (error) throw error
         if (cancelled) return
-        setTxnRows(data ?? [])
+        setTxnRows(filterToRelevantDateRange(data ?? []))
       } catch (e) {
         if (cancelled) return
         setTxnError(e?.message ?? 'Failed to load transactions.')
