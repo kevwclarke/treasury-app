@@ -38,6 +38,8 @@ function latestRowInMonth(list, ym) {
   let best = null
   let bestT = -Infinity
   for (const r of list) {
+    const desc = String(r.description || r.payee || '').toUpperCase()
+    if (desc.includes('OPENING BALANCE')) continue
     if (monthKeyLocal(r.date) !== ym) continue
     const t = rowTimeMs(r.date)
     if (!Number.isFinite(t)) continue
@@ -64,6 +66,8 @@ export function computeTotalCashAndMoMNetDelta(rows, now = new Date()) {
   let latestAll = null
   let latestT = -Infinity
   for (const r of list) {
+    const desc = String(r.description || r.payee || '').toUpperCase()
+    if (desc.includes('OPENING BALANCE')) continue
     const t = rowTimeMs(r.date)
     if (!Number.isFinite(t)) continue
     if (t >= latestT) {
