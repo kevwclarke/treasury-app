@@ -1,5 +1,6 @@
 import { YIELD_CURRENT_PCT } from './treasuryYield'
-import { computeTotalCashAndMoMNetDelta } from './treasuryKpi'
+import { computeBurn30Vs90Pct, computeTotalCashAndMoMNetDelta } from './treasuryKpi'
+import { computeRunwayFromTransactions } from './treasuryRunway'
 
 function parseDate(str) {
   if (!str) return null
@@ -83,7 +84,7 @@ export function computeBurnSparkline(rows) {
   if (!keys.length) return null
   const list = Array.isArray(rows) ? rows : []
 
-  return keys.map((ym) => {
+  const out = keys.map((ym) => {
     let total = 0
     for (const r of list) {
       if (monthKeyFromRow(r) !== ym) continue
@@ -92,6 +93,13 @@ export function computeBurnSparkline(rows) {
     }
     return total
   })
+
+  const burnKpi = computeBurn30Vs90Pct(rows)
+  if (burnKpi != null && out.length) {
+    out[out.length - 1] = burnKpi.monthlyBurn90
+  }
+
+  return out
 }
 
 /**
@@ -113,10 +121,20 @@ export function computeRunwaySparkline(rows) {
     }
   }
   const avgBurn = burnCount > 0 ? burnSum / burnCount : 0
+  let out
   if (!(avgBurn > 0)) {
-    return balances.map((bal) => (bal != null && Number.isFinite(bal) ? 0 : null))
+    out = balances.map((bal) => (bal != null && Number.isFinite(bal) ? 0 : null))
+  } else {
+    out = balances.map((bal) => (bal != null && Number.isFinite(bal) ? bal / avgBurn : null))
   }
-  return balances.map((bal) => (bal != null && Number.isFinite(bal) ? bal / avgBurn : null))
+
+  const runway = computeRunwayFromTransactions(rows)
+  const base = runway?.baseRunwayMo
+  if (base != null && Number.isFinite(base) && out.length) {
+    out[out.length - 1] = base
+  }
+
+  return out
 }
 
 /** Flat effective yield series (hardcoded current rate). */

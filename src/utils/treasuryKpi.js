@@ -4,6 +4,16 @@ function parseDate(str) {
   return isNaN(d.getTime()) ? null : d
 }
 
+function latestTransactionDate(rows) {
+  let latest = null
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const d = parseDate(r.date)
+    if (!d) continue
+    if (!latest || d > latest) latest = d
+  }
+  return latest
+}
+
 function pad2(n) {
   return String(n).padStart(2, '0')
 }
@@ -69,10 +79,9 @@ function lastRunningBalanceInMonth(rows, ym) {
 /**
  * Total cash (latest running balance) and month-over-month change from complete months only.
  * @param {Array<{ amount?: number|string, date?: string, running_balance?: number|null }>} rows
- * @param {Date} [_now]
  * @returns {{ totalCash: number, netThisMonth: number, netPrevMonth: number | null, deltaNet: number | null } | null}
  */
-export function computeTotalCashAndMoMNetDelta(rows, _now = new Date()) {
+export function computeTotalCashAndMoMNetDelta(rows) {
   const list = Array.isArray(rows) ? rows : []
   if (!list.length) return null
 
@@ -119,37 +128,39 @@ export function computeTotalCashAndMoMNetDelta(rows, _now = new Date()) {
 }
 
 /**
- * Monthly burn from last 90 days (same scaling as burn strip) and % change vs that average
- * implied by last 30 days of outflows.
+ * Monthly burn: average outflow over the 3 calendar months ending at the anchor month
+ * (latest transaction date). Latest month total vs that average drives deltaPct.
  * @returns {{ monthlyBurn90: number, monthlyImplied30: number, deltaPct: number | null } | null}
  */
-export function computeBurn30Vs90Pct(rows, nowMs = Date.now()) {
+export function computeBurn30Vs90Pct(rows) {
   const list = Array.isArray(rows) ? rows : []
   if (!list.length) return null
-
-  const cutoff90 = nowMs - 90 * 86400000
-  const cutoff30 = nowMs - 30 * 86400000
-  let out90 = 0
-  let out30 = 0
-
-  for (const r of list) {
-    const a = Number(r?.amount)
-    if (!Number.isFinite(a) || a >= 0) continue
-    const d = parseDate(r?.date)
-    if (!d) continue
-    const t = d.getTime()
-    const v = -a
-    if (t >= cutoff90) out90 += v
-    if (t >= cutoff30) out30 += v
+  const anchor = latestTransactionDate(list)
+  if (!anchor) return null
+  const anchorYear = anchor.getFullYear()
+  const anchorMonth = anchor.getMonth() + 1
+  const monthKeys = []
+  for (let i = 2; i >= 0; i -= 1) {
+    const d = new Date(anchorYear, anchorMonth - 1 - i, 1)
+    monthKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
-
-  const monthlyBurn90 = out90 > 0 ? (out90 / 90) * 30 : 0
-  const monthlyImplied30 = out30 > 0 ? (out30 / 30) * 30 : 0
-
-  if (monthlyBurn90 <= 0) {
-    return { monthlyBurn90: 0, monthlyImplied30, deltaPct: null }
-  }
-
+  const monthlyBurns = monthKeys.map((ym) => {
+    let total = 0
+    for (const r of list) {
+      const d = parseDate(r.date)
+      if (!d) continue
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      if (key !== ym) continue
+      const a = Number(r.amount)
+      if (Number.isFinite(a) && a < 0) total += Math.abs(a)
+    }
+    return total
+  })
+  const validBurns = monthlyBurns.filter((v) => v > 0)
+  if (!validBurns.length) return { monthlyBurn90: 0, monthlyImplied30: 0, deltaPct: null }
+  const monthlyBurn90 = monthlyBurns.reduce((s, v) => s + v, 0) / 3
+  const monthlyImplied30 = monthlyBurns[monthlyBurns.length - 1]
+  if (monthlyBurn90 <= 0) return { monthlyBurn90: 0, monthlyImplied30, deltaPct: null }
   const deltaPct = ((monthlyImplied30 - monthlyBurn90) / monthlyBurn90) * 100
   return { monthlyBurn90, monthlyImplied30, deltaPct }
 }

@@ -1,4 +1,21 @@
+import { computeBurn30Vs90Pct } from './treasuryKpi'
 import { YIELD_SPREAD_DEC } from './treasuryYield'
+
+function parseDate(str) {
+  if (!str) return null
+  const d = new Date(String(str).trim())
+  return isNaN(d.getTime()) ? null : d
+}
+
+function latestTransactionDate(rows) {
+  let latest = null
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const d = parseDate(r.date)
+    if (!d) continue
+    if (!latest || d > latest) latest = d
+  }
+  return latest
+}
 
 /**
  * Calendar months spanned by transaction dates (inclusive), minimum 1 if any valid date exists.
@@ -8,9 +25,9 @@ export function monthsSpannedByTransactions(rows) {
   const list = Array.isArray(rows) ? rows : []
   const times = []
   for (const r of list) {
-    if (!r?.date) continue
-    const t = new Date(r.date).getTime()
-    if (Number.isFinite(t)) times.push(t)
+    const d = parseDate(r?.date)
+    if (!d) continue
+    times.push(d.getTime())
   }
   if (!times.length) return 0
   const min = Math.min(...times)
@@ -21,8 +38,28 @@ export function monthsSpannedByTransactions(rows) {
   return Math.max(1, span)
 }
 
+function totalOutflowsInBurnWindow(rows, anchor) {
+  const list = Array.isArray(rows) ? rows : []
+  const anchorYear = anchor.getFullYear()
+  const anchorMonth = anchor.getMonth() + 1
+  let total = 0
+  for (let i = 2; i >= 0; i -= 1) {
+    const d = new Date(anchorYear, anchorMonth - 1 - i, 1)
+    const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    for (const r of list) {
+      const rd = parseDate(r.date)
+      if (!rd) continue
+      const key = `${rd.getFullYear()}-${String(rd.getMonth() + 1).padStart(2, '0')}`
+      if (key !== ym) continue
+      const a = Number(r.amount)
+      if (Number.isFinite(a) && a < 0) total += Math.abs(a)
+    }
+  }
+  return total
+}
+
 /**
- * @param {Array<{ amount?: number | string, date?: string }>} rows
+ * @param {Array<{ amount?: number | string, date?: string, running_balance?: number|null }>} rows
  * @returns {{
  *   totalCash: number,
  *   totalOutflows: number,
@@ -37,7 +74,6 @@ export function monthsSpannedByTransactions(rows) {
 export function computeRunwayFromTransactions(rows) {
   const list = Array.isArray(rows) ? rows : []
   let totalCash = 0
-  let totalOutflows = 0
 
   let hasRunning = false
   let newestRunningT = -Infinity
@@ -45,19 +81,19 @@ export function computeRunwayFromTransactions(rows) {
 
   for (const r of list) {
     const a = Number(r?.amount)
-    if (!Number.isFinite(a)) continue
-    totalCash += a
-    if (a < 0) totalOutflows += Math.abs(a)
+    if (Number.isFinite(a)) {
+      totalCash += a
+    }
 
     const rb = Number(r?.running_balance)
     if (Number.isFinite(rb) && r?.date) {
-      const t = new Date(r.date).getTime()
-      if (Number.isFinite(t)) {
-        hasRunning = true
-        if (t >= newestRunningT) {
-          newestRunningT = t
-          newestRunningBal = rb
-        }
+      const d = parseDate(r.date)
+      if (!d) continue
+      const t = d.getTime()
+      hasRunning = true
+      if (t >= newestRunningT) {
+        newestRunningT = t
+        newestRunningBal = rb
       }
     }
   }
@@ -66,8 +102,12 @@ export function computeRunwayFromTransactions(rows) {
     totalCash = newestRunningBal
   }
 
-  const months = monthsSpannedByTransactions(list)
-  const monthlyBurn = months > 0 ? totalOutflows / months : 0
+  const anchor = latestTransactionDate(list)
+  const burnKpi = computeBurn30Vs90Pct(list)
+  const monthlyBurn = burnKpi?.monthlyBurn90 ?? 0
+  const totalOutflows = anchor ? totalOutflowsInBurnWindow(list, anchor) : 0
+  const months = anchor ? 3 : monthsSpannedByTransactions(list)
+
   const monthlyOppCost = totalCash > 0 ? (totalCash * YIELD_SPREAD_DEC) / 12 : 0
 
   let baseRunwayMo = null
@@ -76,8 +116,8 @@ export function computeRunwayFromTransactions(rows) {
 
   if (monthlyBurn > 0 && Number.isFinite(totalCash)) {
     baseRunwayMo = totalCash / monthlyBurn
-    bearRunwayMo = totalCash / (monthlyBurn * 1.15)
-    bullRunwayMo = (totalCash + monthlyOppCost) / monthlyBurn
+    bearRunwayMo = baseRunwayMo * (1 / 1.15)
+    bullRunwayMo = baseRunwayMo * 0.95
   }
 
   return {
