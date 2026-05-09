@@ -29,7 +29,8 @@ export function useTreasuryTransactions() {
           .from('transactions')
           .select('amount,payee,date,institution,running_balance')
           .eq('user_id', user.id)
-          .order('date', { ascending: true })
+          .order('date', { ascending: false })
+          .limit(2000)
 
         if (error) throw error
         if (cancelled) return

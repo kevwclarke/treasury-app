@@ -134,24 +134,24 @@ function parseNumberLike(raw) {
   return negativeByParens ? -Math.abs(n) : n
 }
 
-function parseDateLike(raw) {
+function toISODate(str) {
+  if (!str) return null
+  const s = String(str).trim()
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+    const [dd, mm, yyyy] = s.split('/')
+    return `${yyyy}-${mm}-${dd}`
+  }
+  return s
+}
+
+/** Normalise CSV date to YYYY-MM-DD for Supabase (TrueLayer-compatible). */
+function dateForInsert(raw) {
   const s = String(raw ?? '').trim()
   if (!s) return null
-
-  const direct = new Date(s)
-  if (!Number.isNaN(direct.getTime())) return direct.toISOString()
-
-  // Common UK bank CSVs: DD/MM/YYYY or DD-MM-YYYY
-  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})(?:\s+.*)?$/)
-  if (m) {
-    const dd = Number(m[1])
-    const mm = Number(m[2])
-    const yyyy = Number(m[3].length === 2 ? `20${m[3]}` : m[3])
-    const dt = new Date(Date.UTC(yyyy, mm - 1, dd, 0, 0, 0))
-    if (!Number.isNaN(dt.getTime())) return dt.toISOString()
-  }
-
-  return null
+  const iso = toISODate(s)
+  if (!iso) return null
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? null : iso
 }
 
 function chunk(arr, size) {
@@ -286,9 +286,20 @@ export function UploadPage() {
       if (userError) throw userError
       if (!user) throw new Error('Not authenticated.')
 
+      let openingBalanceGbp = null
+      for (const raw of allRows) {
+        const desc = String(raw[mapping.description] ?? '')
+        if (!/opening balance/i.test(desc)) continue
+        const b = parseNumberLike(raw[mapping.balance])
+        if (b != null) openingBalanceGbp = b
+      }
+
       const txs = allRows
         .map((raw) => {
-          const dateIso = parseDateLike(raw[mapping.date])
+          const desc = String(raw[mapping.description] ?? '')
+          if (/opening balance/i.test(desc)) return null
+
+          const dateIso = dateForInsert(raw[mapping.date])
           const amount = parseNumberLike(raw[mapping.amount])
           const balance = parseNumberLike(raw[mapping.balance])
           const payee = String(raw[mapping.description] ?? '').trim()
@@ -345,6 +356,16 @@ export function UploadPage() {
       }
 
       setDedupeSkipped(Math.max(0, toInsert.length - insertedCount))
+
+      if (openingBalanceGbp != null) {
+        const { error: obErr } = await supabase
+          .from('company_profiles')
+          .update({ opening_balance_gbp: openingBalanceGbp })
+          .eq('user_id', user.id)
+        if (obErr) {
+          console.warn('Could not set opening_balance_gbp:', obErr)
+        }
+      }
 
       if (toInsert.length > 0) {
         const { data: prof, error: profErr } = await supabase

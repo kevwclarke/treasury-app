@@ -9,6 +9,7 @@ import {
   computeRunwaySparkline,
   computeTotalCashSparkline,
   kpiChartPoints,
+  lastSixMonthKeys,
 } from '../utils/treasuryKpiSparklines'
 import {
   computeRunwayFromTransactions,
@@ -159,9 +160,22 @@ export function TreasuryDashboard() {
     [concentration, yieldSummary, runwayMetrics, kpiBurnKpi],
   )
 
-  const sparkTotalPoints = useMemo(() => kpiChartPoints(computeTotalCashSparkline(txnRows)), [txnRows])
-  const sparkRunwayPoints = useMemo(() => kpiChartPoints(computeRunwaySparkline(txnRows)), [txnRows])
-  const sparkBurnPoints = useMemo(() => kpiChartPoints(computeBurnSparkline(txnRows)), [txnRows])
+  const kpiMonthKeys = useMemo(() => lastSixMonthKeys(txnRows), [txnRows])
+  const sparkCashVals = useMemo(() => computeTotalCashSparkline(txnRows), [txnRows])
+  const sparkRunwayVals = useMemo(() => computeRunwaySparkline(txnRows), [txnRows])
+  const sparkBurnVals = useMemo(() => computeBurnSparkline(txnRows), [txnRows])
+  const sparkTotalPoints = useMemo(
+    () => kpiChartPoints(sparkCashVals, kpiMonthKeys),
+    [sparkCashVals, kpiMonthKeys],
+  )
+  const sparkRunwayPoints = useMemo(
+    () => kpiChartPoints(sparkRunwayVals, kpiMonthKeys),
+    [sparkRunwayVals, kpiMonthKeys],
+  )
+  const sparkBurnPoints = useMemo(
+    () => kpiChartPoints(sparkBurnVals, kpiMonthKeys),
+    [sparkBurnVals, kpiMonthKeys],
+  )
 
   const runwaySparklineDistorted = useMemo(() => {
     const pts = sparkRunwayPoints
@@ -317,6 +331,8 @@ export function TreasuryDashboard() {
                 </Link>{' '}
                 to see totals and trends.
               </>
+            ) : kpiCash.deltaNet == null ? (
+              <span style={{ color: '#6B7280' }}>Not enough history for month-on-month comparison.</span>
             ) : (
               <span
                 className={

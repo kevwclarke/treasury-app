@@ -1,68 +1,119 @@
+function parseDate(str) {
+  if (!str) return null
+  const d = new Date(String(str).trim())
+  return isNaN(d.getTime()) ? null : d
+}
+
 function pad2(n) {
   return String(n).padStart(2, '0')
 }
 
-function monthKeyLocal(iso) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
+function monthKeyFromDate(d) {
+  if (!d) return null
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`
 }
 
+function monthKeyFromRow(row) {
+  return monthKeyFromDate(parseDate(row?.date))
+}
+
+/** A month is complete if it has at least 3 transaction rows with valid dates. */
+function isCompleteMonth(rows, ym) {
+  let n = 0
+  for (const r of rows) {
+    if (monthKeyFromRow(r) === ym) n += 1
+  }
+  return n >= 3
+}
+
+function distinctSortedMonthKeys(rows) {
+  const set = new Set()
+  for (const r of rows) {
+    const k = monthKeyFromRow(r)
+    if (k) set.add(k)
+  }
+  return Array.from(set).sort()
+}
+
+function completeMonthKeysSorted(rows) {
+  return distinctSortedMonthKeys(rows).filter((ym) => isCompleteMonth(rows, ym))
+}
+
+function monthHasRunningBalanceRow(rows, ym) {
+  for (const r of rows) {
+    if (monthKeyFromRow(r) !== ym) continue
+    const rb = r?.running_balance
+    if (rb != null && Number.isFinite(Number(rb))) return true
+  }
+  return false
+}
+
+function lastRunningBalanceInMonth(rows, ym) {
+  let bestT = -Infinity
+  let bestBal = null
+  for (const r of rows) {
+    if (monthKeyFromRow(r) !== ym) continue
+    const rb = r?.running_balance
+    if (rb == null || !Number.isFinite(Number(rb))) continue
+    const d = parseDate(r.date)
+    if (!d) continue
+    const t = d.getTime()
+    if (t >= bestT) {
+      bestT = t
+      bestBal = Number(rb)
+    }
+  }
+  return bestBal
+}
+
 /**
- * Total cash (sum of amounts) and month-over-month net change (this calendar month vs previous).
- * @param {Array<{ amount?: number|string, date?: string }>} rows
- * @param {Date} [now]
- * @returns {{ totalCash: number, netThisMonth: number, netPrevMonth: number, deltaNet: number } | null}
+ * Total cash (latest running balance) and month-over-month change from complete months only.
+ * @param {Array<{ amount?: number|string, date?: string, running_balance?: number|null }>} rows
+ * @param {Date} [_now]
+ * @returns {{ totalCash: number, netThisMonth: number, netPrevMonth: number | null, deltaNet: number | null } | null}
  */
-export function computeTotalCashAndMoMNetDelta(rows, now = new Date()) {
+export function computeTotalCashAndMoMNetDelta(rows, _now = new Date()) {
   const list = Array.isArray(rows) ? rows : []
   if (!list.length) return null
 
-  let totalCash = 0
-  const netByMonth = new Map()
-  let hasRunning = false
-  let newestRunningT = -Infinity
-  let newestRunningBal = null
-  const monthEndRunning = new Map() // key -> { t, bal }
-
+  let totalCash = null
+  let latestT = -Infinity
   for (const r of list) {
-    const a = Number(r?.amount)
-    if (Number.isFinite(a)) {
-      totalCash += a
-      const k = monthKeyLocal(r.date)
-      if (k) netByMonth.set(k, (netByMonth.get(k) || 0) + a)
-    }
-
-    const rb = Number(r?.running_balance)
-    if (Number.isFinite(rb) && r?.date) {
-      const t = new Date(r.date).getTime()
-      if (!Number.isFinite(t)) continue
-      hasRunning = true
-      if (t >= newestRunningT) {
-        newestRunningT = t
-        newestRunningBal = rb
-      }
-      const mk = monthKeyLocal(r.date)
-      if (mk) {
-        const prev = monthEndRunning.get(mk)
-        if (!prev || t >= prev.t) monthEndRunning.set(mk, { t, bal: rb })
-      }
+    const rb = r?.running_balance
+    if (rb == null || !Number.isFinite(Number(rb))) continue
+    const d = parseDate(r.date)
+    if (!d) continue
+    const t = d.getTime()
+    if (t >= latestT) {
+      latestT = t
+      totalCash = Number(rb)
     }
   }
 
-  if (hasRunning && newestRunningBal != null) {
-    totalCash = newestRunningBal
+  if (totalCash == null) return null
+
+  const completeWithRb = completeMonthKeysSorted(list).filter((ym) =>
+    monthHasRunningBalanceRow(list, ym),
+  )
+
+  if (!completeWithRb.length) {
+    return { totalCash, netThisMonth: totalCash, netPrevMonth: null, deltaNet: null }
   }
 
-  const y = now.getFullYear()
-  const m = now.getMonth() + 1
-  const thisKey = `${y}-${pad2(m)}`
-  const prev = new Date(y, now.getMonth() - 1, 1)
-  const prevKey = `${prev.getFullYear()}-${pad2(prev.getMonth() + 1)}`
+  const monthA = completeWithRb[completeWithRb.length - 1]
+  const netThisMonth = lastRunningBalanceInMonth(list, monthA)
+  if (netThisMonth == null) {
+    return { totalCash, netThisMonth: totalCash, netPrevMonth: null, deltaNet: null }
+  }
 
-  const netThisMonth = hasRunning ? (monthEndRunning.get(thisKey)?.bal ?? 0) : (netByMonth.get(thisKey) ?? 0)
-  const netPrevMonth = hasRunning ? (monthEndRunning.get(prevKey)?.bal ?? 0) : (netByMonth.get(prevKey) ?? 0)
-  const deltaNet = netThisMonth - netPrevMonth
+  const [y, m] = monthA.split('-').map(Number)
+  const prevMonthStart = new Date(y, m - 2, 1)
+  const monthB = `${prevMonthStart.getFullYear()}-${pad2(prevMonthStart.getMonth() + 1)}`
+  const netPrevMonth = lastRunningBalanceInMonth(list, monthB)
+  const deltaNet =
+    netPrevMonth != null && Number.isFinite(netPrevMonth)
+      ? netThisMonth - netPrevMonth
+      : null
 
   return { totalCash, netThisMonth, netPrevMonth, deltaNet }
 }
@@ -84,8 +135,9 @@ export function computeBurn30Vs90Pct(rows, nowMs = Date.now()) {
   for (const r of list) {
     const a = Number(r?.amount)
     if (!Number.isFinite(a) || a >= 0) continue
-    const t = r?.date ? new Date(r.date).getTime() : NaN
-    if (!Number.isFinite(t)) continue
+    const d = parseDate(r?.date)
+    if (!d) continue
+    const t = d.getTime()
     const v = -a
     if (t >= cutoff90) out90 += v
     if (t >= cutoff30) out30 += v
