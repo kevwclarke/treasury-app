@@ -34,9 +34,29 @@ export function endOfMonthMsForYm(ym) {
 }
 
 function monthKeyLocal(iso) {
-  const d = new Date(iso)
+  if (!iso) return null
+  let d
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(String(iso))) {
+    const [dd, mm, yyyy] = String(iso).split('/')
+    d = new Date(Number(yyyy), Number(mm) - 1, Number(dd))
+  } else {
+    d = new Date(iso)
+  }
   if (Number.isNaN(d.getTime())) return null
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`
+}
+
+function rowTimeMs(iso) {
+  if (!iso) return NaN
+  let d
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(String(iso))) {
+    const [dd, mm, yyyy] = String(iso).split('/')
+    d = new Date(Number(yyyy), Number(mm) - 1, Number(dd))
+  } else {
+    d = new Date(iso)
+  }
+  if (Number.isNaN(d.getTime())) return NaN
+  return d.getTime()
 }
 
 /** Calendar month of `now` as YYYY-MM (incomplete month for sparklines). */
@@ -62,7 +82,7 @@ export function computeTotalCashSparkline(rows, now = new Date()) {
   return keys.map((ym) => {
     const monthRows = base.filter((r) => monthKeyLocal(r.date) === ym)
     if (!monthRows.length) return null
-    const sorted = monthRows.sort((a, b) => new Date(b.date) - new Date(a.date))
+    const sorted = monthRows.sort((a, b) => rowTimeMs(b.date) - rowTimeMs(a.date))
     const latest = sorted[0]
     if (latest.running_balance != null && Number.isFinite(Number(latest.running_balance))) {
       return Number(latest.running_balance)
