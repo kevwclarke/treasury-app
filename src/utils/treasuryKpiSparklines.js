@@ -82,12 +82,10 @@ export function computeTotalCashSparkline(rows, now = new Date()) {
   return keys.map((ym) => {
     const monthRows = base.filter((r) => monthKeyLocal(r.date) === ym)
     if (!monthRows.length) return null
-    const sorted = monthRows.sort((a, b) => rowTimeMs(b.date) - rowTimeMs(a.date))
+    const sorted = [...monthRows].sort((a, b) => rowTimeMs(b.date) - rowTimeMs(a.date))
     const latest = sorted[0]
-    if (latest.running_balance != null && Number.isFinite(Number(latest.running_balance))) {
-      return Number(latest.running_balance)
-    }
-    return null
+    const rb = Number(latest.running_balance)
+    return Number.isFinite(rb) ? rb : null
   })
 }
 
