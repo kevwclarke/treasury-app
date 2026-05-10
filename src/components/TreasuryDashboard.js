@@ -26,6 +26,7 @@ import { TreasuryHealthScoreControl } from './TreasuryHealthScoreControl'
 import { KpiRechartsArea } from './KpiRechartsArea'
 import { TreasuryOnboarding } from './TreasuryOnboarding'
 import { DashboardSummaryCards } from './DashboardSummaryCards'
+import { AiTreasuryActions } from './AiTreasuryActions'
 import './TreasuryDashboard.css'
 
 const SESSION_SKIP_EMPTY_ONBOARD = 'treasury_skip_empty_onboarding'
@@ -112,7 +113,7 @@ export function TreasuryDashboard() {
 
   const burnSummary = useMemo(() => {
     if (!burnRows?.length) {
-      return { monthlyAvg: 0, total: 0 }
+      return { monthlyAvg: 0, total: 0, categories: [] }
     }
     const totals = Object.fromEntries(BURN_CATEGORY_ORDER.map((c) => [c, 0]))
     let total = 0
@@ -124,7 +125,14 @@ export function TreasuryDashboard() {
       total += spend
     })
     const monthlyAvg = total > 0 ? (total / 90) * 30 : 0
-    return { monthlyAvg, total }
+    const categories = BURN_CATEGORY_ORDER.map((name) => ({
+      name,
+      amount: totals[name],
+      pct: total > 0 ? (totals[name] / total) * 100 : 0,
+    }))
+      .filter((c) => c.amount > 0)
+      .sort((a, b) => b.amount - a.amount)
+    return { monthlyAvg, total, categories }
   }, [burnRows])
 
   const kpiCash = useMemo(() => computeTotalCashAndMoMNetDelta(txnRows), [txnRows])
@@ -317,6 +325,18 @@ export function TreasuryDashboard() {
           </button>
         </div>
       </section>
+
+      {!txnLoading && txnRows.length > 0 ? (
+        <AiTreasuryActions
+          txnLoading={txnLoading}
+          txnError={txnError}
+          txnRows={txnRows}
+          runwayMetrics={runwayMetrics}
+          yieldSummary={yieldSummary}
+          concentration={concentration}
+          burnSummary={burnSummary}
+        />
+      ) : null}
 
       {showFundraiseAlert ? (
         <section className="tdash__alerts" aria-label="Priority alerts">
