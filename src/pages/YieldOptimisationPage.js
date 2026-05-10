@@ -40,8 +40,8 @@ const OPP_ROWS = [
     basis: 'eligible',
     borderClass: 'yld-opp-row--tbills',
     rationale: 'Government-backed — zero credit risk',
-    href: 'https://www.dmo.gov.uk',
-    cta: 'Apply — DMO',
+    href: 'https://www.hl.co.uk/shares/i-want-to-buy/gilts',
+    cta: 'Buy via Hargreaves Lansdown →',
   },
   {
     key: 'blackrock',
@@ -113,13 +113,30 @@ export function YieldOptimisationPage() {
   const yieldSummary = useMemo(() => computeYieldSummary(rows), [rows])
   const runway = useMemo(() => computeRunwayFromTransactions(rows), [rows])
 
+  const totalCash = useMemo(() => {
+    const withBalance = rows.filter(
+      (r) => r.running_balance != null && Number.isFinite(Number(r.running_balance)),
+    )
+    if (withBalance.length) {
+      const latest = withBalance.reduce((best, r) => {
+        const t = new Date(String(r.date).trim()).getTime()
+        const bestT = new Date(String(best.date).trim()).getTime()
+        return t > bestT ? r : best
+      })
+      return Number(latest.running_balance)
+    }
+    return rows.reduce((s, r) => {
+      const a = Number(r.amount)
+      return s + (Number.isFinite(a) ? a : 0)
+    }, 0)
+  }, [rows])
+
   const hasData = rows.length > 0
   const fetchFailed = Boolean(error) && !loading
-  const totalCash = yieldSummary.totalCash
   const blendedDec = yieldSummary.currentYieldDec
   const blendedPct = blendedDec * 100
-  const annualOpp = yieldSummary.annualOppCost
-  const monthlyOpp = yieldSummary.monthlyOppCost
+  const annualOpp = useMemo(() => totalCash * yieldSummary.spreadDec, [totalCash, yieldSummary.spreadDec])
+  const monthlyOpp = useMemo(() => annualOpp / 12, [annualOpp])
   const eligible = liq.eligibleForYield
   const bufferCash = Math.max(0, totalCash - eligible)
   const residualGap = bufferCash * Math.max(0, YIELD_BEST_DEC - blendedDec)
@@ -229,13 +246,11 @@ export function YieldOptimisationPage() {
                 <span style={{ color: '#9CA3AF' }}> → </span>
                 <span style={{ color: '#16A34A' }}>5.25%</span>
               </p>
-              <p className="yld-action-card__title">
-                Earn 5.25% on idle cash
-              </p>
+              <p className="yld-action-card__title">Move idle cash to UK Government Gilts at 5.25%</p>
               <p className="yld-action-card__confidence">Lowest risk, highest return</p>
               <p className="yld-action-card__desc">
-                Your idle cash above the liquidity buffer earns {formatPct(blendedPct, 2)}. Moving it to UK T-Bills at
-                5.25% captures the full yield gap immediately.
+                UK Gilts (Government bonds) are the safest sterling investment available. Move your idle cash above the
+                liquidity buffer into 91-day Gilts at 5.25% — government-backed, no credit risk, quarterly liquidity.
               </p>
               <div className="yld-action-meta">
                 <div className="yld-action-meta__cell">
@@ -252,8 +267,13 @@ export function YieldOptimisationPage() {
                 <span className="yld-action-wait__val">{formatGBP(Math.round(nba1Daily))}/day</span>
               </div>
               <div className="yld-action-card__footer">
-                <a className="yld-action-card__cta-pill" href="https://www.dmo.gov.uk" target="_blank" rel="noopener noreferrer">
-                  Apply — UK Debt Management Office
+                <a
+                  className="yld-action-card__cta-pill"
+                  href="https://www.hl.co.uk/shares/i-want-to-buy/gilts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Buy via Hargreaves Lansdown →
                 </a>
               </div>
             </article>

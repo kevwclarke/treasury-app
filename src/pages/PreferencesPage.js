@@ -48,6 +48,9 @@ export function PreferencesPage() {
   })
   const [audit, setAudit] = useState([])
   const [loaded, setLoaded] = useState(false)
+  const [yieldAlertThresholdPct, setYieldAlertThresholdPct] = useState(4)
+  const [companyProfileMeta, setCompanyProfileMeta] = useState(null)
+  const [yieldAlertSaveStatus, setYieldAlertSaveStatus] = useState('')
   const slackAutoSentRef = useRef(false)
 
   useEffect(() => {
@@ -69,10 +72,15 @@ export function PreferencesPage() {
     if (!userId) return undefined
     let cancelled = false
     async function load() {
-      const [{ data: pol }, { data: pr }, { data: al }] = await Promise.all([
+      const [{ data: pol }, { data: pr }, { data: al }, { data: cp }] = await Promise.all([
         supabase.from('treasury_policies').select('*').eq('user_id', userId).maybeSingle(),
         supabase.from('email_preferences').select('*').eq('user_id', userId).maybeSingle(),
         supabase.from('audit_log').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+        supabase
+          .from('company_profiles')
+          .select('company_name,funding_stage,yield_alert_threshold_pct')
+          .eq('user_id', userId)
+          .maybeSingle(),
       ])
       if (cancelled) return
       if (pol) {
@@ -87,6 +95,13 @@ export function PreferencesPage() {
           burn_intelligence_email: Boolean(pr.burn_intelligence_email),
           slack_webhook_url: String(pr.slack_webhook_url || ''),
         })
+      }
+      if (cp?.company_name != null && cp?.funding_stage != null) {
+        setCompanyProfileMeta({ company_name: cp.company_name, funding_stage: cp.funding_stage })
+        const y = Number(cp.yield_alert_threshold_pct)
+        setYieldAlertThresholdPct(Number.isFinite(y) ? y : 4)
+      } else {
+        setCompanyProfileMeta(null)
       }
       setAudit(Array.isArray(al) ? al : [])
       setLoaded(true)
@@ -117,6 +132,34 @@ export function PreferencesPage() {
     },
     [userId],
   )
+
+  async function saveYieldAlertThreshold() {
+    if (!userId || !companyProfileMeta) {
+      setYieldAlertSaveStatus('error')
+      return
+    }
+    setYieldAlertSaveStatus('')
+    const { error } = await supabase.from('company_profiles').upsert(
+      {
+        user_id: userId,
+        company_name: companyProfileMeta.company_name,
+        funding_stage: companyProfileMeta.funding_stage,
+        yield_alert_threshold_pct: Number(yieldAlertThresholdPct),
+      },
+      { onConflict: 'user_id' },
+    )
+    if (error) {
+      setYieldAlertSaveStatus('error')
+      return
+    }
+    setYieldAlertSaveStatus('success')
+    await insertAudit({
+      action_type: 'update_yield_alert',
+      category: null,
+      description: 'Updated yield alert threshold',
+      metadata: { yield_alert_threshold_pct: Number(yieldAlertThresholdPct) },
+    })
+  }
 
   async function saveAll() {
     if (!userId) return
@@ -268,6 +311,65 @@ export function PreferencesPage() {
           <button type="button" className="detail-btn detail-btn--dark" onClick={handleSlackTest} disabled={!prefs.slack_webhook_url?.trim()}>
             Test Slack
           </button>
+        </div>
+      </section>
+
+      <section className="detail-section pref-section" id="yield-alerts" aria-labelledby="yield-alerts-heading">
+        <p
+          id="yield-alerts-heading"
+          style={{
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fontWeight: 500,
+            fontSize: 10,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#9CA3AF',
+            margin: '0 0 0.5rem',
+          }}
+        >
+          YIELD ALERTS
+        </p>
+        <h2 className="detail-section__title">Yield Alert Threshold</h2>
+        <p className="detail-section__lead">Get alerted when any account drops below your minimum acceptable yield rate.</p>
+        <div className="pref-grid">
+          <label className="pref-field">
+            <span className="pref-field__label">Minimum yield threshold (%)</span>
+            <input
+              className="detail-input"
+              type="number"
+              min={0}
+              max={25}
+              step={0.25}
+              placeholder="4.00"
+              value={yieldAlertThresholdPct}
+              onChange={(e) => {
+                const v = Number(e.target.value)
+                setYieldAlertThresholdPct(Number.isFinite(v) ? v : 4)
+                setYieldAlertSaveStatus('')
+              }}
+              disabled={!companyProfileMeta}
+            />
+          </label>
+        </div>
+        <div className="pref-actions">
+          <button
+            type="button"
+            className="detail-btn detail-btn--dark"
+            onClick={saveYieldAlertThreshold}
+            disabled={!userId || !companyProfileMeta}
+          >
+            Save yield alert
+          </button>
+          {yieldAlertSaveStatus === 'success' ? (
+            <span className="detail-muted" style={{ marginLeft: 12 }}>
+              Yield alert threshold saved.
+            </span>
+          ) : null}
+          {yieldAlertSaveStatus === 'error' ? (
+            <span className="detail-muted" style={{ marginLeft: 12, color: '#b91c1c' }}>
+              Could not save — check your company profile or try again.
+            </span>
+          ) : null}
         </div>
       </section>
 

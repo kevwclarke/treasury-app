@@ -161,11 +161,11 @@ export function ConcentrationRiskPage() {
               <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <a
                   className="conc-action-card__cta-pill"
-                  href="https://www.starlingbank.com/business/"
+                  href="https://www.starlingbank.com/business-account/"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Compare business accounts
+                  Open Starling Business Account →
                 </a>
               </div>
             </article>
@@ -176,9 +176,10 @@ export function ConcentrationRiskPage() {
             >
               <p className="conc-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="conc-action-card__impact">{formatGBP(Math.round(amountToMove))}</p>
-              <p className="conc-action-card__title">Move surplus to FSCS-protected products</p>
+              <p className="conc-action-card__title">Spread cash across HSBC and Starling</p>
               <p className="conc-action-card__desc">
-                Fixed-term savings accounts at Shawbrook or similar offer FSCS protection up to £120k per institution.
+                Opening a second and third business account takes 48 hours. Spreading £5M across 3 banks reduces your
+                single-point failure risk immediately and brings each balance closer to the £120k FSCS threshold.
               </p>
               <div className="conc-action-meta">
                 <div className="conc-action-meta__cell">
@@ -199,9 +200,14 @@ export function ConcentrationRiskPage() {
                 <span className="conc-action-wait__val">Unprotected exposure continues daily</span>
               </div>
               <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
-                <Link className="conc-action-card__cta-pill" to="/app/opportunities">
-                  View options
-                </Link>
+                <a
+                  className="conc-action-card__cta-pill"
+                  href="https://www.business.hsbc.uk/en-gb/everyday-banking/business-bank-accounts"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open HSBC Business Account →
+                </a>
               </div>
             </article>
 

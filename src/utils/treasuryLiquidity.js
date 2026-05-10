@@ -4,8 +4,7 @@ export const LIQUIDITY_TARGET_MONTHS = 6
 export const LIQUIDITY_LOOKBACK_DAYS = 90
 
 /**
- * @param {Array<{ amount?: number|string, date?: string }>} rows
- * @param {number} [nowMs]
+ * @param {Array<{ amount?: number|string, date?: string, running_balance?: number|null }>} rows
  * @returns {{
  *   totalCash: number,
  *   monthlyBurn: number,
@@ -18,8 +17,13 @@ export const LIQUIDITY_LOOKBACK_DAYS = 90
  *   band: 'red' | 'amber' | 'green',
  * }}
  */
-export function computeLiquidityBuffer(rows, nowMs = Date.now()) {
+export function computeLiquidityBuffer(rows) {
   const list = Array.isArray(rows) ? rows : []
+  const anchorMs = list.reduce((max, r) => {
+    const t = new Date(String(r?.date ?? '').trim()).getTime()
+    return Number.isFinite(t) ? Math.max(max, t) : max
+  }, -Infinity)
+  const nowMs = Number.isFinite(anchorMs) ? anchorMs : Date.now()
   let totalCash = null
   let newestRunningT = -Infinity
   let newestRunningBal = null
