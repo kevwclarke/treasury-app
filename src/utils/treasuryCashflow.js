@@ -4,14 +4,41 @@ function parseDate(str) {
   return isNaN(d.getTime()) ? null : d
 }
 
-/** Latest transaction time (ms); falls back to Date.now() when no valid dates (matches dashboard anchor pattern). */
-function anchorTransactionTimeMs(rows) {
-  const list = Array.isArray(rows) ? rows : []
-  const anchor = list.reduce((max, r) => {
-    const d = new Date(String(r.date ?? '').trim())
-    return isNaN(d.getTime()) ? max : Math.max(max, d.getTime())
-  }, -Infinity)
-  return Number.isFinite(anchor) && anchor > 0 ? anchor : Date.now()
+/** Same as treasuryKpi.js — latest calendar date among rows with a valid date. */
+function latestTransactionDate(rows) {
+  let latest = null
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const d = parseDate(r.date)
+    if (!d) continue
+    if (!latest || d > latest) latest = d
+  }
+  return latest
+}
+
+function monthKeyFromRow(row) {
+  return monthKeyFromDate(parseDate(row?.date))
+}
+
+/** A month is complete if it has at least 3 transaction rows with valid dates (treasuryKpi pattern). */
+function isCompleteMonth(rows, ym) {
+  let n = 0
+  for (const r of rows) {
+    if (monthKeyFromRow(r) === ym) n += 1
+  }
+  return n >= 3
+}
+
+function distinctSortedMonthKeys(rows) {
+  const set = new Set()
+  for (const r of rows) {
+    const k = monthKeyFromRow(r)
+    if (k) set.add(k)
+  }
+  return Array.from(set).sort()
+}
+
+function completeMonthKeysSorted(rows) {
+  return distinctSortedMonthKeys(rows).filter((ym) => isCompleteMonth(rows, ym))
 }
 
 function endOfDayMs(d) {
@@ -97,14 +124,41 @@ export function computeCashflowSummary(rows) {
       totalIn: 0,
       totalOutAbs: 0,
       totalCash: 0,
+      startingCash: 0,
     }
   }
 
-  const anchorMs = anchorTransactionTimeMs(list)
-  const anchorEndMs = endOfDayMs(new Date(anchorMs))
-  const windowKeys = new Set(lastThreeMonthKeysEndingAtAnchor(anchorMs))
+  const anchor = latestTransactionDate(list)
+  if (!anchor) {
+    return {
+      months: 0,
+      avgMonthlyIn: 0,
+      avgMonthlyOut: 0,
+      netMonthly: 0,
+      totalIn: 0,
+      totalOutAbs: 0,
+      totalCash: 0,
+      startingCash: 0,
+    }
+  }
 
-  const byMonthAbsAmts = new Map()
+  const anchorMs = anchor.getTime()
+  const anchorEndMs = endOfDayMs(anchor)
+  const anchorYm = monthKeyFromDate(anchor)
+
+  const completeKeys = completeMonthKeysSorted(list)
+  const eligibleComplete = completeKeys.filter((ym) => ym <= anchorYm)
+  let windowKeyList = eligibleComplete.slice(-3)
+  let windowKeys = new Set(windowKeyList)
+  if (windowKeyList.length === 0) {
+    windowKeyList = lastThreeMonthKeysEndingAtAnchor(anchorMs)
+    windowKeys = new Set(windowKeyList)
+  }
+
+  const months = Math.max(1, windowKeyList.length)
+
+  const byMonthInAmts = new Map()
+  const byMonthOutAmts = new Map()
   for (const r of list) {
     const d = parseDate(r?.date)
     if (!d || d.getTime() > anchorEndMs) continue
@@ -112,14 +166,20 @@ export function computeCashflowSummary(rows) {
     if (!mk || !windowKeys.has(mk)) continue
     const a = Number(r?.amount)
     if (!Number.isFinite(a)) continue
-    if (!byMonthAbsAmts.has(mk)) byMonthAbsAmts.set(mk, [])
-    byMonthAbsAmts.get(mk).push(Math.abs(a))
+    if (a > 0) {
+      if (!byMonthInAmts.has(mk)) byMonthInAmts.set(mk, [])
+      byMonthInAmts.get(mk).push(a)
+    } else if (a < 0) {
+      if (!byMonthOutAmts.has(mk)) byMonthOutAmts.set(mk, [])
+      byMonthOutAmts.get(mk).push(-a)
+    }
   }
 
-  const medianByMonth = new Map()
+  const medianInByMonth = new Map()
+  const medianOutByMonth = new Map()
   for (const mk of windowKeys) {
-    const arr = byMonthAbsAmts.get(mk) ?? []
-    medianByMonth.set(mk, median(arr))
+    medianInByMonth.set(mk, median(byMonthInAmts.get(mk) ?? []))
+    medianOutByMonth.set(mk, median(byMonthOutAmts.get(mk) ?? []))
   }
 
   let totalIn = 0
@@ -138,11 +198,16 @@ export function computeCashflowSummary(rows) {
 
     const a = Number(r?.amount)
     if (Number.isFinite(a)) {
-      const med = medianByMonth.get(mk) ?? 0
-      const cap = med > 0 ? 3 * med : Infinity
-      if (Math.abs(a) > cap) continue
-      if (a > 0) totalIn += a
-      if (a < 0) totalOutAbs += -a
+      if (a > 0) {
+        const medIn = medianInByMonth.get(mk) ?? 0
+        const capIn = medIn > 0 ? 3 * medIn : Infinity
+        if (a <= capIn) totalIn += a
+      }
+      if (a < 0) {
+        const medOut = medianOutByMonth.get(mk) ?? 0
+        const capOut = medOut > 0 ? 3 * medOut : Infinity
+        if (-a <= capOut) totalOutAbs += -a
+      }
     }
 
     const rb = Number(r?.running_balance)
@@ -158,7 +223,6 @@ export function computeCashflowSummary(rows) {
     }
   }
 
-  const months = 3
   const avgMonthlyIn = totalIn / months
   const avgMonthlyOut = totalOutAbs / months
   const netMonthly = avgMonthlyIn - avgMonthlyOut
@@ -172,6 +236,15 @@ export function computeCashflowSummary(rows) {
     totalCash = newestRunningBal
   }
 
+  const startingCashRow = list.reduce((best, r) => {
+    const rb = Number(r?.running_balance)
+    if (!Number.isFinite(rb)) return best
+    const d = new Date(String(r.date).trim())
+    if (isNaN(d.getTime())) return best
+    return !best || d > new Date(String(best.date).trim()) ? r : best
+  }, null)
+  const startingCash = Number(startingCashRow?.running_balance) || 0
+
   return {
     months,
     avgMonthlyIn,
@@ -180,7 +253,103 @@ export function computeCashflowSummary(rows) {
     totalIn,
     totalOutAbs,
     totalCash,
+    startingCash,
   }
+}
+
+function startOfWeekMonday(d) {
+  const x = new Date(d)
+  const dow = x.getDay()
+  const diff = (dow + 6) % 7
+  x.setDate(x.getDate() - diff)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+function addDays(d, n) {
+  const x = new Date(d)
+  x.setDate(x.getDate() + n)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+/**
+ * Weekly cumulative cash for the 90-day chart: actual weekly nets, then projected from summary.netMonthly.
+ * Cumulative balance is shifted so the last actual week matches latest running_balance (startingCash), not £0.
+ */
+export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
+  const list = (Array.isArray(rows) ? rows : []).filter((r) => r?.date)
+  if (!list.length) return []
+
+  const times = list.map((r) => new Date(String(r.date).trim()).getTime()).filter(Number.isFinite)
+  const maxT = Math.max(...times)
+
+  const weeklyNetAvg = summary.netMonthly * (7 / 30.437)
+
+  let ws = startOfWeekMonday(new Date(Math.min(...times)))
+  const projectionEnd = addDays(startOfWeekMonday(new Date(maxT)), numWeeks * 7)
+
+  const raw = []
+  while (ws.getTime() <= projectionEnd.getTime()) {
+    const we = addDays(ws, 7)
+    let net = 0
+    let isProj = false
+
+    if (ws.getTime() > maxT) {
+      net = weeklyNetAvg
+      isProj = true
+    } else {
+      for (const r of list) {
+        const t = new Date(String(r.date).trim()).getTime()
+        if (t >= ws.getTime() && t < we.getTime()) {
+          const a = Number(r.amount)
+          if (Number.isFinite(a)) net += a
+        }
+      }
+    }
+
+    raw.push({
+      label: ws.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      net,
+      isProj,
+    })
+    ws = addDays(ws, 7)
+  }
+
+  let cum = 0
+  const withCum = raw.map((p) => {
+    cum += p.net
+    return { ...p, cum }
+  })
+
+  let lastAct = -1
+  withCum.forEach((p, i) => {
+    if (!p.isProj) lastAct = i
+  })
+
+  const rbBaseline = Number(summary?.startingCash)
+  let offset = 0
+  if (lastAct >= 0) {
+    if (Number.isFinite(rbBaseline) && rbBaseline !== 0) {
+      offset = rbBaseline - withCum[lastAct].cum
+    } else if (Number.isFinite(summary?.totalCash)) {
+      offset = summary.totalCash - withCum[lastAct].cum
+    }
+  }
+
+  const shifted = withCum.map((p) => ({ ...p, cum: p.cum + offset }))
+
+  const chartData = shifted.map((p) => ({
+    label: p.label,
+    act: p.isProj ? null : p.cum,
+    proj: p.isProj ? p.cum : null,
+  }))
+
+  if (lastAct >= 0 && lastAct < chartData.length - 1 && chartData[lastAct].act != null) {
+    chartData[lastAct].proj = chartData[lastAct].act
+  }
+
+  return chartData
 }
 
 /**

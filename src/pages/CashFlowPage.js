@@ -14,6 +14,7 @@ import { useUserTransactions } from '../hooks/useUserTransactions'
 import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFormat'
 import {
   buildCashflowMonthlySeries,
+  buildWeeklyCashChartData,
   cashflowWeeklyLowCashWarning,
   computeCashflowSummary,
   detectRecurringTransactions,
@@ -26,85 +27,6 @@ import './CashFlowPage.css'
 
 function pad2(n) {
   return String(n).padStart(2, '0')
-}
-
-function startOfWeekMonday(d) {
-  const x = new Date(d)
-  const dow = x.getDay()
-  const diff = (dow + 6) % 7
-  x.setDate(x.getDate() - diff)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
-
-function addDays(d, n) {
-  const x = new Date(d)
-  x.setDate(x.getDate() + n)
-  x.setHours(0, 0, 0, 0)
-  return x
-}
-
-/** Weekly cumulative cash position: actual weekly nets from data, then projected using average net. */
-function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
-  const list = (rows || []).filter((r) => r?.date)
-  if (!list.length) return []
-
-  const times = list.map((r) => new Date(r.date).getTime()).filter(Number.isFinite)
-  const maxT = Math.max(...times)
-
-  const weeklyNetAvg = summary.netMonthly * (7 / 30.437)
-
-  let ws = startOfWeekMonday(new Date(Math.min(...times)))
-  const projectionEnd = addDays(startOfWeekMonday(new Date(maxT)), numWeeks * 7)
-
-  const raw = []
-  while (ws.getTime() <= projectionEnd.getTime()) {
-    const we = addDays(ws, 7)
-    let net = 0
-    let isProj = false
-
-    if (ws.getTime() > maxT) {
-      net = weeklyNetAvg
-      isProj = true
-    } else {
-      for (const r of list) {
-        const t = new Date(r.date).getTime()
-        if (t >= ws.getTime() && t < we.getTime()) {
-          const a = Number(r.amount)
-          if (Number.isFinite(a)) net += a
-        }
-      }
-    }
-
-    raw.push({
-      label: ws.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-      net,
-      isProj,
-    })
-    ws = addDays(ws, 7)
-  }
-
-  let cum = 0
-  const withCum = raw.map((p) => {
-    cum += p.net
-    return { ...p, cum }
-  })
-
-  const chartData = withCum.map((p) => ({
-    label: p.label,
-    act: p.isProj ? null : p.cum,
-    proj: p.isProj ? p.cum : null,
-  }))
-
-  let lastAct = -1
-  withCum.forEach((p, i) => {
-    if (!p.isProj) lastAct = i
-  })
-  if (lastAct >= 0 && lastAct < chartData.length - 1 && chartData[lastAct].act != null) {
-    chartData[lastAct].proj = chartData[lastAct].act
-  }
-
-  return chartData
 }
 
 function lastThreeCalendarMonthsInOut(rows, n = 3) {
