@@ -41,7 +41,7 @@ const OPP_ROWS = [
     borderClass: 'yld-opp-row--tbills',
     rationale: 'Government-backed — zero credit risk',
     href: 'https://www.hl.co.uk/shares/i-want-to-buy/gilts',
-    cta: 'Buy via Hargreaves Lansdown →',
+    cta: 'Buy via HL →',
   },
   {
     key: 'blackrock',

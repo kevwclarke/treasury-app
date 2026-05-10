@@ -179,7 +179,7 @@ export function ConcentrationRiskPage() {
               <p className="conc-action-card__title">Spread cash across HSBC and Starling</p>
               <p className="conc-action-card__desc">
                 Opening a second and third business account takes 48 hours. Spreading £5M across 3 banks reduces your
-                single-point failure risk immediately and brings each balance closer to the £120k FSCS threshold.
+                single-point failure risk and brings each balance closer to the £120k FSCS threshold.
               </p>
               <div className="conc-action-meta">
                 <div className="conc-action-meta__cell">
@@ -192,12 +192,16 @@ export function ConcentrationRiskPage() {
                 </div>
                 <div className="conc-action-meta__cell conc-action-meta__cell--wide">
                   <span className="conc-action-meta__label">Annual impact</span>
-                  <span className="conc-action-meta__val conc-action-meta__val--gain">Full FSCS protection on moved amount</span>
+                  <span className="conc-action-meta__val conc-action-meta__val--gain">
+                    Single-point failure risk eliminated
+                  </span>
                 </div>
               </div>
               <div className="conc-action-wait">
                 <span className="conc-action-wait__label">Cost of waiting</span>
-                <span className="conc-action-wait__val">Unprotected exposure continues daily</span>
+                <span className="conc-action-wait__val" style={{ color: '#DC2626' }}>
+                  £5,080,000 at risk every day
+                </span>
               </div>
               <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <a
