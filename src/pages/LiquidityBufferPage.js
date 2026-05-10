@@ -320,11 +320,12 @@ export function LiquidityBufferPage() {
               <p className="liq-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="liq-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing protection</span>
+                <span>Buffer yield</span>
               </p>
-              <p className="liq-action-card__title">Set buffer alert threshold</p>
+              <p className="liq-action-card__title">Ladder your deposits for yield without locking liquidity</p>
               <p className="liq-action-card__desc">
-                Get alerted the moment your buffer drops below your minimum threshold.
+                Split your buffer across 3-month, 6-month, and instant-access products. Keep 3 months instant access,
+                put 3 months in a 90-day notice account at 4.5%, and invest the surplus in T-Bills.
               </p>
               <div className="liq-action-meta">
                 <div className="liq-action-meta__cell">
@@ -333,20 +334,24 @@ export function LiquidityBufferPage() {
                 </div>
                 <div className="liq-action-meta__cell">
                   <span className="liq-action-meta__label">Time to act</span>
-                  <span className="liq-action-meta__val">2 minutes</span>
+                  <span className="liq-action-meta__val">This week</span>
                 </div>
                 <div className="liq-action-meta__cell liq-action-meta__cell--wide">
                   <span className="liq-action-meta__label">Annual impact</span>
-                  <span className="liq-action-meta__val liq-action-meta__val--neutral">Ongoing protection</span>
+                  <span className="liq-action-meta__val liq-action-meta__val--gain">
+                    Optimised yield on buffer without sacrificing liquidity
+                  </span>
                 </div>
               </div>
               <div className="liq-action-wait">
                 <span className="liq-action-wait__label">Cost of waiting</span>
-                <span className="liq-action-wait__val liq-action-wait__val--neutral">Zero — act now</span>
+                <span className="liq-action-wait__val" style={{ color: '#DC2626' }}>
+                  {formatGBP(Math.round(bufferCash * 0.035))}/yr in foregone yield on buffer
+                </span>
               </div>
               <div className="liq-action-card__footer" style={{ marginTop: 'auto' }}>
-                <Link className="liq-action-card__cta-pill" to="/app/preferences">
-                  Configure
+                <Link className="liq-action-card__cta-pill" to="/app/yield">
+                  View yield options →
                 </Link>
               </div>
             </article>

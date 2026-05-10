@@ -13,7 +13,7 @@ import {
 import { useTreasuryTransactions } from '../hooks/useTreasuryTransactions'
 import { computeBurn30Vs90Pct } from '../utils/treasuryKpi'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
-import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
+import { BURN_CATEGORY_ORDER, burnCategoryMomTrend, categorisePayee } from '../utils/treasuryBurn'
 import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFormat'
 import '../styles/design-system.css'
 import './BurnIntelligencePage.css'
@@ -95,6 +95,11 @@ function categoryFillClass(name) {
     Travel: 'burn-market-row__fill--travel',
     'Office & Ops': 'burn-market-row__fill--office',
     Marketing: 'burn-market-row__fill--marketing',
+    Capital: 'burn-market-row__fill--other',
+    Legal: 'burn-market-row__fill--other',
+    'Professional Services': 'burn-market-row__fill--office',
+    Culture: 'burn-market-row__fill--marketing',
+    People: 'burn-market-row__fill--contractors',
     Other: 'burn-market-row__fill--other',
   }
   return map[name] || 'burn-market-row__fill--other'
@@ -288,6 +293,18 @@ export function BurnIntelligencePage() {
   const reducedBurn = monthlyBurn90 * 0.9
   const spend90Total = burn90.total
 
+  const top3NonPayrollVendor = useMemo(() => {
+    const entries = BURN_CATEGORY_ORDER.filter((c) => c !== 'Payroll')
+      .map((c) => ({ c, v: burn90.byCat[c] || 0 }))
+      .filter((x) => x.v > 0)
+      .sort((a, b) => b.v - a.v)
+    const top3 = entries.slice(0, 3)
+    const sum90 = top3.reduce((s, x) => s + x.v, 0)
+    const perMo = sum90 / 3
+    const saving15 = perMo * 0.15
+    return { top3, sum90, perMo, saving15 }
+  }, [burn90.byCat])
+
   return (
     <div className="burn-page">
       {txnError && !txnLoading ? (
@@ -441,11 +458,13 @@ export function BurnIntelligencePage() {
               <p className="burn-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="burn-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing monitoring</span>
+                <span>Vendor leverage</span>
               </p>
-              <p className="burn-action-card__title">Set burn rate alert</p>
+              <p className="burn-action-card__title">Renegotiate your largest vendor contracts</p>
               <p className="burn-action-card__desc">
-                Get alerted the moment any category grows more than 15% month on month.
+                Your top 3 non-payroll categories total {formatGBP(Math.round(top3NonPayrollVendor.perMo))}/month. A 15%
+                reduction across these saves {formatGBP(Math.round(top3NonPayrollVendor.saving15))}/month — achievable
+                through annual commitment or volume negotiation.
               </p>
               <div className="burn-action-meta">
                 <div className="burn-action-meta__cell">
@@ -454,21 +473,25 @@ export function BurnIntelligencePage() {
                 </div>
                 <div className="burn-action-meta__cell">
                   <span className="burn-action-meta__label">Time to act</span>
-                  <span className="burn-action-meta__val">2 minutes</span>
+                  <span className="burn-action-meta__val">This quarter</span>
                 </div>
                 <div className="burn-action-meta__cell burn-action-meta__cell--wide">
                   <span className="burn-action-meta__label">Annual impact</span>
-                  <span className="burn-action-meta__val burn-action-meta__val--neutral">Ongoing monitoring</span>
+                  <span className="burn-action-meta__val burn-action-meta__val--gain">
+                    {formatGBP(Math.round(top3NonPayrollVendor.saving15 * 12))}/yr in vendor savings
+                  </span>
                 </div>
               </div>
               <div className="burn-action-wait">
                 <span className="burn-action-wait__label">Cost of waiting</span>
-                <span className="burn-action-wait__val burn-action-wait__val--neutral">Zero — act now</span>
+                <span className="burn-action-wait__val" style={{ color: '#DC2626' }}>
+                  Contracts auto-renew at current rates
+                </span>
               </div>
               <div className="burn-action-card__footer" style={{ marginTop: 'auto' }}>
-                <Link className="burn-action-card__cta-pill" to="/app/preferences">
-                  Configure
-                </Link>
+                <button type="button" className="burn-action-card__cta-pill" onClick={scrollToBreakdown}>
+                  View full breakdown →
+                </button>
               </div>
             </article>
           </div>
@@ -593,7 +616,9 @@ export function BurnIntelligencePage() {
               style={{ overflow: 'visible', boxSizing: 'border-box', paddingRight: '14px' }}
             >
               <div className="burn-market-rows" aria-label="Spend by category">
-                {categoryBars.map((row) => (
+                {categoryBars.map((row) => {
+                  const mom = burnCategoryMomTrend(txnRows, row.name)
+                  return (
                   <div
                     key={row.name}
                     className="burn-market-row"
@@ -608,7 +633,19 @@ export function BurnIntelligencePage() {
                     }}
                   >
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <span className="burn-market-row__label">{row.name}</span>
+                      <span className="burn-market-row__label" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {row.name}
+                        <span
+                          style={{
+                            fontFamily: 'Inter, system-ui, sans-serif',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: mom.color,
+                          }}
+                        >
+                          {mom.text}
+                        </span>
+                      </span>
                       <div className="burn-market-row__track">
                         <div
                           className={`burn-market-row__fill ${categoryFillClass(row.name)}`}
@@ -623,7 +660,8 @@ export function BurnIntelligencePage() {
                       {formatGBP(Math.round(row.amt))}
                     </span>
                   </div>
-                ))}
+                  )
+                })}
               </div>
               <p className="burn-market-row__below">
                 {fastestGrowing.cat != null && fastestGrowing.pct != null ? (

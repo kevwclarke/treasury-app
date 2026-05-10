@@ -21,6 +21,7 @@ import {
   seriesToBarHeights,
 } from '../utils/treasuryCashflow'
 import { buildCashflowCapitalMoves } from '../utils/capitalMovesFromData'
+import { categorisePayee } from '../utils/treasuryBurn'
 import { TransactionList, TransactionRow } from '../components/TransactionRow'
 import '../styles/design-system.css'
 import './CashFlowPage.css'
@@ -85,6 +86,15 @@ export function CashFlowPage() {
   const barHeightSeries = useMemo(() => seriesToBarHeights(monthlySeries), [monthlySeries])
   const lowCash = useMemo(() => cashflowWeeklyLowCashWarning(summary, 13), [summary])
   const recurringDetected = useMemo(() => detectRecurringTransactions(rows), [rows])
+
+  const recurringSorted = useMemo(
+    () => [...recurringDetected].sort((a, b) => String(a.nextExpected).localeCompare(String(b.nextExpected))),
+    [recurringDetected],
+  )
+
+  const avgInRounded = Math.round(summary.avgMonthlyIn)
+  const runwayEquivHalfInflow =
+    summary.avgMonthlyOut > 0 ? summary.avgMonthlyIn / 2 / summary.avgMonthlyOut : null
 
   const capitalMoves = useMemo(() => buildCashflowCapitalMoves({ summary, lowCash }), [lowCash, summary])
 
@@ -193,11 +203,14 @@ export function CashFlowPage() {
             >
               <p className="cf-action-card__recommended">RECOMMENDED</p>
               <p className="cf-action-card__kicker">NEXT BEST ACTION 1</p>
-              <p className="cf-action-card__impact">{formatGBP(Math.round(summary.avgMonthlyIn))}</p>
-              <p className="cf-action-card__title">Chase overdue receivables</p>
+              <p className="cf-action-card__impact">{formatGBP(avgInRounded)}</p>
+              <p className="cf-action-card__title">Negotiate 30-day payment terms with your largest clients</p>
               <p className="cf-action-card__desc">
-                Outstanding invoices are delaying inflows. Collecting overdue amounts improves your cash position
-                immediately.
+                Your average monthly inflows are {formatGBP(avgInRounded)}. Moving your largest client to 30-day terms
+                (from 60-day) would add approximately {formatGBP(avgInRounded)} to your immediate cash position
+                {runwayEquivHalfInflow != null && Number.isFinite(runwayEquivHalfInflow)
+                  ? ` — equivalent to ${runwayEquivHalfInflow.toFixed(1)} months runway.`
+                  : '.'}
               </p>
               <div className="cf-action-meta">
                 <div className="cf-action-meta__cell">
@@ -206,20 +219,24 @@ export function CashFlowPage() {
                 </div>
                 <div className="cf-action-meta__cell">
                   <span className="cf-action-meta__label">Time to act</span>
-                  <span className="cf-action-meta__val">Today</span>
+                  <span className="cf-action-meta__val">This month</span>
                 </div>
                 <div className="cf-action-meta__cell cf-action-meta__cell--wide">
                   <span className="cf-action-meta__label">Annual impact</span>
-                  <span className="cf-action-meta__val cf-action-meta__val--gain">Improved cash position</span>
+                  <span className="cf-action-meta__val cf-action-meta__val--gain">
+                    {formatGBP(avgInRounded)} cash position improvement
+                  </span>
                 </div>
               </div>
               <div className="cf-action-wait">
                 <span className="cf-action-wait__label">Cost of waiting</span>
-                <span className="cf-action-wait__val">Cash gap widens daily</span>
+                <span className="cf-action-wait__val" style={{ color: '#DC2626' }}>
+                  Cash tied up in extended payment terms
+                </span>
               </div>
               <div className="cf-action-card__footer" style={{ marginTop: 'auto' }}>
-                <Link className="cf-action-card__cta-pill" to="/app/ar">
-                  View AR
+                <Link className="cf-action-card__cta-pill" to="/app/integrations">
+                  Connect Xero to track invoices →
                 </Link>
               </div>
             </article>
@@ -276,11 +293,12 @@ export function CashFlowPage() {
               <p className="cf-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="cf-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing protection</span>
+                <span>Working capital</span>
               </p>
-              <p className="cf-action-card__title">Set low-cash alert threshold</p>
+              <p className="cf-action-card__title">Accelerate your largest outstanding invoice</p>
               <p className="cf-action-card__desc">
-                Configure an alert so Treasury Autopilot warns you before cash drops below your minimum operating level.
+                Your recurring inflows average {formatGBP(avgInRounded)}/month. One missed payment cycle increases your
+                cash risk by {formatGBP(avgInRounded)}. Proactively chase any invoice over 30 days outstanding.
               </p>
               <div className="cf-action-meta">
                 <div className="cf-action-meta__cell">
@@ -289,20 +307,22 @@ export function CashFlowPage() {
                 </div>
                 <div className="cf-action-meta__cell">
                   <span className="cf-action-meta__label">Time to act</span>
-                  <span className="cf-action-meta__val">2 minutes</span>
+                  <span className="cf-action-meta__val">Today</span>
                 </div>
                 <div className="cf-action-meta__cell cf-action-meta__cell--wide">
                   <span className="cf-action-meta__label">Annual impact</span>
-                  <span className="cf-action-meta__val cf-action-meta__val--neutral">Ongoing protection</span>
+                  <span className="cf-action-meta__val cf-action-meta__val--gain">Prevents cash flow gaps</span>
                 </div>
               </div>
               <div className="cf-action-wait">
                 <span className="cf-action-wait__label">Cost of waiting</span>
-                <span className="cf-action-wait__val cf-action-wait__val--neutral">Zero — act now</span>
+                <span className="cf-action-wait__val" style={{ color: '#DC2626' }}>
+                  Cash gap compounds with each missed cycle
+                </span>
               </div>
               <div className="cf-action-card__footer" style={{ marginTop: 'auto' }}>
-                <Link className="cf-action-card__cta-pill" to="/app/preferences">
-                  Configure
+                <Link className="cf-action-card__cta-pill" to="/app/integrations">
+                  Connect Xero for AR visibility →
                 </Link>
               </div>
             </article>
@@ -501,12 +521,28 @@ export function CashFlowPage() {
             <div className="cf-empty">
               <p>Recurring payments are inferred once transaction history exists.</p>
             </div>
-          ) : recurringDetected.length ? (
+          ) : recurringSorted.length ? (
             <div className="cf-opp-list">
-              {recurringDetected.map((r) => (
+              {recurringSorted.map((r) => (
                 <div key={r.payee} className="cf-opp-row cf-opp-row--recurring">
                   <div className="cf-opp-row__content">
-                    <h3 className="cf-opp-row__title">{r.payee}</h3>
+                    <h3 className="cf-opp-row__title" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {r.payee}
+                      <span
+                        style={{
+                          fontFamily: 'Inter, system-ui, sans-serif',
+                          fontSize: 10,
+                          fontWeight: 500,
+                          textTransform: 'uppercase',
+                          background: '#F3F4F6',
+                          color: '#6B7280',
+                          borderRadius: 4,
+                          padding: '2px 8px',
+                        }}
+                      >
+                        {categorisePayee(r.payee)}
+                      </span>
+                    </h3>
                     <p className="cf-opp-row__meta">
                       {r.frequency} · Next expected {r.nextExpected}
                     </p>

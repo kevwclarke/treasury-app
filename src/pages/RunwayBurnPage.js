@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { useUserTransactions } from '../hooks/useUserTransactions'
 import { useDaysDataUnaddressed } from '../hooks/useDaysDataUnaddressed'
-import { BURN_CATEGORY_ORDER, categorisePayee } from '../utils/treasuryBurn'
+import { BURN_CATEGORY_ORDER, burnCategoryMomTrend, categorisePayee } from '../utils/treasuryBurn'
 import { formatCompactAxisGBP, formatGBP, formatPct } from '../utils/treasuryFormat'
 import { computeRunwayFromTransactions } from '../utils/treasuryRunway'
 import { computeBurn30Vs90Pct } from '../utils/treasuryKpi'
@@ -66,6 +66,11 @@ function categoryBorderClass(name) {
     Travel: 'rnwy-opp-row--cat-infra',
     'Office & Ops': 'rnwy-opp-row--cat-office',
     Marketing: 'rnwy-opp-row--cat-marketing',
+    Capital: 'rnwy-opp-row--cat-other',
+    Legal: 'rnwy-opp-row--cat-other',
+    'Professional Services': 'rnwy-opp-row--cat-office',
+    Culture: 'rnwy-opp-row--cat-marketing',
+    People: 'rnwy-opp-row--cat-contractors',
     Other: 'rnwy-opp-row--cat-other',
   }
   return map[name] || 'rnwy-opp-row--cat-other'
@@ -157,13 +162,29 @@ export function RunwayBurnPage() {
       ? Math.max(0, runwayCore.bullRunwayMo - runwayCore.baseRunwayMo)
       : 0
 
-  const monthsAdded10PctBurnCut = useMemo(() => {
-    const tc = runwayCore.totalCash
+  const contractorMonthlyAvg = useMemo(() => {
+    const sixKeys = monthKeys.slice(-6)
+    let s = 0
+    sixKeys.forEach((k) => {
+      s += monthlyByMonth[k]?.byCat?.Contractors ?? 0
+    })
+    return sixKeys.length ? s / sixKeys.length : 0
+  }, [monthKeys, monthlyByMonth])
+
+  const contractorRunwayLift = useMemo(() => {
     const mb = runwayCore.monthlyBurn
-    if (!hasValidRunway || mb <= 0 || !Number.isFinite(tc)) return null
-    const added = tc / (mb * 0.9) - tc / mb
-    return Math.max(0, added)
-  }, [hasValidRunway, runwayCore.monthlyBurn, runwayCore.totalCash])
+    const baseMo = runwayCore.baseRunwayMo
+    if (!hasValidRunway || mb <= 0 || baseMo == null || !Number.isFinite(baseMo)) return null
+    const saving = contractorMonthlyAvg * 0.2
+    if (saving <= 0) return null
+    return (saving / mb) * baseMo
+  }, [contractorMonthlyAvg, hasValidRunway, runwayCore.baseRunwayMo, runwayCore.monthlyBurn])
+
+  const contractorPctOfBurn = useMemo(() => {
+    const mb = runwayCore.monthlyBurn
+    if (!mb || mb <= 0) return 0
+    return (contractorMonthlyAvg / mb) * 100
+  }, [contractorMonthlyAvg, runwayCore.monthlyBurn])
 
   const progressPct = hasValidRunway ? Math.min(100, (baseMo / 24) * 100) : 0
 
@@ -301,13 +322,14 @@ export function RunwayBurnPage() {
             >
               <p className="rnwy-action-card__kicker">NEXT BEST ACTION 2</p>
               <p className="rnwy-action-card__impact">
-                {monthsAdded10PctBurnCut != null ? `Up to ${monthsAdded10PctBurnCut.toFixed(1)} mo` : '—'}
+                {contractorRunwayLift != null ? `+${contractorRunwayLift.toFixed(1)} mo` : '—'}
               </p>
-              <p className="rnwy-action-card__title">Review largest burn categories</p>
+              <p className="rnwy-action-card__title">Cut contractor spend to add runway</p>
               <p className="rnwy-action-card__desc">
-                Your top spending categories are driving {formatPct(burnRollup.top3Pct, 0)} of total burn. A 10%
-                reduction adds {monthsAdded10PctBurnCut != null ? `${monthsAdded10PctBurnCut.toFixed(1)} months` : '—'}{' '}
-                to runway.
+                Contractors represent {formatPct(contractorPctOfBurn, 0)} of your burn at{' '}
+                {formatGBP(Math.round(contractorMonthlyAvg))}/month. A 20% reduction saves{' '}
+                {formatGBP(Math.round(contractorMonthlyAvg * 0.2))}/month and adds{' '}
+                {contractorRunwayLift != null ? `${contractorRunwayLift.toFixed(1)}` : '—'} to your runway.
               </p>
               <div className="rnwy-action-meta">
                 <div className="rnwy-action-meta__cell">
@@ -316,26 +338,24 @@ export function RunwayBurnPage() {
                 </div>
                 <div className="rnwy-action-meta__cell">
                   <span className="rnwy-action-meta__label">Time to act</span>
-                  <span className="rnwy-action-meta__val">This week</span>
+                  <span className="rnwy-action-meta__val">This month</span>
                 </div>
                 <div className="rnwy-action-meta__cell rnwy-action-meta__cell--wide">
                   <span className="rnwy-action-meta__label">Annual impact</span>
                   <span className="rnwy-action-meta__val rnwy-action-meta__val--gain">
-                    {monthsAdded10PctBurnCut != null
-                      ? `Up to ${monthsAdded10PctBurnCut.toFixed(1)} additional runway`
-                      : '—'}
+                    {contractorRunwayLift != null ? `+${contractorRunwayLift.toFixed(1)} months runway` : '—'}
                   </span>
                 </div>
               </div>
               <div className="rnwy-action-wait">
                 <span className="rnwy-action-wait__label">Cost of waiting</span>
-                <span className="rnwy-action-wait__val">
-                  {formatGBP(Math.round(runwayCore.monthlyBurn))} per month continuing
+                <span className="rnwy-action-wait__val" style={{ color: '#DC2626' }}>
+                  {formatGBP(Math.round(contractorMonthlyAvg * 0.2 * 12))}/yr in excess contractor spend
                 </span>
               </div>
               <div className="rnwy-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="rnwy-action-card__cta-pill" to="/app/burn-intelligence">
-                  View burn breakdown
+                  Review contractor spend →
                 </Link>
               </div>
             </article>
@@ -347,33 +367,40 @@ export function RunwayBurnPage() {
               <p className="rnwy-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="rnwy-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing protection</span>
+                <span>Fundraise window</span>
               </p>
-              <p className="rnwy-action-card__title">Model your next raise timing</p>
+              <p className="rnwy-action-card__title">Start fundraise preparation now</p>
               <p className="rnwy-action-card__desc">
-                Configure your fundraising timeline to get an alert when you should already be in conversations.
+                With {hasValidRunway ? `${fmtMo(baseMo)}` : '—'} months runway and a 6-month raise process, your
+                fundraise window opens in{' '}
+                {hasValidRunway && baseMo != null ? Math.max(0, baseMo - 6).toFixed(1) : '—'} months. Preparation should
+                begin today — investor materials, data room, warm introductions.
               </p>
               <div className="rnwy-action-meta">
                 <div className="rnwy-action-meta__cell">
                   <span className="rnwy-action-meta__label">Who</span>
-                  <span className="rnwy-action-meta__val">CFO</span>
+                  <span className="rnwy-action-meta__val">Founder/CFO</span>
                 </div>
                 <div className="rnwy-action-meta__cell">
                   <span className="rnwy-action-meta__label">Time to act</span>
-                  <span className="rnwy-action-meta__val">2 minutes</span>
+                  <span className="rnwy-action-meta__val">This month</span>
                 </div>
                 <div className="rnwy-action-meta__cell rnwy-action-meta__cell--wide">
                   <span className="rnwy-action-meta__label">Annual impact</span>
-                  <span className="rnwy-action-meta__val rnwy-action-meta__val--neutral">Ongoing protection</span>
+                  <span className="rnwy-action-meta__val rnwy-action-meta__val--gain">
+                    Avoids forced raise at disadvantaged terms
+                  </span>
                 </div>
               </div>
               <div className="rnwy-action-wait">
                 <span className="rnwy-action-wait__label">Cost of waiting</span>
-                <span className="rnwy-action-wait__val rnwy-action-wait__val--neutral">Zero — act now</span>
+                <span className="rnwy-action-wait__val" style={{ color: '#DC2626' }}>
+                  Every month reduces negotiating leverage
+                </span>
               </div>
               <div className="rnwy-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="rnwy-action-card__cta-pill" to="/app/fundraise">
-                  Configure
+                  View fundraise timing →
                 </Link>
               </div>
             </article>
@@ -595,10 +622,23 @@ export function RunwayBurnPage() {
                             ? '#3B82F6'
                             : '#D1D5DB'
 
+                const mom = burnCategoryMomTrend(rows, r.name)
                 return (
                   <div key={r.name} className={`rnwy-opp-row ${categoryBorderClass(r.name)}`}>
                     <div className="rnwy-opp-row__content">
-                      <h3 className="rnwy-opp-row__title">{r.name}</h3>
+                      <h3 className="rnwy-opp-row__title" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {r.name}
+                        <span
+                          style={{
+                            fontFamily: 'Inter, system-ui, sans-serif',
+                            fontSize: 12,
+                            fontWeight: 500,
+                            color: mom.color,
+                          }}
+                        >
+                          {mom.text}
+                        </span>
+                      </h3>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div className="rnwy-market-row__track">

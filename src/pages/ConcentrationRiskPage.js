@@ -65,6 +65,11 @@ export function ConcentrationRiskPage() {
 
   const amountToMove = Math.max(0, unprotectedTotal)
 
+  const insightChipProjectedUnprotected = useMemo(
+    () => Math.max(0, unprotectedTotal - (totalCash / 3 - FSCS_LIMIT_GBP) * 2),
+    [unprotectedTotal, totalCash],
+  )
+
   const scrollToFix = useCallback(() => {
     document.getElementById('conc-opportunities')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }, [])
@@ -222,11 +227,12 @@ export function ConcentrationRiskPage() {
               <p className="conc-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="conc-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing protection</span>
+                <span>Governance</span>
               </p>
-              <p className="conc-action-card__title">Configure concentration alerts</p>
+              <p className="conc-action-card__title">Implement a treasury policy document</p>
               <p className="conc-action-card__desc">
-                Set a threshold so Treasury Autopilot alerts you the moment any single institution exceeds your policy.
+                A one-page treasury policy sets maximum concentration limits, minimum yield thresholds, and FSCS exposure
+                rules. Makes your board reporting credible and defensible.
               </p>
               <div className="conc-action-meta">
                 <div className="conc-action-meta__cell">
@@ -235,20 +241,24 @@ export function ConcentrationRiskPage() {
                 </div>
                 <div className="conc-action-meta__cell">
                   <span className="conc-action-meta__label">Time to act</span>
-                  <span className="conc-action-meta__val">2 minutes</span>
+                  <span className="conc-action-meta__val">This week</span>
                 </div>
                 <div className="conc-action-meta__cell conc-action-meta__cell--wide">
                   <span className="conc-action-meta__label">Annual impact</span>
-                  <span className="conc-action-meta__val conc-action-meta__val--gain">Ongoing protection</span>
+                  <span className="conc-action-meta__val conc-action-meta__val--gain">
+                    Board-level credibility on treasury management
+                  </span>
                 </div>
               </div>
               <div className="conc-action-wait">
                 <span className="conc-action-wait__label">Cost of waiting</span>
-                <span className="conc-action-wait__val conc-action-wait__val--neutral">Zero — act now</span>
+                <span className="conc-action-wait__val" style={{ color: '#DC2626' }}>
+                  Operating without a policy creates governance risk
+                </span>
               </div>
               <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
                 <Link className="conc-action-card__cta-pill" to="/app/preferences">
-                  Configure
+                  Set your treasury policy →
                 </Link>
               </div>
             </article>
@@ -511,22 +521,44 @@ export function ConcentrationRiskPage() {
             <>
               <div className="conc-risk-blocks">
                 <div className="conc-risk-block">
-                  <p className="conc-risk-block__value">$175B</p>
+                  <p
+                    className="conc-risk-block__value"
+                    style={{
+                      fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+                      fontWeight: 700,
+                      fontSize: 24,
+                      color: '#DC2626',
+                    }}
+                  >
+                    £{Math.round(unprotectedTotal).toLocaleString('en-GB')}
+                  </p>
                   <p className="conc-risk-block__text">
-                    SVB collapsed with $175B in deposits in March 2023 — Post-SVB, concentration risk is a board-level
-                    concern
+                    Your unprotected exposure at {largestInstitutionName}. In an SVB-style event, only{' '}
+                    {formatGBP(Math.round(FSCS_LIMIT_GBP))} would be recoverable under FSCS.
                   </p>
                 </div>
                 <div className="conc-risk-block">
-                  <p className="conc-risk-block__value">£20B+</p>
-                  <p className="conc-risk-block__text">FSCS paid out £20B+ in claims since 2001</p>
+                  <p className="conc-risk-block__value">48 hours</p>
+                  <p className="conc-risk-block__text">
+                    Approximate time to open a Starling or HSBC business account online. Spreading across 3 banks today
+                    eliminates 66% of your concentration risk immediately.
+                  </p>
                 </div>
                 <div className="conc-risk-block">
-                  <p className="conc-risk-block__value">25%</p>
-                  <p className="conc-risk-block__text">Recommended: no more than 25% in any single institution</p>
+                  <p className="conc-risk-block__value">
+                    £{Math.round(unprotectedTotal / 12).toLocaleString('en-GB')}/mo
+                  </p>
+                  <p className="conc-risk-block__text">
+                    Monthly cost of inaction — the unprotected amount accrues risk every day you remain concentrated in a
+                    single institution.
+                  </p>
                 </div>
               </div>
-              <div className="conc-compare-chip">Diversifying across 4 banks reduces single-institution risk by 75%</div>
+              <div className="conc-compare-chip">
+                Opening accounts at Starling and HSBC today reduces your unprotected exposure from{' '}
+                {formatGBP(Math.round(unprotectedTotal))} to {formatGBP(Math.round(insightChipProjectedUnprotected))}{' '}
+                assuming equal distribution.
+              </div>
             </>
           )}
         </section>

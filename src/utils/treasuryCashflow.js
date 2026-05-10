@@ -288,6 +288,28 @@ export function buildCashflowMonthlySeries(rows, summary, horizonDays = 90) {
   return series
 }
 
+/** Advance a monthly YYYY-MM-DD anchor until the date is on or after today (local midnight). */
+function rollMonthlyNextExpectedUntilFuture(isoStr, anchorDom) {
+  const parts = String(isoStr ?? '').slice(0, 10).split('-').map(Number)
+  if (parts.length < 3 || parts.some((n) => !Number.isFinite(n))) return isoStr
+  let d = new Date(parts[0], parts[1] - 1, parts[2])
+  if (Number.isNaN(d.getTime())) return isoStr
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let guard = 0
+  while (guard < 240) {
+    guard += 1
+    const cmp = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+    cmp.setHours(0, 0, 0, 0)
+    if (cmp.getTime() >= today.getTime()) break
+    const nm = new Date(d.getFullYear(), d.getMonth() + 1, 1)
+    const dim = new Date(nm.getFullYear(), nm.getMonth() + 1, 0).getDate()
+    nm.setDate(Math.min(anchorDom, dim))
+    d = nm
+  }
+  return d.toISOString().slice(0, 10)
+}
+
 /** Bar height % (5–100) from signed net vs max magnitude. */
 export function seriesToBarHeights(series) {
   const maxAbs = Math.max(1e-6, ...series.map((s) => Math.abs(s.net)))
@@ -374,7 +396,8 @@ export function detectRecurringTransactions(rows) {
     const next = new Date(lastD.getFullYear(), lastD.getMonth() + 1, 1)
     const dim = new Date(next.getFullYear(), next.getMonth() + 1, 0).getDate()
     next.setDate(Math.min(bestAnchor, dim))
-    const nextIso = next.toISOString().slice(0, 10)
+    let nextIso = next.toISOString().slice(0, 10)
+    nextIso = rollMonthlyNextExpectedUntilFuture(nextIso, bestAnchor)
 
     out.push({
       payee,

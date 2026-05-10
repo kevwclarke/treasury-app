@@ -21,12 +21,16 @@ const FLAG_ANNUAL_MULT = 0.047
 const PEER_AVG_PCT = 1.8
 
 const BOE_RATE_SERIES = [
-  { month: 'Nov', rate: 5.25 },
-  { month: 'Dec', rate: 5.25 },
-  { month: 'Jan', rate: 5.0 },
-  { month: 'Feb', rate: 5.0 },
-  { month: 'Mar', rate: 4.75 },
-  { month: 'Apr', rate: 4.75 },
+  { month: 'Aug', rate: 5.0 },
+  { month: 'Sep', rate: 5.0 },
+  { month: 'Oct', rate: 4.75 },
+  { month: 'Nov', rate: 4.75 },
+  { month: 'Dec', rate: 4.75 },
+  { month: 'Jan', rate: 4.5 },
+  { month: 'Feb', rate: 4.5 },
+  { month: 'Mar', rate: 4.25 },
+  { month: 'Apr', rate: 4.25 },
+  { month: 'May', rate: 3.75 },
 ]
 
 const OPP_ROWS = [
@@ -316,12 +320,12 @@ export function YieldOptimisationPage() {
               <p className="yld-action-card__kicker">NEXT BEST ACTION 3</p>
               <p className="yld-action-card__impact-qual">
                 <ShieldIcon />
-                <span>Ongoing protection</span>
+                <span>Policy floor</span>
               </p>
-              <p className="yld-action-card__title">Set minimum yield policy in Autopilot</p>
+              <p className="yld-action-card__title">Set a minimum yield policy — 4% floor</p>
               <p className="yld-action-card__desc">
-                Configure a 4% minimum yield threshold. Autopilot alerts you the moment any account drops below your
-                policy.
+                A 4% minimum yield policy means Treasury Autopilot alerts you the moment any account drops below your
+                threshold. At current rates, anything below 4% is leaving significant money on the table.
               </p>
               <div className="yld-action-meta">
                 <div className="yld-action-meta__cell">
@@ -330,16 +334,24 @@ export function YieldOptimisationPage() {
                 </div>
                 <div className="yld-action-meta__cell">
                   <span className="yld-action-meta__label">Time to act</span>
-                  <span className="yld-action-meta__val">2 minutes</span>
+                  <span className="yld-action-meta__val">5 minutes</span>
+                </div>
+                <div className="yld-action-meta__cell yld-action-meta__cell--wide">
+                  <span className="yld-action-meta__label">Annual impact</span>
+                  <span className="yld-action-meta__val" style={{ color: '#16A34A' }}>
+                    {formatGBP(Math.round(totalCash * 0.04))}/yr minimum guaranteed yield
+                  </span>
                 </div>
               </div>
               <div className="yld-action-wait">
                 <span className="yld-action-wait__label">Cost of waiting</span>
-                <span className="yld-action-wait__val yld-action-wait__val--neutral">Zero — act now</span>
+                <span className="yld-action-wait__val" style={{ color: '#DC2626' }}>
+                  {formatGBP(Math.round(monthlyOpp))}/month in foregone yield
+                </span>
               </div>
               <div className="yld-action-card__footer">
                 <Link className="yld-action-card__cta-pill" to="/app/preferences">
-                  Configure Autopilot
+                  Set yield policy →
                 </Link>
               </div>
             </article>
@@ -625,7 +637,9 @@ export function YieldOptimisationPage() {
                 })}
               </div>
               <p className="yld-opp-disclaimer">
-                Estimated gains are calculated independently on your eligible cash position and are not additive.
+                These are business savings and investment products. They are not ISAs and have no annual contribution limits.
+                Estimated gains are calculated independently on your eligible cash position and are not additive. Rates are
+                manually updated weekly — verify current rates before applying.
               </p>
             </>
           )}
@@ -662,8 +676,8 @@ export function YieldOptimisationPage() {
                     <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={{ stroke: '#e5e7eb' }} />
                     <YAxis
-                      domain={[4.4, 5.4]}
-                      ticks={[4.5, 4.75, 5.0, 5.25]}
+                      domain={[3.5, 5.25]}
+                      ticks={[3.75, 4.0, 4.5, 5.0, 5.25]}
                       tick={{ fontSize: 11, fill: '#6b7280' }}
                       axisLine={{ stroke: '#e5e7eb' }}
                       tickFormatter={(v) => `${Number(v).toFixed(2)}%`}
