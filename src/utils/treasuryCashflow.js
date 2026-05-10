@@ -4,45 +4,8 @@ function parseDate(str) {
   return isNaN(d.getTime()) ? null : d
 }
 
-/** Same as treasuryKpi.js — latest calendar date among rows with a valid date. */
-function latestTransactionDate(rows) {
-  let latest = null
-  for (const r of Array.isArray(rows) ? rows : []) {
-    const d = parseDate(r.date)
-    if (!d) continue
-    if (!latest || d > latest) latest = d
-  }
-  return latest
-}
-
-function monthKeyFromRow(row) {
-  return monthKeyFromDate(parseDate(row?.date))
-}
-
-/** A month is complete if it has at least 3 transaction rows with valid dates (treasuryKpi pattern). */
-function isCompleteMonth(rows, ym) {
-  let n = 0
-  for (const r of rows) {
-    if (monthKeyFromRow(r) === ym) n += 1
-  }
-  return n >= 3
-}
-
-function distinctSortedMonthKeys(rows) {
-  const set = new Set()
-  for (const r of rows) {
-    const k = monthKeyFromRow(r)
-    if (k) set.add(k)
-  }
-  return Array.from(set).sort()
-}
-
-function completeMonthKeysSorted(rows) {
-  return distinctSortedMonthKeys(rows).filter((ym) => isCompleteMonth(rows, ym))
-}
-
-function endOfDayMs(d) {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime()
+function isOpeningBalanceRow(r) {
+  return String(r?.payee ?? '').toUpperCase().includes('OPENING BALANCE')
 }
 
 function monthKeyFromDate(d) {
@@ -97,19 +60,6 @@ function median(nums) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
 }
 
-/** Last 3 calendar months ending at the anchor transaction month (inclusive). */
-function lastThreeMonthKeysEndingAtAnchor(anchorMs) {
-  const anchorDate = new Date(anchorMs)
-  const y = anchorDate.getFullYear()
-  const m0 = anchorDate.getMonth()
-  const keys = []
-  for (let i = 2; i >= 0; i -= 1) {
-    const d = new Date(y, m0 - i, 1)
-    keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-  return keys
-}
-
 /**
  * @param {Array<{ amount?: number|string, date?: string, payee?: string }>} rows
  */
@@ -124,126 +74,53 @@ export function computeCashflowSummary(rows) {
       totalIn: 0,
       totalOutAbs: 0,
       totalCash: 0,
-      startingCash: 0,
     }
-  }
-
-  const anchor = latestTransactionDate(list)
-  if (!anchor) {
-    return {
-      months: 0,
-      avgMonthlyIn: 0,
-      avgMonthlyOut: 0,
-      netMonthly: 0,
-      totalIn: 0,
-      totalOutAbs: 0,
-      totalCash: 0,
-      startingCash: 0,
-    }
-  }
-
-  const anchorMs = anchor.getTime()
-  const anchorEndMs = endOfDayMs(anchor)
-  const anchorYm = monthKeyFromDate(anchor)
-
-  const completeKeys = completeMonthKeysSorted(list)
-  const eligibleComplete = completeKeys.filter((ym) => ym <= anchorYm)
-  let windowKeyList = eligibleComplete.slice(-3)
-  let windowKeys = new Set(windowKeyList)
-  if (windowKeyList.length === 0) {
-    windowKeyList = lastThreeMonthKeysEndingAtAnchor(anchorMs)
-    windowKeys = new Set(windowKeyList)
-  }
-
-  const months = Math.max(1, windowKeyList.length)
-
-  const byMonthInAmts = new Map()
-  const byMonthOutAmts = new Map()
-  for (const r of list) {
-    const d = parseDate(r?.date)
-    if (!d || d.getTime() > anchorEndMs) continue
-    const mk = monthKeyFromDate(d)
-    if (!mk || !windowKeys.has(mk)) continue
-    const a = Number(r?.amount)
-    if (!Number.isFinite(a)) continue
-    if (a > 0) {
-      if (!byMonthInAmts.has(mk)) byMonthInAmts.set(mk, [])
-      byMonthInAmts.get(mk).push(a)
-    } else if (a < 0) {
-      if (!byMonthOutAmts.has(mk)) byMonthOutAmts.set(mk, [])
-      byMonthOutAmts.get(mk).push(-a)
-    }
-  }
-
-  const medianInByMonth = new Map()
-  const medianOutByMonth = new Map()
-  for (const mk of windowKeys) {
-    medianInByMonth.set(mk, median(byMonthInAmts.get(mk) ?? []))
-    medianOutByMonth.set(mk, median(byMonthOutAmts.get(mk) ?? []))
   }
 
   let totalIn = 0
   let totalOutAbs = 0
+  const monthsSeen = new Set()
 
-  let hasRunning = false
   let newestRunningT = -Infinity
   let newestRunningBal = null
 
   for (const r of list) {
     const d = parseDate(r?.date)
-    if (!d || d.getTime() > anchorEndMs) continue
 
-    const mk = monthKeyFromDate(d)
-    if (!mk || !windowKeys.has(mk)) continue
-
-    const a = Number(r?.amount)
-    if (Number.isFinite(a)) {
-      if (a > 0) {
-        const medIn = medianInByMonth.get(mk) ?? 0
-        const capIn = medIn > 0 ? 3 * medIn : Infinity
-        if (a <= capIn) totalIn += a
-      }
-      if (a < 0) {
-        const medOut = medianOutByMonth.get(mk) ?? 0
-        const capOut = medOut > 0 ? 3 * medOut : Infinity
-        if (-a <= capOut) totalOutAbs += -a
+    if (!isOpeningBalanceRow(r)) {
+      const a = Number(r?.amount)
+      if (Number.isFinite(a)) {
+        if (a > 0) totalIn += a
+        if (a < 0) totalOutAbs += -a
+        if (d && (a > 0 || a < 0)) monthsSeen.add(monthKeyFromDate(d))
       }
     }
 
+    if (!d) continue
     const rb = Number(r?.running_balance)
-    if (Number.isFinite(rb) && r?.date) {
+    if (Number.isFinite(rb)) {
       const t = d.getTime()
-      if (Number.isFinite(t)) {
-        hasRunning = true
-        if (t >= newestRunningT) {
-          newestRunningT = t
-          newestRunningBal = rb
-        }
+      if (Number.isFinite(t) && t >= newestRunningT) {
+        newestRunningT = t
+        newestRunningBal = rb
       }
     }
   }
 
+  const months = Math.max(1, monthsSeen.size)
   const avgMonthlyIn = totalIn / months
   const avgMonthlyOut = totalOutAbs / months
   const netMonthly = avgMonthlyIn - avgMonthlyOut
 
   let totalCash = list.reduce((s, r) => {
+    if (isOpeningBalanceRow(r)) return s
     const a = Number(r?.amount)
     return s + (Number.isFinite(a) ? a : 0)
   }, 0)
 
-  if (hasRunning && newestRunningBal != null) {
+  if (newestRunningBal != null && Number.isFinite(newestRunningBal)) {
     totalCash = newestRunningBal
   }
-
-  const startingCashRow = list.reduce((best, r) => {
-    const rb = Number(r?.running_balance)
-    if (!Number.isFinite(rb)) return best
-    const d = new Date(String(r.date).trim())
-    if (isNaN(d.getTime())) return best
-    return !best || d > new Date(String(best.date).trim()) ? r : best
-  }, null)
-  const startingCash = Number(startingCashRow?.running_balance) || 0
 
   return {
     months,
@@ -253,7 +130,6 @@ export function computeCashflowSummary(rows) {
     totalIn,
     totalOutAbs,
     totalCash,
-    startingCash,
   }
 }
 
@@ -275,7 +151,7 @@ function addDays(d, n) {
 
 /**
  * Weekly cumulative cash for the 90-day chart: actual weekly nets, then projected from summary.netMonthly.
- * Cumulative balance is shifted so the last actual week matches latest running_balance (startingCash), not £0.
+ * Levels are shifted so the last actual week matches summary.totalCash (latest running_balance when present).
  */
 export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
   const list = (Array.isArray(rows) ? rows : []).filter((r) => r?.date)
@@ -300,6 +176,7 @@ export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
       isProj = true
     } else {
       for (const r of list) {
+        if (isOpeningBalanceRow(r)) continue
         const t = new Date(String(r.date).trim()).getTime()
         if (t >= ws.getTime() && t < we.getTime()) {
           const a = Number(r.amount)
@@ -327,14 +204,9 @@ export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
     if (!p.isProj) lastAct = i
   })
 
-  const rbBaseline = Number(summary?.startingCash)
   let offset = 0
-  if (lastAct >= 0) {
-    if (Number.isFinite(rbBaseline) && rbBaseline !== 0) {
-      offset = rbBaseline - withCum[lastAct].cum
-    } else if (Number.isFinite(summary?.totalCash)) {
-      offset = summary.totalCash - withCum[lastAct].cum
-    }
+  if (lastAct >= 0 && Number.isFinite(summary?.totalCash)) {
+    offset = summary.totalCash - withCum[lastAct].cum
   }
 
   const shifted = withCum.map((p) => ({ ...p, cum: p.cum + offset }))
