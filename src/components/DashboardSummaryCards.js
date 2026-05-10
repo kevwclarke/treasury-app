@@ -283,7 +283,7 @@ export function DashboardSummaryCards({
       headline: `${formatGBP(Math.round(net))} net / month`,
       status: cfStatus,
       context: [
-        `Avg outflows ${formatGBP(Math.round(out))} · inflows from your import window.`,
+        `Avg outflows ${formatGBP(Math.round(out))} · avg monthly inflows from connected bank statement.`,
         cfLowCash ? 'Trajectory shows a low-cash week inside the forecast horizon.' : 'No low-cash flag on current averages.',
       ],
       to: '/app/cashflow',
