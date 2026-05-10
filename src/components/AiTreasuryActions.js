@@ -128,9 +128,6 @@ export function AiTreasuryActions({
           <p className="ai-actions__subtitle">
             Your highest-impact treasury actions this week — ranked by pound value
           </p>
-          <p className="ai-actions__lead">
-            Ranked by pound impact — with the cost of inaction if ignored
-          </p>
         </div>
         <button
           type="button"
