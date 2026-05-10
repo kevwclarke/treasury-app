@@ -22,7 +22,7 @@ export function useUserTransactions() {
 
         const { data, error: qError } = await supabase
           .from('transactions')
-          .select('id,amount,payee,date,balance,institution')
+          .select('id,amount,payee,date,balance,institution,running_balance')
           .eq('user_id', user.id)
           .order('date', { ascending: true })
 
