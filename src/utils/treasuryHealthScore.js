@@ -1,4 +1,4 @@
-import { YIELD_BEST_PCT, YIELD_CURRENT_PCT } from './treasuryYield'
+import { YIELD_BEST_PCT, YIELD_CURRENT_PCT, YIELD_SPREAD_DEC } from './treasuryYield'
 
 /**
  * Treasury health score 0–100 per investor report rules.
@@ -11,31 +11,42 @@ import { YIELD_BEST_PCT, YIELD_CURRENT_PCT } from './treasuryYield'
  * }} p
  */
 export function computeTreasuryHealthScore100(p) {
-  // Additive pillars (max 100): runway 35, yield gap 25, concentration 25, burn 15.
   const yieldGapPct = YIELD_BEST_PCT - YIELD_CURRENT_PCT
 
   let runwayPts = 0
   const r = p.baseRunwayMo
   if (r != null && Number.isFinite(r) && r > 0) {
-    runwayPts = r >= 18 ? 35 : (r / 18) * 35
+    if (r > 18) runwayPts = 35
+    else if (r >= 12) runwayPts = 25
+    else if (r >= 9) runwayPts = 18
+    else if (r >= 6) runwayPts = 10
+    else runwayPts = 0
   }
 
   let yieldPts = 25
-  if (p.totalCash > 0 && yieldGapPct > 0) {
-    yieldPts = Math.max(0, 25 - yieldGapPct * 6)
+  const annualOppGbp = p.totalCash > 0 && yieldGapPct > 0 ? p.totalCash * YIELD_SPREAD_DEC : 0
+  if (annualOppGbp > 0) {
+    if (annualOppGbp < 10_000) yieldPts = 25
+    else if (annualOppGbp < 50_000) yieldPts = 18
+    else if (annualOppGbp < 150_000) yieldPts = 10
+    else if (annualOppGbp < 300_000) yieldPts = 5
+    else yieldPts = 0
   }
 
-  let concPts = 25
-  if (p.maxInstitutionConcentrationPct > 75) concPts -= 15
-  else if (p.maxInstitutionConcentrationPct > 50) concPts -= 8
-  if (p.fscsUnprotectedGbp > 500_000) concPts -= 10
-  else if (p.fscsUnprotectedGbp > 250_000) concPts -= 5
-  concPts = Math.max(0, concPts)
+  const maxConc = p.maxInstitutionConcentrationPct
+  let concPts = 0
+  if (maxConc < 50) concPts = 25
+  else if (maxConc <= 75) concPts = 15
+  else if (maxConc <= 90) concPts = 8
+  else concPts = 0
 
   let burnPts = 15
-  if (p.burnMomGrowthPct != null && Number.isFinite(p.burnMomGrowthPct)) {
-    if (p.burnMomGrowthPct > 10) burnPts = 0
-    else if (p.burnMomGrowthPct > 5) burnPts = 7.5
+  const b = p.burnMomGrowthPct
+  if (b != null && Number.isFinite(b)) {
+    if (b > 15) burnPts = 0
+    else if (b > 5) burnPts = 5
+    else if (b > 0) burnPts = 10
+    else burnPts = 15
   }
 
   const raw = runwayPts + yieldPts + concPts + burnPts

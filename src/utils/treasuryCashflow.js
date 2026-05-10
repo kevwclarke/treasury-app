@@ -4,24 +4,28 @@ function parseDate(str) {
   return isNaN(d.getTime()) ? null : d
 }
 
-function latestTransactionDate(rows) {
-  let latest = null
-  for (const r of Array.isArray(rows) ? rows : []) {
-    const d = parseDate(r.date)
-    if (!d) continue
-    if (!latest || d > latest) latest = d
-  }
-  return latest
+/** Latest transaction time (ms); falls back to Date.now() when no valid dates (matches dashboard anchor pattern). */
+function anchorTransactionTimeMs(rows) {
+  const list = Array.isArray(rows) ? rows : []
+  const anchor = list.reduce((max, r) => {
+    const d = new Date(String(r.date ?? '').trim())
+    return isNaN(d.getTime()) ? max : Math.max(max, d.getTime())
+  }, -Infinity)
+  return Number.isFinite(anchor) && anchor > 0 ? anchor : Date.now()
 }
 
 function endOfDayMs(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime()
 }
 
-function monthKeyFromIso(iso) {
-  const d = parseDate(iso)
+function monthKeyFromDate(d) {
   if (!d) return null
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthKeyFromIso(iso) {
+  const d = parseDate(iso)
+  return monthKeyFromDate(d)
 }
 
 function padMonth(y, m0) {
@@ -66,17 +70,60 @@ function median(nums) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
 }
 
+/** Last 3 calendar months ending at the anchor transaction month (inclusive). */
+function lastThreeMonthKeysEndingAtAnchor(anchorMs) {
+  const anchorDate = new Date(anchorMs)
+  const y = anchorDate.getFullYear()
+  const m0 = anchorDate.getMonth()
+  const keys = []
+  for (let i = 2; i >= 0; i -= 1) {
+    const d = new Date(y, m0 - i, 1)
+    keys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  return keys
+}
+
 /**
  * @param {Array<{ amount?: number|string, date?: string, payee?: string }>} rows
  */
 export function computeCashflowSummary(rows) {
   const list = Array.isArray(rows) ? rows : []
-  const anchor = latestTransactionDate(list)
-  const anchorEndMs = anchor ? endOfDayMs(anchor) : null
+  if (!list.length) {
+    return {
+      months: 0,
+      avgMonthlyIn: 0,
+      avgMonthlyOut: 0,
+      netMonthly: 0,
+      totalIn: 0,
+      totalOutAbs: 0,
+      totalCash: 0,
+    }
+  }
+
+  const anchorMs = anchorTransactionTimeMs(list)
+  const anchorEndMs = endOfDayMs(new Date(anchorMs))
+  const windowKeys = new Set(lastThreeMonthKeysEndingAtAnchor(anchorMs))
+
+  const byMonthAbsAmts = new Map()
+  for (const r of list) {
+    const d = parseDate(r?.date)
+    if (!d || d.getTime() > anchorEndMs) continue
+    const mk = monthKeyFromDate(d)
+    if (!mk || !windowKeys.has(mk)) continue
+    const a = Number(r?.amount)
+    if (!Number.isFinite(a)) continue
+    if (!byMonthAbsAmts.has(mk)) byMonthAbsAmts.set(mk, [])
+    byMonthAbsAmts.get(mk).push(Math.abs(a))
+  }
+
+  const medianByMonth = new Map()
+  for (const mk of windowKeys) {
+    const arr = byMonthAbsAmts.get(mk) ?? []
+    medianByMonth.set(mk, median(arr))
+  }
 
   let totalIn = 0
   let totalOutAbs = 0
-  const distinctMonths = new Set()
 
   let hasRunning = false
   let newestRunningT = -Infinity
@@ -84,13 +131,16 @@ export function computeCashflowSummary(rows) {
 
   for (const r of list) {
     const d = parseDate(r?.date)
-    if (!d) continue
-    if (anchorEndMs != null && d.getTime() > anchorEndMs) continue
+    if (!d || d.getTime() > anchorEndMs) continue
 
-    distinctMonths.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    const mk = monthKeyFromDate(d)
+    if (!mk || !windowKeys.has(mk)) continue
 
     const a = Number(r?.amount)
     if (Number.isFinite(a)) {
+      const med = medianByMonth.get(mk) ?? 0
+      const cap = med > 0 ? 3 * med : Infinity
+      if (Math.abs(a) > cap) continue
       if (a > 0) totalIn += a
       if (a < 0) totalOutAbs += -a
     }
@@ -108,10 +158,11 @@ export function computeCashflowSummary(rows) {
     }
   }
 
-  const months = Math.max(1, distinctMonths.size)
-  const avgMonthlyIn = months > 0 ? totalIn / months : 0
-  const avgMonthlyOut = months > 0 ? totalOutAbs / months : 0
+  const months = 3
+  const avgMonthlyIn = totalIn / months
+  const avgMonthlyOut = totalOutAbs / months
   const netMonthly = avgMonthlyIn - avgMonthlyOut
+
   let totalCash = list.reduce((s, r) => {
     const a = Number(r?.amount)
     return s + (Number.isFinite(a) ? a : 0)
@@ -140,12 +191,17 @@ export function buildCashflowMonthlySeries(rows, summary, horizonDays = 90) {
   const list = (Array.isArray(rows) ? rows : []).filter((r) => r?.date)
   if (!list.length) return []
 
-  const anchor = latestTransactionDate(list)
-  if (!anchor) return []
+  const anchorT = list.reduce((max, r) => {
+    const d = new Date(String(r.date).trim())
+    return isNaN(d.getTime()) ? max : Math.max(max, d.getTime())
+  }, -Infinity)
+  if (!Number.isFinite(anchorT) || anchorT <= 0) return []
+
+  const anchorMs = anchorT
 
   const times = list.map((r) => parseDate(r.date)?.getTime()).filter(Number.isFinite)
   const minT = Math.min(...times)
-  const maxT = anchor.getTime()
+  const maxT = anchorMs
 
   const netByMonth = new Map()
   for (const r of list) {
@@ -171,7 +227,7 @@ export function buildCashflowMonthlySeries(rows, summary, horizonDays = 90) {
   }))
 
   const lastKey = actualKeys[actualKeys.length - 1]
-  const horizonEnd = maxT + horizonDays * 86400000
+  const horizonEnd = anchorMs + horizonDays * 86400000
   const projNet = summary.avgMonthlyIn - summary.avgMonthlyOut
 
   let projKey = addMonthsToKey(lastKey, 1)

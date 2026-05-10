@@ -255,9 +255,23 @@ export function DashboardSummaryCards({
       headline: burn > 0 ? `${formatGBP(Math.round(burn))} / month` : '—',
       status: burnStatus,
       context: [
-        burnDelta != null && Number.isFinite(burnDelta)
-          ? `Last 30 days vs trailing 90: ${burnDelta > 0 ? '+' : ''}${burnDelta.toFixed(1)}%.`
-          : 'Trailing 90-day average monthly outflow.',
+        burnDelta != null && Number.isFinite(burnDelta) ? (
+          <>
+            Last 30 days vs trailing 90:{' '}
+            <span
+              style={{
+                color:
+                  burnDelta > 0 ? '#DC2626' : burnDelta < 0 ? '#16A34A' : '#6B7280',
+              }}
+            >
+              {burnDelta > 0 ? '+' : ''}
+              {burnDelta.toFixed(1)}%
+            </span>
+            .
+          </>
+        ) : (
+          'Trailing 90-day average monthly outflow.'
+        ),
         'Category breakdown on Runway & Burn.',
       ],
       to: '/app/runway',

@@ -278,9 +278,21 @@ export function TreasuryDashboard() {
               £{Math.round(yieldSummary.monthlyOppCost).toLocaleString('en-GB')}/month lost to idle cash.{' '}
             </span>
             {kpiBurnKpi?.deltaPct != null && Number.isFinite(kpiBurnKpi.deltaPct) ? (
-              <span style={{ color: kpiBurnKpi.deltaPct > 0 ? '#dc2626' : kpiBurnKpi.deltaPct < 0 ? '#16a34a' : '#374151' }}>
+              <span>
                 Burn {kpiBurnKpi.deltaPct > 0 ? 'up' : kpiBurnKpi.deltaPct < 0 ? 'down' : 'flat'}{' '}
-                {Math.abs(kpiBurnKpi.deltaPct).toFixed(1)}%.{' '}
+                <span
+                  style={{
+                    color:
+                      kpiBurnKpi.deltaPct > 0
+                        ? '#DC2626'
+                        : kpiBurnKpi.deltaPct < 0
+                          ? '#16A34A'
+                          : '#6B7280',
+                  }}
+                >
+                  {Math.abs(kpiBurnKpi.deltaPct).toFixed(1)}%
+                </span>
+                .{' '}
               </span>
             ) : null}
             <span style={{ color: concentration.maxPct > 75 ? '#dc2626' : '#374151' }}>
@@ -518,7 +530,11 @@ export function TreasuryDashboard() {
                 <span
                   style={{
                     color:
-                      kpiBurnKpi.deltaPct > 0 ? '#dc2626' : kpiBurnKpi.deltaPct < 0 ? '#16a34a' : undefined,
+                      kpiBurnKpi.deltaPct > 0
+                        ? '#DC2626'
+                        : kpiBurnKpi.deltaPct < 0
+                          ? '#16A34A'
+                          : '#6B7280',
                   }}
                 >
                   {kpiBurnKpi.deltaPct > 0 ? '+' : ''}
@@ -554,7 +570,7 @@ export function TreasuryDashboard() {
         concentrationMaxPct={concentration.maxPct}
         concentrationUnprotected={concentration.unprotectedTotal}
         runwayMo={runwayMetrics.baseRunwayMo}
-        monthlyBurn={burnSummary.monthlyAvg}
+        monthlyBurn={kpiBurnKpi?.monthlyBurn90 ?? null}
         burnDeltaPct={kpiBurnKpi?.deltaPct ?? null}
         cfNetMonthly={cashflowSummary.netMonthly}
         cfAvgOut={cashflowSummary.avgMonthlyOut}
