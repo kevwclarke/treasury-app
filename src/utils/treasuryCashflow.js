@@ -1,3 +1,5 @@
+import { computeBurn30Vs90Pct } from './treasuryKpi'
+
 function parseDate(str) {
   if (!str) return null
   const d = new Date(String(str).trim())
@@ -109,7 +111,7 @@ export function computeCashflowSummary(rows) {
 
   const months = Math.max(1, monthsSeen.size)
   const avgMonthlyIn = totalIn / months
-  const avgMonthlyOut = totalOutAbs / months
+  const avgMonthlyOut = computeBurn30Vs90Pct(list)?.monthlyBurn90 ?? 0
   const netMonthly = avgMonthlyIn - avgMonthlyOut
 
   let totalCash = list.reduce((s, r) => {
