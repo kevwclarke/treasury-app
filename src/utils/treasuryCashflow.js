@@ -1,13 +1,7 @@
-import { computeBurn30Vs90Pct } from './treasuryKpi'
-
 function parseDate(str) {
   if (!str) return null
   const d = new Date(String(str).trim())
   return isNaN(d.getTime()) ? null : d
-}
-
-function isOpeningBalanceRow(r) {
-  return String(r?.payee ?? '').toUpperCase().includes('OPENING BALANCE')
 }
 
 function monthKeyFromDate(d) {
@@ -62,6 +56,16 @@ function median(nums) {
   return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
 }
 
+/** Latest running_balance by transaction date (matches 90-day chart anchor). */
+function projectionStartFromRows(rows) {
+  const list = Array.isArray(rows) ? rows : []
+  return (
+    list
+      .filter((r) => r.running_balance != null && Number.isFinite(Number(r.running_balance)))
+      .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.running_balance ?? 0
+  )
+}
+
 /**
  * @param {Array<{ amount?: number|string, date?: string, payee?: string }>} rows
  */
@@ -79,49 +83,46 @@ export function computeCashflowSummary(rows) {
     }
   }
 
+  const inByMonth = new Map()
+  const outByMonth = new Map()
+
   let totalIn = 0
   let totalOutAbs = 0
-  const monthsSeen = new Set()
-
-  let newestRunningT = -Infinity
-  let newestRunningBal = null
 
   for (const r of list) {
     const d = parseDate(r?.date)
-
-    if (!isOpeningBalanceRow(r)) {
-      const a = Number(r?.amount)
-      if (Number.isFinite(a)) {
-        if (a > 0) totalIn += a
-        if (a < 0) totalOutAbs += -a
-        if (d && (a > 0 || a < 0)) monthsSeen.add(monthKeyFromDate(d))
-      }
-    }
-
+    const a = Number(r?.amount)
+    if (!Number.isFinite(a)) continue
+    if (a > 0) totalIn += a
+    if (a < 0) totalOutAbs += -a
     if (!d) continue
-    const rb = Number(r?.running_balance)
-    if (Number.isFinite(rb)) {
-      const t = d.getTime()
-      if (Number.isFinite(t) && t >= newestRunningT) {
-        newestRunningT = t
-        newestRunningBal = rb
-      }
-    }
+    const mk = monthKeyFromDate(d)
+    if (!mk) continue
+    if (a > 0) inByMonth.set(mk, (inByMonth.get(mk) || 0) + a)
+    if (a < 0) outByMonth.set(mk, (outByMonth.get(mk) || 0) - a)
   }
 
-  const months = Math.max(1, monthsSeen.size)
-  const avgMonthlyIn = totalIn / months
-  const avgMonthlyOut = computeBurn30Vs90Pct(list)?.monthlyBurn90 ?? 0
+  const inMonthlyTotals = [...inByMonth.values()]
+  const outMonthlyTotals = [...outByMonth.values()]
+  const avgMonthlyIn = median(inMonthlyTotals)
+  const avgMonthlyOut = median(outMonthlyTotals)
   const netMonthly = avgMonthlyIn - avgMonthlyOut
 
+  const monthKeys = new Set([...inByMonth.keys(), ...outByMonth.keys()])
+  const months = monthKeys.size
+
   let totalCash = list.reduce((s, r) => {
-    if (isOpeningBalanceRow(r)) return s
     const a = Number(r?.amount)
     return s + (Number.isFinite(a) ? a : 0)
   }, 0)
 
-  if (newestRunningBal != null && Number.isFinite(newestRunningBal)) {
-    totalCash = newestRunningBal
+  const projectionStart = projectionStartFromRows(list)
+  if (
+    list.some(
+      (r) => r.running_balance != null && Number.isFinite(Number(r.running_balance)),
+    )
+  ) {
+    totalCash = Number(projectionStart)
   }
 
   return {
@@ -153,7 +154,7 @@ function addDays(d, n) {
 
 /**
  * Weekly cumulative cash for the 90-day chart: actual weekly nets, then projected from summary.netMonthly.
- * Levels are shifted so the last actual week matches summary.totalCash (latest running_balance when present).
+ * Levels are shifted so the last actual week matches the latest running_balance (projectionStartFromRows).
  */
 export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
   const list = (Array.isArray(rows) ? rows : []).filter((r) => r?.date)
@@ -178,7 +179,6 @@ export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
       isProj = true
     } else {
       for (const r of list) {
-        if (isOpeningBalanceRow(r)) continue
         const t = new Date(String(r.date).trim()).getTime()
         if (t >= ws.getTime() && t < we.getTime()) {
           const a = Number(r.amount)
@@ -206,9 +206,10 @@ export function buildWeeklyCashChartData(rows, summary, numWeeks = 13) {
     if (!p.isProj) lastAct = i
   })
 
+  const projectionStart = projectionStartFromRows(rows)
   let offset = 0
-  if (lastAct >= 0 && Number.isFinite(summary?.totalCash)) {
-    offset = summary.totalCash - withCum[lastAct].cum
+  if (lastAct >= 0) {
+    offset = projectionStart - withCum[lastAct].cum
   }
 
   const shifted = withCum.map((p) => ({ ...p, cum: p.cum + offset }))
