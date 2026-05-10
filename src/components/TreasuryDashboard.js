@@ -127,15 +127,20 @@ export function TreasuryDashboard() {
     return { monthlyAvg, total }
   }, [burnRows])
 
+  const kpiCash = useMemo(() => computeTotalCashAndMoMNetDelta(txnRows), [txnRows])
+  const kpiBurnKpi = useMemo(() => computeBurn30Vs90Pct(txnRows), [txnRows])
+
   const yieldSummary = useMemo(() => {
-    const totalCash = (txnRows ?? []).reduce((s, t) => {
-      const a = Number(t.amount)
-      return s + (Number.isFinite(a) ? a : 0)
-    }, 0)
+    const totalCash =
+      kpiCash?.totalCash ??
+      (txnRows ?? []).reduce((s, t) => {
+        const a = Number(t.amount)
+        return s + (Number.isFinite(a) ? a : 0)
+      }, 0)
     const annualOppCost = totalCash * YIELD_SPREAD_DEC
     const monthlyOppCost = annualOppCost / 12
     return { totalCash, annualOppCost, monthlyOppCost }
-  }, [txnRows])
+  }, [txnRows, kpiCash])
 
   const concentration = useMemo(() => computeConcentrationFromTransactions(txnRows), [txnRows])
   const runwayMetrics = useMemo(() => computeRunwayFromTransactions(txnRows), [txnRows])
@@ -145,8 +150,21 @@ export function TreasuryDashboard() {
     [cashflowSummary],
   )
   const liquidity = useMemo(() => computeLiquidityBuffer(txnRows), [txnRows])
-  const kpiCash = useMemo(() => computeTotalCashAndMoMNetDelta(txnRows), [txnRows])
-  const kpiBurnKpi = useMemo(() => computeBurn30Vs90Pct(txnRows), [txnRows])
+
+  const liquidityReserveCash = useMemo(() => {
+    if (liquidity.bufferMonths == null || !Number.isFinite(liquidity.bufferMonths)) return 0
+    return liquidity.bufferMonths * burnSummary.monthlyAvg
+  }, [liquidity.bufferMonths, burnSummary.monthlyAvg])
+
+  const capitalMoveEligibleCash = useMemo(() => {
+    const total = kpiCash?.totalCash ?? yieldSummary.totalCash ?? 0
+    return Math.round(Math.max(0, total - liquidityReserveCash))
+  }, [kpiCash?.totalCash, yieldSummary.totalCash, liquidityReserveCash])
+
+  const capitalMoveAnnualGainGbp = useMemo(
+    () => Math.round(Math.max(0, capitalMoveEligibleCash * 0.0515)),
+    [capitalMoveEligibleCash],
+  )
 
   const treasuryHealthScore = useMemo(
     () =>
@@ -198,9 +216,6 @@ export function TreasuryDashboard() {
     }
     return 'Your treasury position is stable.'
   }, [yieldSummary.annualOppCost, kpiBurnKpi?.deltaPct, runwayMetrics.baseRunwayMo])
-
-  const eligibleCash = Math.round(Math.max(0, kpiCash?.totalCash ?? yieldSummary.totalCash ?? 0))
-  const annualGainTbill = Math.round(Math.max(0, yieldSummary.annualOppCost ?? 0))
 
   const showFundraiseAlert =
     !txnLoading &&
@@ -269,13 +284,19 @@ export function TreasuryDashboard() {
               </span>
             ) : null}
             <span style={{ color: concentration.maxPct > 75 ? '#dc2626' : '#374151' }}>
-              {formatPct(concentration.maxPct, 1)} concentrated in one bank.
+              {concentration.maxPct.toFixed(1)}% concentrated in {concentration.largestInstitution || 'one bank'}.
             </span>
           </p>
           <p className="tdash__state-action-label">TOP CAPITAL MOVE</p>
           <p className="tdash__state-action">
-            Move £{eligibleCash.toLocaleString('en-GB')} to UK T-Bills for +£
-            <span style={{ color: '#16a34a' }}>{annualGainTbill.toLocaleString('en-GB')}</span>/yr.
+            {capitalMoveEligibleCash <= 0 || capitalMoveAnnualGainGbp <= 0 ? (
+              'Maintain liquidity buffer before optimising yield'
+            ) : (
+              <>
+                Move £{capitalMoveEligibleCash.toLocaleString('en-GB')} to UK T-Bills for +£
+                <span style={{ color: '#16a34a' }}>{capitalMoveAnnualGainGbp.toLocaleString('en-GB')}</span>/yr.
+              </>
+            )}
           </p>
         </div>
         <div className="tdash__state-right">
@@ -495,13 +516,10 @@ export function TreasuryDashboard() {
             ) : (
               <>
                 <span
-                  className={
-                    kpiBurnKpi.deltaPct > 0
-                      ? 'tdash__kpi-delta--down'
-                      : kpiBurnKpi.deltaPct < 0
-                        ? 'tdash__kpi-delta--up'
-                        : ''
-                  }
+                  style={{
+                    color:
+                      kpiBurnKpi.deltaPct > 0 ? '#dc2626' : kpiBurnKpi.deltaPct < 0 ? '#16a34a' : undefined,
+                  }}
                 >
                   {kpiBurnKpi.deltaPct > 0 ? '+' : ''}
                   {kpiBurnKpi.deltaPct.toFixed(1)}% vs 90-day average

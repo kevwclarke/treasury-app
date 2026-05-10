@@ -1,8 +1,26 @@
-import { monthsSpannedByTransactions } from './treasuryRunway'
+function parseDate(str) {
+  if (!str) return null
+  const d = new Date(String(str).trim())
+  return isNaN(d.getTime()) ? null : d
+}
+
+function latestTransactionDate(rows) {
+  let latest = null
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const d = parseDate(r.date)
+    if (!d) continue
+    if (!latest || d > latest) latest = d
+  }
+  return latest
+}
+
+function endOfDayMs(d) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999).getTime()
+}
 
 function monthKeyFromIso(iso) {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return null
+  const d = parseDate(iso)
+  if (!d) return null
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
 }
 
@@ -53,20 +71,33 @@ function median(nums) {
  */
 export function computeCashflowSummary(rows) {
   const list = Array.isArray(rows) ? rows : []
+  const anchor = latestTransactionDate(list)
+  const anchorEndMs = anchor ? endOfDayMs(anchor) : null
+
   let totalIn = 0
   let totalOutAbs = 0
+  const distinctMonths = new Set()
+
   let hasRunning = false
   let newestRunningT = -Infinity
   let newestRunningBal = null
+
   for (const r of list) {
+    const d = parseDate(r?.date)
+    if (!d) continue
+    if (anchorEndMs != null && d.getTime() > anchorEndMs) continue
+
+    distinctMonths.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+
     const a = Number(r?.amount)
-    if (!Number.isFinite(a)) continue
-    if (a > 0) totalIn += a
-    if (a < 0) totalOutAbs += -a
+    if (Number.isFinite(a)) {
+      if (a > 0) totalIn += a
+      if (a < 0) totalOutAbs += -a
+    }
 
     const rb = Number(r?.running_balance)
     if (Number.isFinite(rb) && r?.date) {
-      const t = new Date(r.date).getTime()
+      const t = d.getTime()
       if (Number.isFinite(t)) {
         hasRunning = true
         if (t >= newestRunningT) {
@@ -76,7 +107,8 @@ export function computeCashflowSummary(rows) {
       }
     }
   }
-  const months = monthsSpannedByTransactions(list)
+
+  const months = Math.max(1, distinctMonths.size)
   const avgMonthlyIn = months > 0 ? totalIn / months : 0
   const avgMonthlyOut = months > 0 ? totalOutAbs / months : 0
   const netMonthly = avgMonthlyIn - avgMonthlyOut
@@ -108,9 +140,12 @@ export function buildCashflowMonthlySeries(rows, summary, horizonDays = 90) {
   const list = (Array.isArray(rows) ? rows : []).filter((r) => r?.date)
   if (!list.length) return []
 
-  const times = list.map((r) => new Date(r.date).getTime()).filter(Number.isFinite)
+  const anchor = latestTransactionDate(list)
+  if (!anchor) return []
+
+  const times = list.map((r) => parseDate(r.date)?.getTime()).filter(Number.isFinite)
   const minT = Math.min(...times)
-  const maxT = Math.max(...times)
+  const maxT = anchor.getTime()
 
   const netByMonth = new Map()
   for (const r of list) {
@@ -177,8 +212,8 @@ export function detectRecurringTransactions(rows) {
     if (!p) continue
     const a = Number(r.amount)
     if (!Number.isFinite(a)) continue
-    const d = new Date(r.date)
-    if (Number.isNaN(d.getTime())) continue
+    const d = parseDate(r.date)
+    if (!d) continue
     const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const dom = d.getDate()
     if (!byPayee.has(p)) byPayee.set(p, new Map())

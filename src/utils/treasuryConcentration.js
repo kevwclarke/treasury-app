@@ -23,6 +23,24 @@ export function normalizeTransactionInstitution(raw) {
   return CSV_SOURCE_INSTITUTIONS.includes(s) ? s : 'Other'
 }
 
+function latestRunningBalanceForInstitution(rows, institutionKey) {
+  let latest = null
+  let latestT = -Infinity
+  for (const r of rows) {
+    if (normalizeTransactionInstitution(r?.institution) !== institutionKey) continue
+    const rb = Number(r?.running_balance)
+    if (!Number.isFinite(rb)) continue
+    const d = new Date(String(r.date).trim())
+    if (isNaN(d.getTime())) continue
+    const t = d.getTime()
+    if (t >= latestT) {
+      latestT = t
+      latest = rb
+    }
+  }
+  return latest
+}
+
 function emptyBuckets() {
   return Object.fromEntries(CONCENTRATION_INSTITUTIONS.map((k) => [k, 0]))
 }
@@ -63,12 +81,22 @@ export function computeConcentrationFromTransactions(rows) {
   }
 
   const balances = emptyBuckets()
+  const amountSums = emptyBuckets()
 
   for (const r of list) {
     const a = Number(r?.amount)
     if (!Number.isFinite(a)) continue
     const key = normalizeTransactionInstitution(r?.institution)
-    balances[key] = (balances[key] ?? 0) + a
+    amountSums[key] = (amountSums[key] ?? 0) + a
+  }
+
+  for (const name of CONCENTRATION_INSTITUTIONS) {
+    const rb = latestRunningBalanceForInstitution(list, name)
+    if (rb != null) {
+      balances[name] = rb
+    } else {
+      balances[name] = amountSums[name] ?? 0
+    }
   }
 
   const institutionRows = CONCENTRATION_INSTITUTIONS.map((name) => {
@@ -105,11 +133,15 @@ export function computeConcentrationFromTransactions(rows) {
 
   const barSegments = getConcentrationBarSegments(institutionRows, totalCash)
 
+  const largestInstitution =
+    institutionRows.reduce((best, r) => (!best || r.balance > best.balance ? r : best), null)?.name ?? null
+
   return {
     totalCash,
     institutionRows,
     barSegments,
     maxPct,
+    largestInstitution,
     riskTone,
     riskLabel,
     unprotectedTotal,

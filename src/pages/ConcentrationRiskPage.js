@@ -159,8 +159,13 @@ export function ConcentrationRiskPage() {
                 <span className="conc-action-wait__val">{formatGBP(Math.round(unprotectedTotal))} at risk every day</span>
               </div>
               <div className="conc-action-card__footer" style={{ marginTop: 'auto' }}>
-                <a className="conc-action-card__cta-pill" href="https://www.starling.com/business" target="_blank" rel="noopener noreferrer">
-                  Open new account
+                <a
+                  className="conc-action-card__cta-pill"
+                  href="https://www.starlingbank.com/business/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Compare business accounts
                 </a>
               </div>
             </article>
